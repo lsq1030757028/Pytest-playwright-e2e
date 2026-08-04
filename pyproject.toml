@@ -45,6 +45,7 @@ markers = [
   "regression: complete regression suite",
   "critical: release-blocking tests",
   "integration: live browser-to-service integration tests",
+  "target_integration: pinned open-source target integration tests",
   "destructive: tests that modify or delete data",
   "serial: tests that cannot run in parallel",
 ]
