@@ -1,0 +1,14 @@
+id: locator-safe-repair
+failure:
+  category: test_defect
+  evidence: locator submit-button not found
+repair:
+  kind: locator
+  find: ELEMENTS["submit-button"]
+  replace: ELEMENTS["save-button"]
+expected:
+  before: fail
+  after: pass
+  assertion_removed: false
+  oracle_changed: false
+retention: regression
