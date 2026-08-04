@@ -78,6 +78,12 @@ jobs:
           --output test-results
           --junitxml=test-results/junit-target-integration.xml
 
+      - name: TodoMVC mutation proof
+        run: >-
+          uv run test-workflow proof run proofs/todomvc/plan.yaml
+          --workspace .target-work/todomvc-proof
+          --output test-results/todomvc-proof
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
