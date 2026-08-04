@@ -1,0 +1,24 @@
+plan_id: golden-harness-plan
+nodes:
+  - node_id: seed
+    capability: fixture.seed@1.0.0
+    depends_on: []
+    outputs:
+      - SeedData@1
+  - node_id: plan
+    capability: test.plan@1.0.0
+    depends_on:
+      - seed
+    input_bindings:
+      - from_node: seed
+        output_index: 0
+        expected_type: SeedData
+    outputs:
+      - TestPlan@1
+expected:
+  topological_order:
+    - seed
+    - plan
+  pause_after_nodes: 1
+  final_status: succeeded
+  deep_context_loaded: false
