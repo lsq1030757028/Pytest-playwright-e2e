@@ -64,6 +64,42 @@ jobs:
           -m harness_integration
           --junitxml=test-results/junit-harness-3.0e.xml
 
+      - name: Stage 3 governance integration
+        run: >-
+          uv run pytest tests/integration/test_harness_governance_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-3-governance.xml
+
+      - name: Stage 4 intelligence integration
+        run: >-
+          uv run pytest tests/integration/test_harness_intelligence_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-4-intelligence.xml
+
+      - name: Stage 5 generation proof integration
+        run: >-
+          uv run pytest tests/integration/test_harness_generation_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-5-generation.xml
+
+      - name: Stage 6 diagnosis and repair integration
+        run: >-
+          uv run pytest tests/integration/test_harness_diagnosis_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-6-diagnosis.xml
+
+      - name: Stage 7 regression benchmark integration
+        run: >-
+          uv run pytest tests/integration/test_harness_regression_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-7-regression.xml
+
+      - name: Ledger and release asset integration
+        run: |
+          uv run test-harness-ledger validate docs/implementation-ledger.yaml
+          uv run pytest tests/integration/test_harness_ledger_release_integration.py -m harness_integration --junitxml=test-results/junit-ledger-release.xml
+          uv build
+
       - name: Validate deterministic Replay Bundle
         run: |
           uv run test-workflow spec validate experiments/todomvc-golden-loop/spec/test-spec.yaml
@@ -119,6 +155,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results
+          path: |
+            test-results
+            dist
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 30
