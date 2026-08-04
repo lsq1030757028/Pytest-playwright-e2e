@@ -1,3 +1,14 @@
+from .artifacts import (
+    ArtifactEnvelope,
+    ArtifactImmutableError,
+    ArtifactIntegrityError,
+    ArtifactNotFoundError,
+    ArtifactStore,
+    FileArtifactStore,
+    InMemoryArtifactStore,
+    StoreExecutionContext,
+    content_hash,
+)
 from .contracts import (
     ArtifactRef,
     ArtifactTypeRef,
@@ -23,16 +34,30 @@ from .contracts import (
     RetryMode,
     RetryPolicy,
 )
+from .registry import (
+    CapabilityAlreadyRegisteredError,
+    CapabilityNotFoundError,
+    CapabilityRegistry,
+    semver_key,
+)
 
 __all__ = [
+    "ArtifactEnvelope",
+    "ArtifactImmutableError",
+    "ArtifactIntegrityError",
+    "ArtifactNotFoundError",
     "ArtifactRef",
+    "ArtifactStore",
     "ArtifactTypeRef",
     "ArtifactValidity",
     "Capability",
     "CapabilityAccess",
+    "CapabilityAlreadyRegisteredError",
     "CapabilityDescriptor",
     "CapabilityExecutionContext",
+    "CapabilityNotFoundError",
     "CapabilityRef",
+    "CapabilityRegistry",
     "CapabilityRequest",
     "CapabilityResult",
     "CapabilityResultStatus",
@@ -44,8 +69,13 @@ __all__ = [
     "EventSeverity",
     "ExecutionBudget",
     "ExecutionMetrics",
+    "FileArtifactStore",
     "IdempotencyMode",
+    "InMemoryArtifactStore",
     "PermissionScope",
     "RetryMode",
     "RetryPolicy",
+    "StoreExecutionContext",
+    "content_hash",
+    "semver_key",
 ]
