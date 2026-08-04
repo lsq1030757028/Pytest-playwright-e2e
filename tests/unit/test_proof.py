@@ -67,14 +67,16 @@ def test_text_mutation_rejects_missing_or_ambiguous_match(tmp_path: Path) -> Non
     target.parent.mkdir(parents=True)
     target.write_text("no match", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="found 0"):
-        with TextMutation(app_dir, mutation_spec()):
-            pass
+    with pytest.raises(ValueError, match="found 0"), TextMutation(
+        app_dir, mutation_spec()
+    ):
+        pass
 
     target.write_text("before and before", encoding="utf-8")
-    with pytest.raises(ValueError, match="found 2"):
-        with TextMutation(app_dir, mutation_spec()):
-            pass
+    with pytest.raises(ValueError, match="found 2"), TextMutation(
+        app_dir, mutation_spec()
+    ):
+        pass
 
 
 def test_mutation_spec_rejects_path_traversal_and_noop() -> None:
