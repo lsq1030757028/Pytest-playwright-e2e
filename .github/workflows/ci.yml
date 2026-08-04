@@ -36,7 +36,7 @@ jobs:
 
       - name: Harness 3.0A contracts integration
         run: >-
-          uv run pytest tests/integration/test_harness_contracts.py
+          uv run pytest tests/integration/test_harness_contracts_integration.py
           -m harness_integration
           --junitxml=test-results/junit-harness-3.0a.xml
 
