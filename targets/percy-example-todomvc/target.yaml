@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: percy-example-todomvc
+repository: https://github.com/percy/example-todomvc.git
+revision: 4a2344b2207a72c680e5c559c72617498fb5b75b
+subdirectory: .
+install_command:
+  - npm
+  - ci
+  - --ignore-scripts
+  - --no-audit
+  - --no-fund
+start_command:
+  - npx
+  - --no-install
+  - http-server
+  - -p
+  - ${PORT}
+health_path: /
+required_files:
+  - index.html
+  - dist/bundle.js
+  - package.json
+  - package-lock.json
+attribution: percy/example-todomvc, MIT License; modified from tastejs/todomvc
