@@ -1,3 +1,11 @@
+from .adapters import (
+    AdapterInputError,
+    MutationProofCapability,
+    PytestRunCapability,
+    SpecValidateCapability,
+    TargetManifestValidateCapability,
+    register_existing_capabilities,
+)
 from .artifacts import (
     ArtifactEnvelope,
     ArtifactImmutableError,
@@ -69,6 +77,7 @@ from .registry import (
 )
 
 __all__ = [
+    "AdapterInputError",
     "ArtifactEnvelope",
     "ArtifactImmutableError",
     "ArtifactIntegrityError",
@@ -105,6 +114,7 @@ __all__ = [
     "FileArtifactStore",
     "IdempotencyMode",
     "InMemoryArtifactStore",
+    "MutationProofCapability",
     "NodeExecution",
     "NodeOutputBinding",
     "NodeStatus",
@@ -118,13 +128,17 @@ __all__ = [
     "PolicyEngine",
     "PolicyOutcome",
     "PolicyReason",
+    "PytestRunCapability",
     "RetryMode",
     "RetryPolicy",
+    "SpecValidateCapability",
     "StoreExecutionContext",
+    "TargetManifestValidateCapability",
     "WorkflowCompiler",
     "budget_violations",
     "content_hash",
     "permissions_cover",
+    "register_existing_capabilities",
     "reset_checkpoint",
     "scope_allows",
     "semver_key",
