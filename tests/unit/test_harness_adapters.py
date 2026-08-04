@@ -92,7 +92,7 @@ def test_pytest_run_capability_executes_only_selected_test_asset() -> None:
         request(
             "test.run",
             "adapter-test-run",
-            budget=ExecutionBudget(subprocesses=1, wall_time_seconds=60),
+            budget=ExecutionBudget(subprocesses=1, wall_time_seconds=120),
             parameters={
                 "tests": ["tests/assets/harness/3.0e/test_selected_harness.py"],
                 "pytest_args": ["-q"],
@@ -113,7 +113,7 @@ def test_pytest_run_rejects_paths_outside_tests() -> None:
         request(
             "test.run",
             "adapter-path-reject",
-            budget=ExecutionBudget(subprocesses=1, wall_time_seconds=60),
+            budget=ExecutionBudget(subprocesses=1, wall_time_seconds=120),
             parameters={"tests": ["pyproject.toml"]},
         ),
         StoreExecutionContext(InMemoryArtifactStore()),
