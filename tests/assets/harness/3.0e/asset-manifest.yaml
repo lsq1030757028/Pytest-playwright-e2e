@@ -1,0 +1,19 @@
+id: harness-existing-adapters-3.0e
+version: 1
+purpose: L1 TodoMVC minimal Harness golden gate.
+assets:
+  - path: test_selected_harness.py
+    artifact_type: SelectedPytestAsset
+    schema_version: 1
+workflow:
+  assurance_profile: L1
+  capabilities:
+    - spec.validate@1.0.0
+    - target.validate@1.0.0
+    - test.run@1.0.0
+  explicitly_skipped:
+    - proof.run@1.0.0
+    - browser.explore
+    - deep-context.load
+retention: regression
+owner: harness-foundation
