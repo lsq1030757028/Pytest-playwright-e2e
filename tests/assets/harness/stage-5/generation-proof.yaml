@@ -1,0 +1,13 @@
+id: generated-free-time-proof
+requirement_revision: REQ-FREE@v1
+oracle_ids: [O-BOUNDARY]
+target: examples/demo_app/main.py
+mutation:
+  find: close_seconds <= free_seconds
+  replace: close_seconds < free_seconds
+expected:
+  baseline: pass
+  mutation: fail
+  restored: pass
+  restored_hash_matches: true
+retention: regression
