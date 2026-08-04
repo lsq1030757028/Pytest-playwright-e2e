@@ -7,6 +7,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ..proof import MutationProofRunner
+from ..serialization import load_model
+from ..specs import TestSpec
+from ..targets import TargetManager
+from .artifacts import StoreExecutionContext, canonical_json_bytes
 from .contracts import (
     ArtifactTypeRef,
     CapabilityAccess,
@@ -19,11 +24,6 @@ from .contracts import (
     ExecutionMetrics,
     PermissionScope,
 )
-from .artifacts import StoreExecutionContext, canonical_json_bytes
-from ..proof import MutationProofRunner
-from ..serialization import load_model
-from ..specs import TestSpec
-from ..targets import TargetManager, TargetManifest
 
 
 class AdapterInputError(ValueError):
@@ -63,8 +63,8 @@ class SpecValidateCapability:
                 "valid": True,
                 "path": str(path.relative_to(self.repo_root)),
                 "spec_id": spec.id,
-                "scenario_count": len(spec.scenarios),
-                "oracle_count": sum(len(item.oracles) for item in spec.scenarios),
+                "case_count": len(spec.cases),
+                "oracle_count": sum(len(item.oracles) for item in spec.cases),
             }
             ref = context.write_artifact(
                 artifact_id=_artifact_id("validation/spec", request.request_id),
