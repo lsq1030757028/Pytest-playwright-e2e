@@ -14,6 +14,7 @@ from .control_plane import build_runtime
 from .mocking import validate_mock_configuration
 from .models import FailureEvidence, QualityGate
 from .preflight import run_preflight
+from .proof import MutationProofRunner
 from .reporting import parse_junit, render_markdown
 from .runner import run_tests
 from .serialization import load_model
@@ -26,11 +27,13 @@ spec_app = typer.Typer(no_args_is_help=True, help="Validate structured test spec
 bundle_app = typer.Typer(no_args_is_help=True, help="Create and validate replay bundles")
 env_app = typer.Typer(no_args_is_help=True, help="Compile deterministic test environments")
 mock_app = typer.Typer(no_args_is_help=True, help="Validate and run contract-backed mocks")
+proof_app = typer.Typer(no_args_is_help=True, help="Validate and execute mutation test proofs")
 target_app = typer.Typer(no_args_is_help=True, help="Manage pinned open-source test targets")
 app.add_typer(spec_app, name="spec")
 app.add_typer(bundle_app, name="bundle")
 app.add_typer(env_app, name="env")
 app.add_typer(mock_app, name="mock")
+app.add_typer(proof_app, name="proof")
 app.add_typer(target_app, name="target")
 
 
@@ -184,6 +187,43 @@ def materialize_target(
             indent=2,
         )
     )
+
+
+@proof_app.command("validate")
+def validate_proof_plan(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+) -> None:
+    """Validate a mutation proof plan and its referenced target manifest."""
+    loaded = MutationProofRunner().load_plan(plan_file)
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "plan_id": loaded.plan.id,
+                "mutations": len(loaded.plan.mutations),
+                "stability_runs": loaded.plan.stability_runs,
+                "target_manifest": str(loaded.target_manifest),
+            },
+            indent=2,
+        )
+    )
+
+
+@proof_app.command("run")
+def run_proof(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+    workspace: Path = typer.Option(Path(".target-work/proof")),
+    output: Path = typer.Option(Path("test-results/proof")),
+) -> None:
+    """Run baseline, mutation, and restored phases against a pinned target."""
+    report = MutationProofRunner().run(
+        plan_file,
+        workspace=workspace,
+        evidence_dir=output,
+    )
+    typer.echo(report.model_dump_json(indent=2))
+    if report.status != "passed":
+        raise typer.Exit(code=2)
 
 
 @bundle_app.command("create")
