@@ -1,0 +1,8 @@
+environment: test
+base_url: ${TEST_WORKFLOW_BASE_URL}
+health_path: /health
+allow_write: false
+browsers:
+  - chromium
+artifacts_dir: test-results
+request_timeout_seconds: 10

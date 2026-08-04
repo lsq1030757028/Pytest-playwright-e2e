@@ -1,0 +1,68 @@
+name: test-workflow-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Install Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Collect tests
+        run: uv run pytest --collect-only
+
+      - name: Unit and API tests
+        run: uv run pytest tests/unit tests/api --junitxml=test-results/junit-core.xml
+
+      - name: Browser smoke tests
+        run: >-
+          uv run pytest tests/e2e
+          -m "smoke and not destructive"
+          --browser chromium
+          --tracing retain-on-failure
+          --screenshot only-on-failure
+          --video retain-on-failure
+          --output test-results
+          --junitxml=test-results/junit-e2e.xml
+
+      - name: Live browser integration
+        env:
+          RUN_LIVE_E2E: "1"
+        run: >-
+          uv run pytest tests/e2e/specs/test_live_free_time_workflow.py
+          -m integration
+          --browser chromium
+          --tracing retain-on-failure
+          --screenshot only-on-failure
+          --video retain-on-failure
+          --output test-results
+          --junitxml=test-results/junit-live-e2e.xml
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 14

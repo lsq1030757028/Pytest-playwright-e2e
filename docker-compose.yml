@@ -1,0 +1,25 @@
+services:
+  demo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RUN_LIVE_E2E: "1"
+      TEST_WORKFLOW_BASE_URL: http://demo-app:8000
+    depends_on:
+      demo-app:
+        condition: service_healthy
+    volumes:
+      - ./test-results:/app/test-results

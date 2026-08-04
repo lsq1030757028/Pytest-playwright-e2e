@@ -1,0 +1,11 @@
+{
+  "test_id": "tests/e2e/specs/test_example.py::test_example",
+  "exception_type": "AssertionError",
+  "message": "expected X, got Y",
+  "retry_passed": false,
+  "stable_reproduction": true,
+  "api_confirms_wrong_result": true,
+  "duplicate_test_data": false,
+  "requirement_ambiguous": false,
+  "status_codes": [200]
+}
