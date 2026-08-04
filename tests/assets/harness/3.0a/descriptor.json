@@ -1,0 +1,40 @@
+{
+  "name": "spec.validate",
+  "version": "1.0.0",
+  "input_types": [{"name": "TestSpec", "schema_version": 1}],
+  "output_types": [{"name": "SpecValidation", "schema_version": 1}],
+  "side_effects": [],
+  "cost_class": "low",
+  "default_context": {
+    "level": "focused",
+    "selectors": [{"namespace": "test.spec", "keys": ["current"]}],
+    "max_items": 10,
+    "max_bytes": 100000,
+    "allow_secrets": false
+  },
+  "required_permissions": {
+    "read": ["artifacts/spec/*"],
+    "write": ["artifacts/validation/*"],
+    "execute": [],
+    "network_domains": [],
+    "allow_model": false,
+    "allow_browser": false,
+    "allow_subprocess": false,
+    "allow_secrets": false
+  },
+  "access": {
+    "allow_model": false,
+    "allow_network": false,
+    "allow_browser": false,
+    "allow_subprocess": false
+  },
+  "idempotency": "deterministic",
+  "retry_policy": {
+    "mode": "none",
+    "max_attempts": 1,
+    "delay_seconds": 0,
+    "max_delay_seconds": 0
+  },
+  "timeout_seconds": 30,
+  "tags": ["harness", "spec"]
+}
