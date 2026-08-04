@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from pathlib import import Path
+from pathlib import Path
 
 import pytest
 
 from test_workflow.config import load_settings
 
 
-def test_load_settings_resolves_environment_variable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_settings_resolves_environment_variable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("TARGET_URL", "http://127.0.0.1:8080")
     config = tmp_path / "config.yaml"
     config.write_text(
