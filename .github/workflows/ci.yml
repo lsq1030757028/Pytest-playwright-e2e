@@ -46,6 +46,12 @@ jobs:
           -m harness_integration
           --junitxml=test-results/junit-harness-3.0b.xml
 
+      - name: Harness 3.0C policy integration
+        run: >-
+          uv run pytest tests/integration/test_harness_policy_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0c.xml
+
       - name: Validate deterministic Replay Bundle
         run: |
           uv run test-workflow spec validate experiments/todomvc-golden-loop/spec/test-spec.yaml
