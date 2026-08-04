@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "id": "FREE-TIME-FULL-WORKFLOW-001",
+  "title": "Free time exact boundary",
+  "requirement_sources": [
+    {"id": "REQ-FREE", "source": "REQ-FREE@v1"}
+  ],
+  "facts": [
+    {
+      "id": "F-BOUNDARY",
+      "statement": "120 seconds is within two free minutes",
+      "source": "REQ-FREE",
+      "confidence": "confirmed"
+    }
+  ],
+  "assumptions": [],
+  "risks": [
+    {
+      "id": "R-BOUNDARY",
+      "title": "exact boundary rejected and customer overcharged",
+      "probability": "medium",
+      "impact": "critical",
+      "test_required": true
+    }
+  ],
+  "truth_boundary": {
+    "must_be_real": ["billing.free-time"],
+    "may_be_mocked": ["system.clock"]
+  },
+  "cases": [
+    {
+      "id": "CASE-BOUNDARY",
+      "title": "two minutes accepts 120 seconds",
+      "risk": "critical",
+      "preconditions": [],
+      "actions": [
+        {
+          "name": "calculate_free_time",
+          "params": {"free_minutes": 2, "close_seconds": 120}
+        }
+      ],
+      "oracles": [
+        {
+          "id": "O-BOUNDARY",
+          "source": "requirement",
+          "expression": "free_time_applied == true",
+          "expected": true,
+          "basis_ref": "F-BOUNDARY",
+          "confidence": "confirmed"
+        }
+      ],
+      "tags": ["critical", "billing", "boundary"]
+    }
+  ],
+  "regression_keys": ["billing", "free-time"]
+}
