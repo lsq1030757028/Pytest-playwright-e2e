@@ -1,0 +1,9 @@
+id: todomvc-incremental-understanding
+scope: [todo.cleanup, todo.persistence]
+required_invariants: [INV-DATA-001, INV-PERSIST-001]
+required_p0_scenarios: [LOSS-DATA-001, LOSS-PERSIST-001]
+expected:
+  p0_recall: 1.0
+  false_blockers: 0
+  undeclared_oracle_assumptions: 0
+retention: regression
