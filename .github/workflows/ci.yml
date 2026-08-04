@@ -34,6 +34,12 @@ jobs:
       - name: Unit and API tests
         run: uv run pytest tests/unit tests/api --junitxml=test-results/junit-core.xml
 
+      - name: Harness 3.0A contracts integration
+        run: >-
+          uv run pytest tests/integration/test_harness_contracts.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0a.xml
+
       - name: Validate deterministic Replay Bundle
         run: |
           uv run test-workflow spec validate experiments/todomvc-golden-loop/spec/test-spec.yaml
