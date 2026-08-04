@@ -5,7 +5,7 @@ from enum import StrEnum
 from pydantic import Field, model_validator
 
 from .contracts import FrozenModel
-from .governance import AssuranceLevel, BusinessPriority if False else AssuranceLevel
+from .governance import AssuranceLevel
 from .intelligence import BusinessPriority
 
 
@@ -203,9 +203,7 @@ class BenchmarkEvaluator:
         )
         expected_all = sum(len(item.expected_all_tests) for item in cases)
         selected_all = sum(len(item.expected_all_tests & item.selected_tests) for item in cases)
-        false_green = sum(
-            item.defect_present and item.verdict_passed for item in cases
-        )
+        false_green = sum(item.defect_present and item.verdict_passed for item in cases)
         reductions = [
             1 - item.execution_seconds / item.full_suite_seconds
             for item in cases
