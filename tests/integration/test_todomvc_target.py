@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import playwright.sync_api
 import pytest
-from playwright.sync_api import Browser, expect
 
 from test_workflow.adapters.todomvc import TodoItem, TodoMVCAdapter
 from test_workflow.targets import TargetManager
@@ -20,7 +20,7 @@ TARGET_MANIFEST = REPO_ROOT / "targets" / "percy-example-todomvc" / "target.yaml
     reason="Set RUN_TARGET_INTEGRATION=1 to clone and run the pinned public target.",
 )
 def test_pinned_todomvc_target_supports_seed_toggle_filter_and_cleanup(
-    browser: Browser,
+    browser: playwright.sync_api.Browser,
     tmp_path: Path,
 ) -> None:
     manager = TargetManager()
@@ -39,12 +39,16 @@ def test_pinned_todomvc_target_supports_seed_toggle_filter_and_cleanup(
             ],
         )
 
-        expect(page.locator(".todo-list li")).to_have_count(2)
-        expect(page.locator(".todo-count")).to_contain_text("1 item left")
+        playwright.sync_api.expect(page.locator(".todo-list li")).to_have_count(2)
+        playwright.sync_api.expect(page.locator(".todo-count")).to_contain_text(
+            "1 item left"
+        )
 
         page.get_by_role("link", name="Active").click()
-        expect(page.locator(".todo-list li")).to_have_count(1)
-        expect(page.locator(".todo-list label")).to_have_text("Active item")
+        playwright.sync_api.expect(page.locator(".todo-list li")).to_have_count(1)
+        playwright.sync_api.expect(page.locator(".todo-list label")).to_have_text(
+            "Active item"
+        )
 
         page.get_by_role("link", name="All").click()
         page.locator(".todo-list li", has_text="Active item").locator(".toggle").check()
@@ -52,6 +56,6 @@ def test_pinned_todomvc_target_supports_seed_toggle_filter_and_cleanup(
         assert all(item.completed for item in state.items)
 
         page.get_by_role("button", name="Clear completed").click()
-        expect(page.locator(".todo-list li")).to_have_count(0)
+        playwright.sync_api.expect(page.locator(".todo-list li")).to_have_count(0)
         assert adapter.read(page).items == []
         context.close()
