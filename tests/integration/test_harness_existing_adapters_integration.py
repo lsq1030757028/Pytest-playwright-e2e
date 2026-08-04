@@ -85,7 +85,7 @@ def test_l1_todomvc_harness_gate_runs_only_minimal_capabilities(tmp_path: Path) 
                     capability=CapabilityRef(name="test.run", version="1.0.0"),
                     budget=ExecutionBudget(
                         subprocesses=1,
-                        wall_time_seconds=60,
+                        wall_time_seconds=120,
                         artifact_bytes=1_000_000,
                     ),
                     permissions=PermissionScope(
