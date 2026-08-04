@@ -8,6 +8,7 @@ from test_workflow.harness import (
     BudgetUsage,
     CapabilityAccess,
     CapabilityDescriptor,
+    CapabilityRef,
     CapabilityRequest,
     ContextLevel,
     ContextRequest,
@@ -100,7 +101,7 @@ def test_policy_denies_context_escalation_and_secret_access() -> None:
 
 def test_policy_denies_capability_mismatch() -> None:
     request = allowed_request().model_copy(
-        update={"capability": {"name": "target.start", "version": "1.0.0"}}
+        update={"capability": CapabilityRef(name="target.start", version="1.0.0")}
     )
     decision, _ = PolicyEngine().evaluate(descriptor(), request)
     assert decision.reasons[0] == PolicyReason.CAPABILITY_MISMATCH
