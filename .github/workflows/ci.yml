@@ -65,6 +65,19 @@ jobs:
           --output test-results
           --junitxml=test-results/junit-live-e2e.xml
 
+      - name: Pinned TodoMVC target integration
+        env:
+          RUN_TARGET_INTEGRATION: "1"
+        run: >-
+          uv run pytest tests/integration/test_todomvc_target.py
+          -m target_integration
+          --browser chromium
+          --tracing retain-on-failure
+          --screenshot only-on-failure
+          --video retain-on-failure
+          --output test-results
+          --junitxml=test-results/junit-target-integration.xml
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
