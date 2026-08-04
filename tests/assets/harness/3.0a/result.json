@@ -1,0 +1,41 @@
+{
+  "request_id": "request-contract-golden",
+  "status": "success",
+  "artifacts": [
+    {
+      "artifact_id": "validation/TODO-001/v1",
+      "artifact_type": "SpecValidation",
+      "schema_version": 1,
+      "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_revisions": {"requirement": "REQ-TODO-001@v1"},
+      "created_by": {"name": "spec.validate", "version": "1.0.0"},
+      "validity": "valid"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "event-contract-golden",
+      "event_type": "capability.completed",
+      "occurred_at": "2026-08-05T00:00:00Z",
+      "source": {"name": "spec.validate", "version": "1.0.0"},
+      "payload": {"valid": true},
+      "severity": "info",
+      "campaign_id": "CAMPAIGN-TODO-001",
+      "correlation_id": "CORR-TODO-001"
+    }
+  ],
+  "suggested_transition": "SPEC_VALIDATED",
+  "metrics": {
+    "duration_ms": 3,
+    "model_calls": 0,
+    "tokens": 0,
+    "browser_sessions": 0,
+    "api_calls": 0,
+    "subprocesses": 0,
+    "artifact_bytes": 128,
+    "retries": 0
+  },
+  "warnings": [],
+  "blockers": [],
+  "error": null
+}
