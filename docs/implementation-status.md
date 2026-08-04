@@ -123,8 +123,8 @@ Trigger / Change Event
 | TestSpec / Mock / Replay | `VERIFIED` | PR #7 | Run #14 |
 | Target Runtime / Adapter | `VERIFIED` | PR #8 | Run #20 |
 | Baseline / Mutation / Restored | `VERIFIED` | PR #9 | Run #23 / #25 |
-| 总体计划 v2.1 | `IMPLEMENTED` | PR #9 | 待本次 CI |
-| Harness 架构方案 | `IMPLEMENTED` | PR #9 | 待本次 CI |
+| 总体计划 v2.1 | `VERIFIED` | PR #9 | Run #33 |
+| Harness 架构方案 | `VERIFIED` | PR #9 | Run #33 |
 | Harness Foundation | `PLANNED` | 下一模块 | 尚未编码 |
 | Assurance Router / Campaign | `PLANNED` | Harness 后 | 尚未编码 |
 
