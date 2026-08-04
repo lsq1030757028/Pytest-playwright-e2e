@@ -93,7 +93,8 @@ class RuleFirstDiagnoser:
                 auto_repair_allowed=False,
                 recommended_scope=("requirement-review",),
             )
-        if "strict mode violation" in summaries or "locator" in summaries and "not found" in summaries:
+        locator_missing = "locator" in summaries and "not found" in summaries
+        if "strict mode violation" in summaries or locator_missing:
             return DiagnosisResult(
                 category=FailureCategory.TEST_DEFECT,
                 confidence=0.95,
@@ -187,7 +188,10 @@ class SafeRepairValidator:
         if any(item in proposal.replace for item in self.forbidden_additions):
             reasons.append("repair introduces forbidden sleep or retry behavior")
         lowered = f"{proposal.find}\n{proposal.replace}".lower()
-        if "oracle" in lowered or "expected" in lowered and proposal.kind != RepairKind.TEST_DATA:
+        modifies_expected = (
+            "expected" in lowered and proposal.kind != RepairKind.TEST_DATA
+        )
+        if "oracle" in lowered or modifies_expected:
             reasons.append("repair may modify a confirmed oracle")
         return RepairValidation(allowed=not reasons, reasons=tuple(reasons))
 
