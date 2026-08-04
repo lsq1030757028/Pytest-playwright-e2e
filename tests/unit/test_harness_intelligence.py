@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from test_workflow.harness import AssuranceLevel
 from test_workflow.harness.intelligence import (
-    BusinessAsset,
     BusinessPriority,
     EvidenceLevel,
     HiddenUnderstandingEvaluator,
@@ -17,7 +17,6 @@ from test_workflow.harness.intelligence import (
     RiskStatus,
     merge_invariants,
 )
-from test_workflow.harness import AssuranceLevel
 
 
 def invariant() -> ProductionInvariant:
@@ -77,10 +76,11 @@ def provider() -> MockModelProvider:
 
 def test_business_model_rejects_unknown_invariant_asset() -> None:
     bad = invariant().model_copy(update={"asset_refs": ("missing",)})
-    response = provider().responses["business-understanding"]
+    model_provider = provider()
+    response = model_provider.responses["business-understanding"]
     response["model"]["invariants"] = [bad.model_dump(mode="json")]
     with pytest.raises(ValueError, match="unknown assets"):
-        IncrementalBusinessCompiler(provider()).compile(
+        IncrementalBusinessCompiler(model_provider).compile(
             requirement_revision_id="REQ@v1",
             assurance_level=AssuranceLevel.L2,
             requirement_text="clear completed",
@@ -106,8 +106,12 @@ def test_l1_limits_loss_scenario_budget() -> None:
     model_provider = provider()
     response = model_provider.responses["business-understanding"]
     response["loss_scenarios"] = [
-        scenario(BusinessPriority.P2).model_copy(update={"scenario_id": "P2"}).model_dump(mode="json"),
-        scenario(BusinessPriority.P0).model_copy(update={"scenario_id": "P0"}).model_dump(mode="json"),
+        scenario(BusinessPriority.P2)
+        .model_copy(update={"scenario_id": "P2"})
+        .model_dump(mode="json"),
+        scenario(BusinessPriority.P0)
+        .model_copy(update={"scenario_id": "P0"})
+        .model_dump(mode="json"),
     ]
     artifact = IncrementalBusinessCompiler(model_provider).compile(
         requirement_revision_id="REQ@v1",
