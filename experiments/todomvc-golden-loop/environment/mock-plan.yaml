@@ -1,0 +1,33 @@
+schema_version: "1.0"
+truth_boundary:
+  must_be_real:
+    - todo.create
+    - todo.toggle
+    - todo.filter
+    - todo.persist
+  may_be_mocked:
+    - browser.storage
+    - system.clock
+    - telemetry_service
+dependencies:
+  - dependency: todo_application
+    decision: real
+    reason: Todo 的增删改、筛选和持久化是本次被测业务逻辑
+    risk: critical
+  - dependency: browser.storage
+    decision: control
+    reason: 需要构造可重复的本地存储初始状态和损坏数据
+    risk: high
+  - dependency: system.clock
+    decision: control
+    reason: 固定 ID 和时间相关行为，消除运行时漂移
+    risk: medium
+  - dependency: telemetry_service
+    decision: virtualize
+    reason: 遥测不属于 Todo 核心需求，但不应阻塞页面执行
+    risk: low
+    contract:
+      path: environment/contracts/telemetry-response.schema.json
+      sha256: 26df12dea3eb1b7463bd7eeb0bc2bf30bdd78ff1fc4f09909b71291f95808586
+      description: 遥测服务成功响应契约
+    behavior_path: environment/mocks/telemetry-service.yaml

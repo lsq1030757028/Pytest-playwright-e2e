@@ -1,0 +1,16 @@
+risks:
+  - id: R-001
+    title: 纯空格被保存为待办事项
+    probability: high
+    impact: medium
+    test_required: true
+  - id: R-002
+    title: 刷新后完成状态丢失
+    probability: medium
+    impact: high
+    test_required: true
+  - id: R-003
+    title: 清除完成项误删未完成事项
+    probability: low
+    impact: critical
+    test_required: true

@@ -1,0 +1,75 @@
+schema_version: "1.0"
+id: TODOMVC-GOLDEN-001
+title: 粗糙需求下的 TodoMVC 核心行为
+requirement_sources:
+  - id: REQ-ROUGH-001
+    source: input/rough-requirement.md
+facts:
+  - id: F-001
+    statement: 用户可以新增待办事项
+    source: REQ-ROUGH-001
+    confidence: confirmed
+  - id: F-002
+    statement: 刷新后数据不应丢失
+    source: REQ-ROUGH-001
+    confidence: confirmed
+assumptions:
+  - id: A-001
+    statement: 新增事项会去除首尾空白
+    basis: common-product-behavior
+    confidence: medium
+    reversible: true
+    confirmation_required: false
+  - id: A-002
+    statement: 是否允许重复事项
+    basis: insufficient-information
+    confidence: unknown
+    reversible: true
+    confirmation_required: true
+risks:
+  - id: R-001
+    title: 纯空格被保存为待办事项
+    probability: high
+    impact: medium
+    test_required: true
+  - id: R-002
+    title: 刷新后完成状态丢失
+    probability: medium
+    impact: high
+    test_required: true
+truth_boundary:
+  must_be_real:
+    - todo.create
+    - todo.toggle
+    - todo.filter
+    - todo.persist
+  may_be_mocked:
+    - browser.storage
+    - system.clock
+    - telemetry_service
+cases:
+  - id: TODO-CREATE-001
+    title: 合法待办事项可以新增并持久化
+    risk: high
+    preconditions:
+      - browser.storage 已加载确定性初始数据
+    actions:
+      - name: add_todo
+        params:
+          title: "  Buy milk  "
+      - name: reload_page
+    oracles:
+      - id: O-CREATE-001
+        source: requirement
+        expression: todo.title == "Buy milk"
+        expected: true
+        basis_ref: A-001
+        confidence: medium
+      - id: O-PERSIST-001
+        source: requirement
+        expression: todo.exists_after_reload == true
+        expected: true
+        basis_ref: F-002
+        confidence: confirmed
+    tags: [smoke, persistence]
+regression_keys: [todo-create, local-storage, persistence]

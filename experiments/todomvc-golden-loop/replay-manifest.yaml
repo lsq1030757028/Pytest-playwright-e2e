@@ -1,0 +1,46 @@
+schema_version: '1.0'
+run_id: todomvc-golden-loop-v1
+created_at: '2026-08-04T14:15:22.826999Z'
+command:
+- python
+- -m
+- pytest
+- generated
+- -q
+browser: chromium
+python_version: 3.13.5
+random_seed: 20260804
+artifacts:
+- path: environment/contracts/telemetry-response.schema.json
+  sha256: 26df12dea3eb1b7463bd7eeb0bc2bf30bdd78ff1fc4f09909b71291f95808586
+  role: input
+- path: environment/data-seed.yaml
+  sha256: adc9623eb9e0d306dc97a75dd74eb9bb7a18231fcaf141ac64cd329f9633e1a2
+  role: input
+- path: environment/environment-spec.yaml
+  sha256: e8cfe747ec51a918f526405db470802a10f8a148c28c170040564e51260d1bf7
+  role: input
+- path: environment/mock-plan.yaml
+  sha256: a5a928aab514699e36013954dd13e109fe56e395a0c94aa45e38d0ef50feeeb1
+  role: input
+- path: environment/mocks/telemetry-service.yaml
+  sha256: 5d2dc1404ffd6c6e7c29cdb2c6e10f23e82392634177d1b0274e90934a115d7a
+  role: input
+- path: generated/test_environment_proof.py
+  sha256: b784acd924eef2d415a15d14aadba97047ddf68e7d12e37e8cd227e696474e0d
+  role: input
+- path: input/rough-requirement.md
+  sha256: 1c64d1f003cf2c102f1989f4548beef4f86b166ea1b21ff5530384b4c3d15609
+  role: input
+- path: spec/test-spec.yaml
+  sha256: 03dc2231514cdcb67b751bf31c3de3d746d4e085bdbcee0f84e81d69bd19654c
+  role: input
+- path: understanding/assumptions.yaml
+  sha256: 66ee431f4eda7f6af007ffd0e5215229ab0ea1e58d48a16d62d75f1d640ebc78
+  role: input
+- path: understanding/facts.yaml
+  sha256: 9354071762a1e65e617e352ba897c03fe53efcf13e3723f93ffb14dadd9259d5
+  role: input
+- path: understanding/risks.yaml
+  sha256: 8c566e859e97694776fc779f9881fafe12be25f4aba034778a4aa97f722c31b8
+  role: input

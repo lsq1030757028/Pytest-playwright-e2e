@@ -34,6 +34,13 @@ jobs:
       - name: Unit and API tests
         run: uv run pytest tests/unit tests/api --junitxml=test-results/junit-core.xml
 
+      - name: Validate deterministic Replay Bundle
+        run: |
+          uv run test-workflow spec validate experiments/todomvc-golden-loop/spec/test-spec.yaml
+          uv run test-workflow mock verify experiments/todomvc-golden-loop
+          uv run test-workflow bundle validate experiments/todomvc-golden-loop
+          uv run test-workflow replay experiments/todomvc-golden-loop
+
       - name: Browser smoke tests
         run: >-
           uv run pytest tests/e2e

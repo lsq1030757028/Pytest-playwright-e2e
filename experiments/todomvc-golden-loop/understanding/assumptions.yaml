@@ -1,0 +1,13 @@
+assumptions:
+  - id: A-001
+    statement: 新增事项会去除首尾空白
+    basis: common-product-behavior
+    confidence: medium
+    reversible: true
+    confirmation_required: false
+  - id: A-002
+    statement: 是否允许重复事项
+    basis: insufficient-information
+    confidence: unknown
+    reversible: true
+    confirmation_required: true

@@ -92,3 +92,24 @@ The demo app is exposed at `http://localhost:8000`. The CI image can run the ful
 ```bash
 docker compose run --rm test-runner
 ```
+
+## Deterministic environment and mocks
+
+The workflow now treats the test environment as a compiled artifact:
+
+- `TestSpec` defines requirements, risks, Oracles, and the truth boundary.
+- `EnvironmentSpec` fixes time, randomness, storage, real services, and virtual services.
+- `MockPlan` prevents mocks from replacing the business behavior under test.
+- contract-backed virtual services validate response schemas before execution.
+- `ReplayManifest` pins every input with SHA-256 for independent replay.
+
+Runnable example:
+
+```bash
+uv run test-workflow mock verify experiments/todomvc-golden-loop
+uv run test-workflow env build experiments/todomvc-golden-loop
+uv run test-workflow bundle validate experiments/todomvc-golden-loop
+uv run test-workflow replay experiments/todomvc-golden-loop
+```
+
+See `docs/mock-control-plane.md` for the truth-boundary and environment-control design.

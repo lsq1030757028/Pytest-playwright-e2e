@@ -7,3 +7,8 @@ __pycache__/
 playwright-report/
 test-results/*
 !test-results/.gitkeep
+
+# Replay runtime outputs
+experiments/**/.runtime/
+experiments/**/.pytest_cache/
+experiments/**/evidence/*

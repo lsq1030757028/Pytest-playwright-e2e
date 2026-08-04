@@ -1,0 +1,12 @@
+schema_version: "1.0"
+service: telemetry_service
+routes:
+  - id: track-event
+    method: POST
+    path: /track
+    response:
+      status: 202
+      json:
+        accepted: true
+        event_id: evt-deterministic-001
+      delay_ms: 0
