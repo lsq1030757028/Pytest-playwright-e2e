@@ -118,6 +118,13 @@ from .intelligence import (
     UnderstandingArtifact,
     UnderstandingEvaluation,
 )
+from .ledger import (
+    ImplementationLedger,
+    LedgerStatus,
+    ModuleLedgerEntry,
+    ModuleTestEvidence,
+    load_implementation_ledger,
+)
 from .orchestration import (
     ExecutionCheckpoint,
     ExecutionNode,
@@ -164,10 +171,12 @@ from .regression import (
     TestAssetStatus,
     TestLayer,
 )
+from .verdict import AgentVerdict, VerdictBuilder, VerdictStatus
 
 __all__ = [
     "AITestSpecCompiler",
     "AdapterInputError",
+    "AgentVerdict",
     "ArtifactEnvelope",
     "ArtifactImmutableError",
     "ArtifactIntegrityError",
@@ -245,12 +254,16 @@ __all__ = [
     "ImpactGraph",
     "ImpactMapping",
     "ImpactNode",
+    "ImplementationLedger",
     "InMemoryArtifactStore",
     "IncrementalBusinessCompiler",
     "InvariantCategory",
+    "LedgerStatus",
     "LossScenario",
     "MockModelProvider",
     "ModelProvider",
+    "ModuleLedgerEntry",
+    "ModuleTestEvidence",
     "MutationProofCapability",
     "NodeExecution",
     "NodeOutputBinding",
@@ -301,9 +314,12 @@ __all__ = [
     "TestLayer",
     "UnderstandingArtifact",
     "UnderstandingEvaluation",
+    "VerdictBuilder",
+    "VerdictStatus",
     "WorkflowCompiler",
     "budget_violations",
     "content_hash",
+    "load_implementation_ledger",
     "permissions_cover",
     "register_existing_capabilities",
     "register_governance_capabilities",
