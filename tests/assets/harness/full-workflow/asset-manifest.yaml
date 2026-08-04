@@ -1,0 +1,22 @@
+id: complete-agent-workflow
+version: 1
+inputs:
+  - business-response.json
+  - test-spec.json
+workflow:
+  - source revision
+  - L3 assurance routing
+  - incremental business understanding
+  - hidden evaluation
+  - AI TestSpec compilation
+  - safe candidate generation
+  - baseline mutation restored proof
+  - negative-control product-defect diagnosis
+  - impact regression selection
+  - benchmark
+  - deterministic verdict
+expected:
+  verdict: PASS
+  false_green: 0
+  critical_recall: 1.0
+retention: regression
