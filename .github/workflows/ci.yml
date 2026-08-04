@@ -94,6 +94,12 @@ jobs:
           -m harness_integration
           --junitxml=test-results/junit-stage-7-regression.xml
 
+      - name: Complete requirement-to-verdict workflow
+        run: >-
+          uv run pytest tests/integration/test_full_agent_workflow.py
+          -m harness_integration
+          --junitxml=test-results/junit-full-agent-workflow.xml
+
       - name: Ledger and release asset integration
         run: |
           uv run test-harness-ledger validate docs/implementation-ledger.yaml
