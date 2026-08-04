@@ -37,7 +37,10 @@ class NoopCapability:
     def execute(
         self, request: CapabilityRequest, context: StoreExecutionContext
     ) -> CapabilityResult:
-        return CapabilityResult(request_id=request.request_id, status=CapabilityResultStatus.SUCCESS)
+        return CapabilityResult(
+            request_id=request.request_id,
+            status=CapabilityResultStatus.SUCCESS,
+        )
 
 
 def test_registry_resolves_latest_stable_semver() -> None:
