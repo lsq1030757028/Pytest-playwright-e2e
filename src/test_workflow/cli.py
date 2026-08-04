@@ -18,6 +18,7 @@ from .reporting import parse_junit, render_markdown
 from .runner import run_tests
 from .serialization import load_model
 from .specs import EnvironmentSpec, MockPlan, TestSpec
+from .targets import TargetManager
 from .virtual_service import create_virtual_service, load_behavior
 
 app = typer.Typer(no_args_is_help=True, help="Pytest + Skill + Playwright workflow CLI")
@@ -25,10 +26,12 @@ spec_app = typer.Typer(no_args_is_help=True, help="Validate structured test spec
 bundle_app = typer.Typer(no_args_is_help=True, help="Create and validate replay bundles")
 env_app = typer.Typer(no_args_is_help=True, help="Compile deterministic test environments")
 mock_app = typer.Typer(no_args_is_help=True, help="Validate and run contract-backed mocks")
+target_app = typer.Typer(no_args_is_help=True, help="Manage pinned open-source test targets")
 app.add_typer(spec_app, name="spec")
 app.add_typer(bundle_app, name="bundle")
 app.add_typer(env_app, name="env")
 app.add_typer(mock_app, name="mock")
+app.add_typer(target_app, name="target")
 
 
 @app.command()
@@ -147,6 +150,40 @@ def serve_mock(
         raise typer.Exit(code=2)
     behavior = load_behavior(root / selected.behavior_path)
     uvicorn.run(create_virtual_service(behavior), host=host, port=port)
+
+
+@target_app.command("validate")
+def validate_target(
+    manifest_file: Path = typer.Argument(..., exists=True, readable=True),
+) -> None:
+    """Validate a pinned target manifest without cloning the target."""
+    manifest = TargetManager().load_manifest(manifest_file)
+    typer.echo(manifest.model_dump_json(indent=2))
+
+
+@target_app.command("materialize")
+def materialize_target(
+    manifest_file: Path = typer.Argument(..., exists=True, readable=True),
+    destination: Path = typer.Argument(...),
+    install: bool = typer.Option(True),
+) -> None:
+    """Clone, pin, verify, and optionally install a declared target."""
+    target = TargetManager().materialize(
+        manifest_file,
+        destination,
+        install=install,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "target_id": target.manifest.id,
+                "revision": target.revision,
+                "checkout_dir": str(target.checkout_dir),
+                "app_dir": str(target.app_dir),
+            },
+            indent=2,
+        )
+    )
 
 
 @bundle_app.command("create")
