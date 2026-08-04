@@ -22,10 +22,10 @@ def test_implementation_ledger_and_release_assets_are_deployable() -> None:
     assert ledger.project == "AI Test Harness"
     assert len(ledger.modules) >= 15
     assert "docker/build-push-action@v6" in release_text
-    assert "ghcr.io/${{ github.repository }}" in release_text
+    assert "ghcr.io/${{ github.repository_owner }}/pytest-playwright-e2e" in release_text
     assert "uv build" in release_text
     assert workflow["jobs"]["build-and-publish"]
-    assert 'USER pwuser' in dockerfile
+    assert "USER pwuser" in dockerfile
     assert 'ENTRYPOINT ["test-workflow"]' in dockerfile
     assert "COPY targets ./targets" in dockerfile
     assert "COPY proofs ./proofs" in dockerfile
