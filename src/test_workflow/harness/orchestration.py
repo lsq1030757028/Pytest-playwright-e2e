@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
-from typing import Iterable
 
 from pydantic import Field, field_validator, model_validator
 
 from .artifacts import ArtifactStore, StoreExecutionContext
 from .contracts import (
-    ArtifactRef,
     CapabilityRequest,
     CapabilityResult,
     CapabilityResultStatus,
@@ -15,8 +14,8 @@ from .contracts import (
     ExecutionMetrics,
     FrozenModel,
 )
-from .policy import BudgetAccount, BudgetExceededError, BudgetUsage, PolicyEngine
-from .registry import CapabilityNotFoundError, CapabilityRegistry
+from .policy import BudgetAccount, BudgetUsage, PolicyEngine
+from .registry import CapabilityRegistry
 
 NODE_ID_PATTERN = r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
 
@@ -272,25 +271,22 @@ class Orchestrator:
                             f"capability returned unpersisted artifact {artifact.artifact_id}"
                         )
                 events.extend(context.events)
+                context_event_ids = {event.event_id for event in context.events}
                 events.extend(
-                    item
-                    for item in result.events
-                    if item.event_id not in {event.event_id for event in context.events}
+                    item for item in result.events if item.event_id not in context_event_ids
                 )
                 states[node_id] = self._result_state(
                     node_id,
                     result,
                     attempts=current.attempts + 1,
                 )
-            except (CapabilityNotFoundError, BudgetExceededError, Exception) as exc:
+            except Exception as exc:
                 states[node_id] = NodeExecution(
                     node_id=node_id,
                     status=NodeStatus.FAILED,
                     error=f"{type(exc).__name__}: {exc}",
                     attempts=current.attempts + 1,
                 )
-                if not node.continue_on_failure:
-                    continue
 
         status = self._plan_status(states)
         return self._checkpoint(plan, states, events, status)
