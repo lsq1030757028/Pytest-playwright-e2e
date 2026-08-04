@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import pytest
 from playwright.sync_api import Browser, expect
+import pytest
 
 from test_workflow.adapters.todomvc import TodoItem, TodoMVCAdapter
 from test_workflow.targets import TargetManager
