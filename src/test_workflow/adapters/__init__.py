@@ -1,0 +1,1 @@
+"""Product-specific test adapters."""
