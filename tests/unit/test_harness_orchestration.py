@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from test_workflow.harness import (
     ArtifactTypeRef,
     CapabilityDescriptor,
+    CapabilityNotFoundError,
     CapabilityRef,
     CapabilityRegistry,
     CapabilityRequest,
@@ -193,7 +194,7 @@ def test_plan_order_and_parallel_batches_are_deterministic() -> None:
 
 
 def test_compiler_requires_registered_exact_capability_version() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(CapabilityNotFoundError):
         WorkflowCompiler(registry()).compile(
             "missing-capability",
             (
