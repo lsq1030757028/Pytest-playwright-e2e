@@ -116,11 +116,11 @@ flowchart LR
 |---|---|---|---|
 | Pytest + Playwright 基础框架 | `MERGED` | `main` | CI 已通过 |
 | 总体计划 v1 | `MERGED` | `main` | 已被当前分支 v2.0 更新 |
-| 总体计划 v2 | `IMPLEMENTED` | PR #9 当前分支 | 文档已更新，待本次 CI |
+| 总体计划 v2 | `VERIFIED` | PR #9 当前分支 | CI Run #28 全部通过 |
 | TestSpec / Mock / Env / Replay | `VERIFIED` | PR #7 | CI Run #14 |
 | 固定 TodoMVC Target Runtime | `VERIFIED` | PR #8 | CI Run #20 |
 | TodoMVC Product Adapter | `VERIFIED` | PR #8 | 真实目标集成通过 |
-| Baseline / Mutation / Restored | `VERIFIED` | PR #9 | Run #23 / #25 |
+| Baseline / Mutation / Restored | `VERIFIED` | PR #9 | Run #23 / #25 / #28 |
 | Assurance Router | `PLANNED` | Module 03A/03B | 详细计划已建立 |
 | Change-aware Campaign | `PLANNED` | Module 03C/03D/03E | 详细计划已建立 |
 | 增量业务理解 | `PLANNED` | Module 04 | 依赖 Module 03 |
