@@ -1,0 +1,26 @@
+id: todomvc-change-aware-governance
+version: 1
+scenarios:
+  - id: clarification
+    change_type: clarification
+    expected_action: resume
+  - id: acceptance-addition
+    change_type: acceptance_addition
+    expected_action: local_replan
+  - id: cross-tab-expansion
+    change_type: scope_expansion
+    signals:
+      cross_service: true
+    expected_assurance: L2
+  - id: oracle-change
+    change_type: oracle_change
+    expected_evidence_validity: superseded
+  - id: unauthorized-suggestion
+    change_type: oracle_change
+    source_role: developer
+    expected_authorized: false
+  - id: invariant-conflict
+    change_type: invariant_conflict
+    expected_action: block
+    expected_assurance: L3
+retention: regression
