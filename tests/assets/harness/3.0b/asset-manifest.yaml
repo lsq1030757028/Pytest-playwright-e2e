@@ -1,0 +1,13 @@
+id: harness-registry-store-3.0b
+version: 1
+purpose: Registry resolution and immutable artifact-store integration scenario.
+assets:
+  - artifact_id: inputs/message/v1
+    artifact_type: TextInput
+    schema_version: 1
+    retention: regression
+  - artifact_id: outputs/uppercase/v1
+    artifact_type: TextOutput
+    schema_version: 1
+    retention: regression
+owner: harness-foundation
