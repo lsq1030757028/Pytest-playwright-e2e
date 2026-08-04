@@ -307,15 +307,12 @@ class CapabilityResult(FrozenModel):
         artifact_ids = [item.artifact_id for item in self.artifacts]
         if len(artifact_ids) != len(set(artifact_ids)):
             raise ValueError("result artifact ids must be unique")
-        if self.status == CapabilityResultStatus.SUCCESS:
-            if self.blockers or self.error:
-                raise ValueError("successful result cannot include blockers or an error")
-        elif self.status == CapabilityResultStatus.FAILED:
-            if not self.error:
-                raise ValueError("failed result requires an error")
-        elif self.status == CapabilityResultStatus.BLOCKED:
-            if not self.blockers:
-                raise ValueError("blocked result requires at least one blocker")
+        if self.status == CapabilityResultStatus.SUCCESS and (self.blockers or self.error):
+            raise ValueError("successful result cannot include blockers or an error")
+        if self.status == CapabilityResultStatus.FAILED and not self.error:
+            raise ValueError("failed result requires an error")
+        if self.status == CapabilityResultStatus.BLOCKED and not self.blockers:
+            raise ValueError("blocked result requires at least one blocker")
         return self
 
 
