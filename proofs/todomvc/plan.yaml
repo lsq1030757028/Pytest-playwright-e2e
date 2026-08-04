@@ -1,0 +1,51 @@
+schema_version: "1.0"
+id: todomvc-business-proof
+project_root: ../..
+target_manifest: targets/percy-example-todomvc/target.yaml
+target_url_env: TODO_TARGET_URL
+stability_runs: 3
+test_command:
+  - python
+  - -m
+  - pytest
+  - tests/regression/test_todomvc_business.py
+  - -q
+  - --browser
+  - chromium
+  - --tracing
+  - retain-on-failure
+  - --screenshot
+  - only-on-failure
+  - --video
+  - "off"
+mutations:
+  - id: allow-blank-item
+    description: Bypass trimming and blank-item rejection during creation.
+    target_path: dist/bundle.js
+    find: 'View$$module$src$view.prototype.bindAddItem=function(a){module$src$helpers.$on(this.$newTodo,"change",function(b){(b=b.target.value.trim())&&a(b)})}'
+    replace: 'View$$module$src$view.prototype.bindAddItem=function(a){module$src$helpers.$on(this.$newTodo,"change",function(b){a(b.target.value)})}'
+    critical: true
+  - id: reverse-filters
+    description: Reverse Active and Completed filter semantics.
+    target_path: dist/bundle.js
+    find: '{"":module$src$item.emptyItemQuery,active:{completed:!1},completed:{completed:!0}}'
+    replace: '{"":module$src$item.emptyItemQuery,active:{completed:!0},completed:{completed:!1}}'
+    critical: true
+  - id: count-completed-as-active
+    description: Display total items as the remaining active count.
+    target_path: dist/bundle.js
+    find: 'a(c,c-e,e)'
+    replace: 'a(c,c,e)'
+    critical: true
+  - id: clear-active-instead-of-completed
+    description: Clear active items rather than completed items.
+    target_path: dist/bundle.js
+    find: 'this.store.remove({completed:!0},this._filter.bind(this))'
+    replace: 'this.store.remove({completed:!1},this._filter.bind(this))'
+    critical: true
+  - id: disable-persistence
+    description: Update only the in-memory cache and stop writing LocalStorage.
+    target_path: dist/bundle.js
+    find: 'this.setLocalStorage=function(b){c.setItem(a,JSON.stringify(d=b))}'
+    replace: 'this.setLocalStorage=function(b){d=b}'
+    critical: true
