@@ -1,0 +1,269 @@
+spec_id: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+status: CANDIDATE_PILOT_APPROVED
+goal:
+  issue: 49
+  authority: OWNER_DIRECT_APPROVAL
+  authority_recorded_at: "2026-08-06"
+assurance:
+  dev: DEV3
+  ux: UX0
+  human_uat: OWNER_OPERATIONAL_ACCEPTANCE
+scope:
+  schedule:
+    timezone: Asia/Shanghai
+    cadence: HOURLY
+    start_alignment: NEXT_WHOLE_HOUR
+  execution:
+    surface:
+      allowed:
+        - CHAT
+        - CODEX
+        - UNKNOWN
+      attestation: SELF_REPORTED
+    model_visibility:
+      unknown_value: UNKNOWN
+      guessing_forbidden: true
+    reasoning_visibility:
+      unknown_value: UNKNOWN
+      guessing_forbidden: true
+  github_writes:
+    allowed:
+      - READ_REPOSITORY_CONTEXT
+      - UPDATE_SINGLE_RUN_COMMENT
+      - UPDATE_EXISTING_AUTHORIZED_BRANCH
+      - CREATE_COMMIT_WITH_RUN_TOKEN
+      - CREATE_BRANCH_OR_DRAFT_PR_WHEN_AUTHORITY_REQUIRES
+      - INSPECT_OR_RERUN_CI_WHEN_TOOL_PERMITS
+    forbidden:
+      - DIRECT_MAIN_WRITE
+      - MERGE_PR
+      - ENABLE_AUTO_MERGE
+      - BYPASS_FAILED_GATE
+      - PRODUCTION_DATA_WRITE
+      - PERSONAL_DATA_WRITE
+      - SECRET_ACQUISITION_OR_DISCLOSURE
+      - IRREVERSIBLE_EXTERNAL_WRITE
+      - UNBOUNDED_RESOURCE_CREATION
+      - ORACLE_POLICY_PERMISSION_CHANGE
+context_model:
+  levels:
+    - PROJECT
+    - CAMPAIGN
+    - RUN
+  project_sources:
+    - AGENTS.md
+    - docs/github-development-ssot.md
+    - docs/github-development-ssot.yaml
+    - docs/user-communication-ssot.md
+    - docs/user-communication-ssot.yaml
+    - docs/specs/autonomous-execution-mandate.yaml
+    - docs/implementation-status.md
+    - docs/agent-os-evolution-roadmap.md
+  campaign_required_fields:
+    - goal
+    - objective
+    - authority
+    - phase
+    - lifecycle_status
+    - authoritative_issue
+    - authoritative_pr
+    - branch
+    - head_sha
+    - completed_capabilities
+    - unresolved_findings
+    - blockers
+    - decisions
+    - rejected_alternatives
+    - failed_attempts
+    - do_not_repeat_until
+    - next_valid_actions
+    - completion_criteria
+    - human_uat_truth
+  run_required_fields:
+    - run_token
+    - scheduled_at
+    - started_at
+    - ended_at
+    - surface
+    - model
+    - reasoning_mode
+    - attestation
+    - campaign
+    - authority_snapshot
+    - lease
+    - actions
+    - files
+    - commits
+    - tests
+    - ci
+    - final_status
+    - next_action
+run_token:
+  format: relay-<campaign-id>-<monotonic-sequence>-<UTC-start-time>
+  commit_marker: "[RELAY:<run-token>]"
+  comment_marker: "<!-- scheduled-relay:<run-token> -->"
+lease:
+  required_before_development_write: true
+  mechanism: GITHUB_COMPARE_AND_SWAP
+  duration_minutes: 55
+  heartbeat_after_meaningful_transition: true
+  active_lease_behavior: BUSY_NO_DEVELOPMENT_WRITE
+  stale_lease_recovery_requires:
+    - VERIFY_PREVIOUS_RUN_RECORD
+    - VERIFY_BRANCH
+    - VERIFY_PR
+    - VERIFY_HEAD_SHA
+  pilot_fallback_until_files_exist: UNIQUE_START_MARKER_BEST_EFFORT_LOCK
+lifecycle:
+  states:
+    - WAKE
+    - ATTEST_RUNTIME
+    - LOCATE_AUTHORITY
+    - ACQUIRE_LEASE
+    - WRITE_START
+    - HYDRATE_CONTEXT
+    - SELECT_INCREMENT
+    - WORKING
+    - VERIFYING
+    - WRITE_FINAL
+    - RELEASE_LEASE
+    - CHAT_FINAL
+  final_statuses:
+    - SUCCESS
+    - WAITING_CI
+    - NO_ACTION
+    - BUSY
+    - BLOCKED
+    - FAILED
+    - REPLAN_REQUIRED
+    - MODEL_UNVERIFIED
+    - OUT_OF_MANDATE
+github_record:
+  single_comment_per_run: true
+  preferred_target: AUTHORITATIVE_PR
+  fallback_target: AUTHORITATIVE_ISSUE
+  stages:
+    START:
+      timing: BEFORE_CODE_OR_TEST_MUTATION
+      required_fields:
+        - status
+        - run_token
+        - scheduled_at
+        - started_at
+        - surface
+        - model
+        - reasoning_mode
+        - campaign
+        - issue
+        - pr
+        - branch
+        - head_sha
+        - lease_result
+        - intended_increment
+    WORKING:
+      update_same_comment: true
+      required_fields:
+        - action
+        - rationale
+        - files
+        - tests
+        - commits
+        - ci
+        - heartbeat_at
+    FINAL:
+      update_same_comment: true
+      required_fields:
+        - final_status
+        - ended_at
+        - final_runtime_attestation
+        - actions
+        - files
+        - commits
+        - tests
+        - ci
+        - blocker_or_error
+        - next_valid_action
+        - lease_release_truth
+  start_write_failure:
+    behavior: STOP_ALL_FURTHER_GITHUB_WRITES_AND_REPORT_ACTUAL_ERROR_IN_CHAT
+chat_final:
+  required_every_run: true
+  silence_forbidden: true
+  first_line: "Run Token：<token>；状态：<status>"
+  required_fields:
+    - business_progress
+    - lifecycle_status
+    - actual_work
+    - files_or_none
+    - commits_or_none
+    - issue_pr_branch
+    - ci_status
+    - blocker_or_actual_error
+    - next_valid_action
+    - github_record_location
+    - github_comment_id_when_available
+    - surface
+    - model
+    - reasoning_mode
+increment_policy:
+  principle: GLOBAL_UNDERSTANDING_LOCAL_EXECUTION
+  microtask_only_forbidden: true
+  natural_checkpoint_required: true
+  priority:
+    - SAFETY_OR_AUTHORITY_CONFLICT
+    - REAL_CI_FAILURE
+    - BLOCKING_REVIEW_FINDING
+    - MISSING_APPROVED_BEHAVIOR
+    - MISSING_TRUSTWORTHY_TEST_OR_EVIDENCE
+    - CLOSURE_AND_RELEASE_VERIFICATION
+    - NEXT_APPROVED_SPEC_STEP
+  infrastructure_failure_behavior: BLOCKED_OR_WAITING_CI_NO_CODE_CHURN
+reorientation:
+  trigger_any:
+    - FIVE_RUNS_SINCE_LAST_REORIENTATION
+    - CAMPAIGN_PHASE_CHANGED
+    - AUTHORITATIVE_PR_MERGED_CLOSED_OR_SUPERSEDED
+    - HANDOFF_CONFLICTS_WITH_GITHUB_TRUTH
+    - MAJOR_ARCHITECTURE_OR_REQUIREMENT_CHANGE
+    - REPEATED_FAILED_ATTEMPTS
+idempotency:
+  search_marker_before_comment_create: true
+  update_existing_comment_when_marker_exists: true
+  duplicate_run_token_forbidden: true
+  verify_head_before_commit: true
+  force_update_forbidden: true
+  partial_failure_must_be_recorded: true
+pilot:
+  expected_initial_authority_hint:
+    issue: 43
+    pr: 45
+  hard_coding_authority_forbidden: true
+  auto_merge: false
+  production_changes: false
+  release_setting_changes: false
+  chat_response_every_run: true
+  github_start_and_final_every_run: true
+acceptance:
+  consecutive_hourly_runs: 3
+  criteria:
+    - UNIQUE_RUN_TOKENS
+    - START_AND_FINAL_ON_CORRECT_AUTHORITY
+    - NO_DUPLICATE_COMMENTS
+    - CHAT_FINAL_GENERATED_EVERY_RUN
+    - NO_OVERLAPPING_DEVELOPMENT_OWNERSHIP
+    - COMMITS_TRACE_TO_RUN_TOKENS
+    - CAMPAIGN_RESTORED_WITHOUT_PRIOR_CHAT_HISTORY
+    - FAILED_GATES_NOT_BYPASSED
+    - RUNTIME_FIELDS_TRUTHFUL_OR_UNKNOWN
+    - TASK_DISABLEMENT_STOPS_FUTURE_WRITES
+promotion_requires:
+  - SEPARATE_APPROVED_IMPLEMENTATION_PLAN
+  - DURABLE_LEASE_FILES
+  - SCHEMAS_AND_VALIDATION
+  - TESTS
+  - OPERATIONAL_MONITORING
+  - NO_AUTO_MERGE_UNLESS_SEPARATELY_AUTHORIZED
+rollback:
+  - DISABLE_SCHEDULED_TASK
+  - CLOSE_OR_REVERT_PILOT_GOVERNANCE_ASSETS
+  - PRESERVE_AUDIT_HISTORY
