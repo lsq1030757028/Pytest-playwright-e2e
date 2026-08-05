@@ -1,220 +1,246 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T02:00:00+08:00
+updated_at: 2026-08-05T09:00:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
-    status: VERIFIED
+    status: MERGED
     code_paths: [tests/conftest.py, src/test_workflow/runner.py]
     document_paths: [README.md]
     test_evidence:
       unit_command: uv run pytest tests/unit tests/api
-      unit_result: PASS
+      unit_result: PASS in main CI run 30964599790
       integration_command: uv run pytest tests/e2e -m smoke
-      integration_result: PASS
+      integration_result: PASS in main CI run 30964599790
       asset_paths: [tests/e2e]
     branch: main
-    notes: [Already present on the default branch]
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-1
     title: TestSpec Mock Environment and Replay
-    status: VERIFIED
+    status: MERGED
     code_paths: [src/test_workflow/specs.py, src/test_workflow/bundle.py, src/test_workflow/control_plane.py]
     document_paths: [docs/mock-control-plane.md, docs/phase-1-implementation-report.md]
     test_evidence:
       unit_command: uv run pytest tests/unit
-      unit_result: PASS
+      unit_result: PASS in main CI run 30964599790
       integration_command: uv run test-workflow replay experiments/todomvc-golden-loop
-      integration_result: PASS
+      integration_result: PASS without model participation in main CI run 30964599790
       asset_paths: [experiments/todomvc-golden-loop]
-    branch: agent/deterministic-mock-control-plane
-    pull_request: 7
-    commit: 69cebfb1b1888cc9a8382f1994d1ec4c713bad9e
-    ci_run: 30919965724
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-1.5
     title: Pinned target runtime and TodoMVC adapter
-    status: VERIFIED
+    status: MERGED
     code_paths: [src/test_workflow/targets.py, src/test_workflow/adapters/todomvc.py]
     document_paths: [docs/target-runtime-and-todomvc-adapter.md]
     test_evidence:
-      unit_command: uv run pytest tests/unit
-      unit_result: PASS
+      unit_command: uv run pytest tests/unit/test_targets.py tests/unit/test_todomvc_adapter.py
+      unit_result: PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_todomvc_target.py -m target_integration
-      integration_result: PASS
+      integration_result: PASS against pinned revision in main CI run 30964599790
       asset_paths: [targets/percy-example-todomvc]
-    branch: agent/todomvc-target-adapter
-    pull_request: 8
-    commit: f283545260a634871d851d4edfc79ab3e8e67bc1
-    ci_run: 30920999000
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-2
     title: Baseline Mutation Restored executable proof
-    status: VERIFIED
+    status: MERGED
     code_paths: [src/test_workflow/proof.py, tests/regression/test_todomvc_business.py]
     document_paths: [docs/module-02-todomvc-mutation-proof-report.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_proof.py
-      unit_result: PASS
+      unit_result: PASS in main CI run 30964599790
       integration_command: uv run test-workflow proof run proofs/todomvc/plan.yaml
-      integration_result: 3 baseline PASS, 5 mutations KILLED, 3 restored PASS
-      asset_paths: [proofs/todomvc]
-    branch: agent/todomvc-mutation-proof
-    pull_request: 9
-    commit: 4145eee3159d031808ce272b45fd9fd001a1b1cb
-    ci_run: 30926956712
+      integration_result: 3 baseline PASS, 5 mutations KILLED, 3 restored PASS, Critical False Green 0
+      asset_paths: [proofs/todomvc, tests/regression/test_todomvc_business.py]
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: harness-3.0a
     title: Capability contracts
-    status: VERIFIED
+    status: MERGED
     code_paths: [src/test_workflow/harness/contracts.py]
     document_paths: [docs/module-3.0a-capability-contracts.md, docs/testing/harness-3.0a-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_contracts.py
-      unit_result: 10 PASS
+      unit_result: 10 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_contracts_integration.py -m harness_integration
-      integration_result: 1 PASS
+      integration_result: PASS in main CI run 30964599790
       asset_paths: [tests/assets/harness/3.0a]
-    branch: agent/harness-contracts
-    pull_request: 10
-    commit: ed0a0a665f8f061632008cee419e21979104c571
-    ci_run: 30934850175
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: harness-3.0b
     title: Capability registry and immutable artifact store
-    status: VERIFIED
+    status: MERGED
     code_paths: [src/test_workflow/harness/registry.py, src/test_workflow/harness/artifacts.py]
     document_paths: [docs/module-3.0b-registry-artifact-store.md, docs/testing/harness-3.0b-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_registry.py
-      unit_result: 9 PASS
+      unit_result: 9 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_registry_integration.py -m harness_integration
-      integration_result: 1 PASS
+      integration_result: PASS in main CI run 30964599790
       asset_paths: [tests/assets/harness/3.0b]
-    branch: agent/harness-registry-store
-    pull_request: 11
-    commit: 0ac08f38ed84442544e9e257d76b16b2b6168240
-    ci_run: 30935560108
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: harness-3.0c
     title: Policy budget and permission controls
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/policy.py]
     document_paths: [docs/module-3.0c-policy-budget-permission.md, docs/testing/harness-3.0c-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_policy.py
-      unit_result: PENDING FINAL CI
+      unit_result: 8 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_policy_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS in main CI run 30964599790
       asset_paths: [tests/assets/harness/3.0c]
-    branch: agent/harness-policy-budget
-    pull_request: 12
-    commit: 6c5f1d08e8adb574751bd26ea70750c5126994f9
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: harness-3.0d
     title: Dynamic workflow compiler and orchestrator
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/orchestration.py]
     document_paths: [docs/module-3.0d-workflow-orchestrator.md, docs/testing/harness-3.0d-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_orchestration.py
-      unit_result: PENDING FINAL CI
+      unit_result: 7 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_orchestrator_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS including pause, persistence and resume in main CI run 30964599790
       asset_paths: [tests/assets/harness/3.0d]
-    branch: agent/harness-orchestrator
-    pull_request: 13
-    commit: db76d856e8bbf9e0257abddab1b793098ce19bb5
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: harness-3.0e
     title: Existing capability adapters and L1 Golden Gate
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/adapters.py]
     document_paths: [docs/module-3.0e-existing-capability-adapters.md, docs/testing/harness-3.0e-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_adapters.py
-      unit_result: PENDING FINAL CI
+      unit_result: 6 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_existing_adapters_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS in main CI run 30964599790
       asset_paths: [tests/assets/harness/3.0e]
-    branch: agent/harness-existing-adapters
-    pull_request: 14
-    commit: 4338bbda02225d043df9d073819f9c1547c9f639
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-3-governance
     title: Source revisions assurance routing campaign impact and valid progress
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/governance.py]
     document_paths: [docs/modules/stage-3-governance.md, docs/testing/stage-3-governance-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_governance.py
-      unit_result: PENDING FINAL CI
+      unit_result: 14 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_governance_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS for change authority, assurance floors and valid progress
       asset_paths: [tests/assets/harness/stage-3]
-    branch: agent/test-agent-complete
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-4-intelligence
     title: Incremental business understanding invariants and loss scenarios
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/intelligence.py]
     document_paths: [docs/modules/stage-4-intelligence.md, docs/testing/stage-4-intelligence-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_intelligence.py
-      unit_result: PENDING FINAL CI
+      unit_result: 8 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_intelligence_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS with hidden evaluator and P0 loss coverage
       asset_paths: [tests/assets/harness/stage-4]
-    branch: agent/test-agent-complete
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-5-generation
     title: AI TestSpec compiler candidate test generation and proof gate
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/generation.py]
     document_paths: [docs/modules/stage-5-generation.md, docs/testing/stage-5-generation-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_generation.py
-      unit_result: PENDING FINAL CI
+      unit_result: 7 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_generation_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS with generated test killing the boundary mutation and exact source restoration
       asset_paths: [tests/assets/harness/stage-5]
-    branch: agent/test-agent-complete
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-6-diagnosis
     title: Evidence diagnosis and bounded safe repair
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/diagnosis.py]
     document_paths: [docs/modules/stage-6-diagnosis.md, docs/testing/stage-6-diagnosis-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_diagnosis.py
-      unit_result: PENDING FINAL CI
+      unit_result: 8 PASS in main CI run 30964599790
       integration_command: uv run pytest tests/integration/test_harness_diagnosis_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
+      integration_result: PASS for rule-first diagnosis and bounded safe repair
       asset_paths: [tests/assets/harness/stage-6]
-    branch: agent/test-agent-complete
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: stage-7-regression
     title: Intelligent regression asset promotion and benchmark
-    status: IMPLEMENTED
+    status: MERGED
     code_paths: [src/test_workflow/harness/regression.py]
     document_paths: [docs/modules/stage-7-regression.md, docs/testing/stage-7-regression-test-design.md]
     test_evidence:
       unit_command: uv run pytest tests/unit/test_harness_regression.py
-      unit_result: PENDING FINAL CI
-      integration_command: uv run pytest tests/integration/test_harness_regression_integration.py -m harness_integration
-      integration_result: PENDING FINAL CI
-      asset_paths: [tests/assets/harness/stage-7]
-    branch: agent/test-agent-complete
+      unit_result: 7 PASS in main CI run 30964599790
+      integration_command: uv run pytest tests/integration/test_harness_regression_integration.py tests/integration/test_full_agent_workflow.py -m harness_integration
+      integration_result: PASS with full critical recall, zero false green and deterministic verdict
+      asset_paths: [tests/assets/harness/stage-7, tests/integration/test_full_agent_workflow.py]
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599790
 
   - module_id: deployment-hosting
     title: Package container release and GHCR hosting
-    status: IN_PROGRESS
-    code_paths: [.github/workflows/release.yml, Dockerfile]
+    status: MERGED
+    code_paths: [.github/workflows/release.yml, Dockerfile, pyproject.toml]
     document_paths: [docs/deployment-and-hosting.md]
     test_evidence:
-      unit_command: docker build --check .
-      unit_result: PENDING
-      integration_command: release workflow on main
-      integration_result: PENDING
-      asset_paths: [.github/workflows/release.yml]
-    branch: agent/test-agent-complete
+      unit_command: uv build
+      unit_result: PASS; wheel and sdist uploaded as artifact 8914224545
+      integration_command: release-test-harness on main
+      integration_result: PASS in release run 30964599796; GHCR main and sha-dc38f6a pushed with digest sha256:c9272a2cc7eac02adec7268495a8747143cb4d43b110a315662d2579de60cf29
+      asset_paths: [.github/workflows/release.yml, Dockerfile, docs/implementation-ledger.yaml]
+    branch: main
+    pull_request: 15
+    commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
+    ci_run: 30964599796
+    notes:
+      - Python distribution artifact digest sha256:c8ce6f1ff318a949e9f9f5bc9c632b9cc6630aa5995546c8b803c046a063785d
+      - GHCR tags are ghcr.io/lsq1030757028/pytest-playwright-e2e:main and ghcr.io/lsq1030757028/pytest-playwright-e2e:sha-dc38f6a
