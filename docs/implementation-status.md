@@ -9,7 +9,8 @@
 > 当前主模块阶段：`SPEC_DRAFT_NEXT`  
 > 并行跨切面：`UX Assurance Plane`  
 > 已关闭 UX 模块：`UX0 SYNTHETIC_USER_SHADOW_RUNTIME`  
-> 下一 UX 模块：`TODO_MVC_UX_MUTATION_PROOF_SPEC`  
+> 当前 UX 模块：`UX1 TODOMVC_UX_MUTATION_PROOF`  
+> 当前 UX 阶段：`SPEC_DRAFT`  
 > UX Gate：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`  
 > 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
@@ -23,8 +24,9 @@ M0 Harness Baseline：MERGED
 M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT
 UX0 Synthetic User SPEC：MERGED / CLOSED
-Synthetic User Runtime：MERGED / CLOSED
-TodoMVC UX Mutation Proof：SPEC_NEXT
+UX0 Synthetic User Runtime：MERGED / CLOSED
+TodoMVC UX Mutation Proof：SPEC_DRAFT
+UX Mutation Proof Runner：NOT_IMPLEMENTED
 UX Gate Mode：SHADOW / NONBLOCKING
 Human UAT：REQUIRED
 M1 Memory Gate：0 / 1
@@ -33,7 +35,9 @@ Stage Delivery：NOT_READY
 
 M1.0 已证明 Memory Benchmark、威胁场景、证据和独立 Replay 基线；它不实现生产 Memory Store，也不关闭完整 M1 Memory Gate。
 
-UX0 Synthetic User Shadow Runtime 已完成 SPEC、实现、真实 Playwright Journey、独立 Replay、PR Review、主干合并、Python/GHCR 发布、台账和分支清理。它能够在 UAT 前生成真实体验证据，但仍是非阻断 SHADOW，不替代 Human UAT。
+UX0 Synthetic User Shadow Runtime 已完成规范、实现、四条真实 Playwright Journey、独立 Replay、主干合并、Python/GHCR 发布、台账和分支清理。它能够在 UAT 前生成体验证据，但仍是非阻断 SHADOW，不替代 Human UAT。
+
+UX1 当前只进入 Mutation Proof SPEC，定义如何证明 Synthetic User 能杀死真实体验退化。Mutation Runner 尚未实现，也没有修改任何目标源码。
 
 ---
 
@@ -52,17 +56,18 @@ flowchart LR
 
     B --> U1[✅ UX0 SPEC]
     U1 --> U2[✅ Shadow Runtime<br/>MERGED / CLOSED]
-    U2 --> U3[🟡 TodoMVC UX Mutation Proof<br/>SPEC NEXT]
-    U3 --> U4[⬜ False-positive / False-negative Benchmark]
-    U4 --> U5[⬜ Advisory Gate Candidate]
-    U5 --> U6[⬜ Blocking Policy Candidate]
+    U2 --> U3[🟡 UX1 TodoMVC Mutation Proof<br/>SPEC DRAFT]
+    U3 --> U4[⬜ Mutation Proof Runner]
+    U4 --> U5[⬜ False-positive / False-negative Benchmark]
+    U5 --> U6[⬜ Advisory Gate Candidate]
+    U6 --> U7[⬜ Blocking Policy Candidate]
 ```
 
-Memory 仍是主里程碑；UX Assurance 是跨 M1—M3 的并行质量面，不抢占 M1A 的主执行指针。
+Memory 仍是项目主里程碑；UX Assurance 是跨 M1—M3 的并行质量面，不抢占 M1A 的主执行指针。
 
 ---
 
-## 3. 已关闭能力
+## 3. 已交付基础能力
 
 ### M0 Harness Baseline
 
@@ -137,46 +142,20 @@ Experience Oracle
 - JSON / Markdown 报告、Artifact Manifest 和 Replay Manifest；
 - Artifact Tamper 和 Replay Drift 拒绝。
 
-### 4.3 交付证据
+### 4.3 最终证据
 
 ```text
-Merge Commit：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
-PR Focused Runtime：Run #25 / 30992515643 — SUCCESS
-PR Full Quality：Run #134 / 30992515715 — SUCCESS
-Main UX Shadow Gate：Run #26 / 30993021836 — SUCCESS
-Main Quality：Run #135 / 30993021825 — SUCCESS
-Release：Run #12 / 30993022051 — SUCCESS
-Cleanup：Run #10 / 30993021598 — SUCCESS
-Unit / Contract / Delivery / Approval：17 / 17 PASS
+Runtime Merge：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+Final Ledger Merge：8760cf785ecb4d75415b8a155739fc7d69e7546d
+Final Main Quality：Run #142 / 30994343760 — SUCCESS
+Final UX Shadow Gate：Run #33 / 30994343819 — SUCCESS
+Final Release：Run #13 / 30994343839 — SUCCESS
+Final Cleanup：Run #11 / 30994343939 — SUCCESS
 Real Playwright Journeys：4 / 4 PASS
 Journey Checkpoints：14 / 14 PASS
 Independent Replay：PASS
-Campaign Verdict：PASS
 Critical False Green：0
 ```
-
-```text
-Main UX Artifact：8924951167
-Main UX Artifact Digest：sha256:afd95dfea4ba738494bc24e2c9b2c2247eb64cbaff1b5d07901ea20c4b758134
-Python Distribution：8924921509
-Python Digest：sha256:6ff953f33d5699d64dc832bb7bf73d63425eb5e5ae2a2f24bec9558c0996e16d
-Docker Build Record：8924949424
-Docker Build Digest：sha256:89e9c4b4c971f4e9a0524abdb75a2514434a3b53e72b81add762f31fe74eafc9
-GHCR Tags：main / sha-f687fd9
-Image Digest：sha256:a0d20ae869f323a0622e71dad8c4257fac3f32963552ea3ac9781086c3e2797d
-Image Config：sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
-Semantic Digest：sha256:1dda03adfcc3a264240b20a883daf2a230e3ce6dcd00c43dccfb84da40b885c5
-Artifact Manifest Digest：sha256:702fdce96eedbb8b81566dda08768d33434346a7edf88653594587f676c92fa4
-```
-
-### 4.4 尚未完成
-
-- UX Mutation Proof；
-- 缺失反馈、状态丢失、键盘障碍、恢复失败 Mutations；
-- False-positive / False-negative Benchmark；
-- 真实 LLM Provider 的跨模型诊断一致性；
-- 跨项目、移动端、小程序和真实设备；
-- Advisory / Blocking Gate。
 
 当前 Runtime 只能 `SHADOW`，Release Effect 固定为 `NONBLOCKING_SHADOW`，Human UAT 保持 `REQUIRED`。
 
@@ -198,30 +177,59 @@ M1A SPEC 不选择数据库、向量库、Embedding Model 或 Ranking Algorithm�
 
 ---
 
-## 6. 下一 UX 模块：TodoMVC UX Mutation Proof
+## 6. 当前 UX 模块：TodoMVC UX Mutation Proof SPEC
 
-该模块先落独立 SPEC，证明 Synthetic User 不只会让正常页面通过，还能可靠发现体验退化。
-
-首批 Mutation Family：
+UX1 要证明 Synthetic User 不只会让健康页面通过，还能可靠发现体验退化。
 
 ```text
-Missing Feedback
-Visible Success but Lost State
-Keyboard / Focus / Semantic Barrier
-Interrupted Resume Failure
-Filter / Route State Drift
-```
-
-每个 Mutation 使用：
-
-```text
-Baseline PASS
-→ Mutation KILLED
-→ Source Restored
+Pinned Baseline PASS
+→ Apply one bounded UX Mutation
+→ Mutation KILLED with E3/E4 Oracle evidence
+→ Restore exact source bytes
 → Restored PASS
+→ Independent Replay PASS
 ```
 
-并记录假阳性、假阴性、Critical False Green、Replay 和恢复完整性。该模块仍不启用 Advisory 或 Blocking。
+首批五类 Mutation：
+
+```text
+MISSING_FEEDBACK
+VISIBLE_SUCCESS_STATE_LOSS
+KEYBOARD_FOCUS_SEMANTIC_BARRIER
+INTERRUPTED_RESUME_FAILURE
+FILTER_ROUTE_STATE_DRIFT
+```
+
+固定目标和安全边界：
+
+```text
+Target：percy/example-todomvc@4a2344b2207a72c680e5c559c72617498fb5b75b
+Mutable File：Disposable Checkout / index.html only
+Preimage SHA-256：8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+Mutation：Exact Text Replace / Match Count 1
+Repository / Remote / Production Write：FORBIDDEN
+AI-only Kill：FORBIDDEN
+Exact Restore：REQUIRED
+```
+
+当前已落：
+
+- 人类可读 SPEC；
+- 机器可读 SPEC；
+- 五 Mutation Catalog；
+- Canonical Target Preimage；
+- Negative / Adversarial 资产；
+- DEV3 测试设计；
+- 离线确定性 SPEC Policy Test。
+
+尚未实现：
+
+- Mutation Domain Models；
+- Disposable Target Sandbox；
+- Exact Patch Runtime；
+- Baseline / Mutated / Restored Runner；
+- Mutation Campaign 和 Replay；
+- False-positive / False-negative Benchmark。
 
 ---
 
@@ -240,12 +248,13 @@ Baseline PASS
 - DEV-E 生产动作；
 - 绕过失败的 CI、Evidence、Review 或 Release Gate。
 
-Synthetic User 额外禁止：
+Synthetic User / UX Mutation 额外禁止：
 
 - 真实客户账号；
 - 敏感属性和生物识别推断；
 - 无限制网页探索；
-- AI-only Blocker；
+- AI-only Blocker 或 Kill；
+- 修改当前仓库、远程服务或生产目标；
 - 自动替代 Human UAT。
 
 ---
@@ -253,13 +262,12 @@ Synthetic User 额外禁止：
 ## 8. 近期执行顺序
 
 ```text
-1. UX0 Final Ledger / CLOSED
-2. TodoMVC UX Mutation Proof SPEC
-3. M1A Memory Contracts SPEC PR / Merge
-4. TodoMVC UX Mutation Proof Implementation
-5. M1A Domain Contracts Implementation
-6. UX False-positive / False-negative Benchmark
-7. M1B Store & Progressive Retrieval
+1. UX1 TodoMVC UX Mutation Proof SPEC Review / Merge
+2. M1A Memory Contracts SPEC PR / Merge
+3. UX1 Mutation Proof Runner Implementation
+4. M1A Domain Contracts Implementation
+5. UX False-positive / False-negative Benchmark
+6. M1B Store & Progressive Retrieval
 ```
 
 UX 与 Memory 可交错推进，但不能通过并行降低各自的 Evidence Gate。
