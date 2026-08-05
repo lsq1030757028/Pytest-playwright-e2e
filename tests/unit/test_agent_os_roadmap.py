@@ -2,7 +2,6 @@ from pathlib import Path
 
 import yaml
 
-
 ROADMAP_PATH = Path("docs/agent-os-roadmap.yaml")
 
 
