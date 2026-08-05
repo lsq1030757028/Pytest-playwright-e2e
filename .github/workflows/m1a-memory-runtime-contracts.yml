@@ -25,11 +25,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for chunk in tools/m1a-hardening/chunk-*.b64; do
-            sha256sum "$chunk"
-            base64 --decode "$chunk" >/dev/null
-          done
+          sha256sum tools/m1a-hardening/chunk-*.b64
           cat tools/m1a-hardening/chunk-*.b64 | base64 --decode > /tmp/m1a-hardening.patch
+          test -s /tmp/m1a-hardening.patch
           git apply --check /tmp/m1a-hardening.patch
           git apply /tmp/m1a-hardening.patch
           rm -rf tools/m1a-hardening
