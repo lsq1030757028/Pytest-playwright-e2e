@@ -32,14 +32,6 @@ class DeterministicMemoryReference(_ReferenceBase):
         expected_head_revision_id: str | None,
         correlation_id: str,
     ) -> AppendRevisionResult:
-        try:
-            revision = MemoryRevision.model_validate(revision.model_dump(mode="python"))
-        except ValidationError:
-            return AppendRevisionResult(
-                decision=Decision.REJECTED,
-                error_code=ErrorCode.INVALID_SCHEMA,
-            )
-
         permission = self.evaluate_permission(
             actor=actor,
             namespace=revision.namespace,
@@ -73,6 +65,14 @@ class DeterministicMemoryReference(_ReferenceBase):
                     "idempotency key was reused with a different authenticated CAS request",
                 )
             return result.model_copy(update={"decision": Decision.IDEMPOTENT_REPLAY})
+
+        try:
+            revision = MemoryRevision.model_validate(revision.model_dump(mode="python"))
+        except ValidationError:
+            return AppendRevisionResult(
+                decision=Decision.REJECTED,
+                error_code=ErrorCode.INVALID_SCHEMA,
+            )
 
         provenance_error = self._validate_provenance(revision)
         if provenance_error is not None:
