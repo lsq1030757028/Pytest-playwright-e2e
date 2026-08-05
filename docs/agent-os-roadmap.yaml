@@ -1,24 +1,11 @@
 project: AI Test Harness
-roadmap_version: 3.1
-updated_at: 2026-08-05T11:45:00+08:00
+roadmap_version: 3.2
+updated_at: 2026-08-05T14:00:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
-
-active_work:
-  goal_issue: 20
-  module: M1.0
-  phase: SPEC_BASELINE
-  status: ACTIVE_WHEN_MERGED
-  spec_id: SPEC-M1.0-MEMORY-BENCHMARK
-  spec_version: 1.0.0
-  spec_paths:
-    - docs/specs/m1.0-memory-benchmark-threat-model-spec.md
-    - docs/specs/m1.0-memory-benchmark-threat-model.yaml
-  scenario_catalog: benchmarks/memory/m1.0/scenario-catalog.yaml
-  test_design: docs/testing/m1.0-memory-benchmark-threat-model-test-design.md
-  next_after_spec: M1.0_BENCHMARK_HARNESS
-  runtime_assurance: DEV3
+active_module: M1A
+active_phase: SPEC_DRAFT
 
 principles:
   - memory_before_multi_agent
@@ -28,6 +15,13 @@ principles:
   - single_agent_stability_before_parallel_efficiency
   - deterministic_safety_gates
   - spec_before_implementation
+  - bounded_autonomy_under_active_mandate
+
+active_governance:
+  development_ssot: docs/github-development-ssot.yaml
+  autonomy_mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+  mandate_status: ACTIVE
+  mandate_scope: [M1, M2, M3]
 
 stage_delivery_gate:
   required_milestones: [M1, M2, M3]
@@ -37,6 +31,7 @@ stage_delivery_gate:
     replayable_critical_evidence_percent: 100
     rollback_for_promoted_assets: required
     model_memory_device_provenance: required
+    out_of_mandate_actions: 0
 
 milestones:
   - id: M0
@@ -44,7 +39,8 @@ milestones:
     status: MERGED
     objective: Prove controlled capability execution and executable test evidence.
     evidence:
-      main_commit: 11aabf0351376830a817b5b7bf5cdecdbe8560d2
+      baseline_commit: 11aabf0351376830a817b5b7bf5cdecdbe8560d2
+      consolidated_commit: dc38f6a094be1ad25cde2ec3948fe8de00343687
       final_quality_run: 30965665125
       final_release_run: 30965665110
       modules_merged: 14
@@ -57,12 +53,12 @@ milestones:
 
   - id: M1
     title: Memory and controlled self-evolution
-    status: NEXT
+    status: IN_PROGRESS
     depends_on: [M0]
+    active_module: M1A
     module_status:
-      M1.0_SPEC: ACTIVE_WHEN_MERGED
-      M1.0_BENCHMARK_HARNESS: NEXT_AFTER_SPEC
-      M1A: PLANNED
+      M1.0: MERGED
+      M1A: SPEC_DRAFT
       M1B: PLANNED
       M1C: PLANNED
       M1D: PLANNED
@@ -76,6 +72,17 @@ milestones:
       - M1D Shared memory governance
       - M1E Controlled self-evolution
       - M1F Memory benchmark gate
+    completed_evidence:
+      M1.0:
+        spec: SPEC-M1.0-MEMORY-BENCHMARK@1.0.0
+        implementation_commit: 0038a741a130add9432f8dc2dbc626a1ba1e0a00
+        closure_commit: 89e0ab38b895dfceb604089ef3cc729ac8d17220
+        main_quality_run: 30979625315
+        release_run: 30979625302
+        campaign_scenarios: 16
+        campaign_runs: 60
+        critical_false_green: 0
+        semantic_digest: sha256:001fd1b17d903983a0dae4fd6b7b3c9f492fa663a45d0073c6d1c3b761af254b
     test_assets:
       - memory_off_vs_on
       - repeated_task
@@ -83,30 +90,24 @@ milestones:
       - stale_memory
       - conflicting_memory
       - memory_poisoning
-      - benchmark_contamination
-      - cross_project_leakage
       - shared_memory_acl
-      - assumption_to_fact
-      - oracle_contamination
       - promotion_and_rollback
-      - revoke_and_forget
-      - retrieval_budget_flooding
-      - deterministic_retrieval_replay
-      - provenance_tampering
-      - concurrent_revision_conflict
     gates:
+      status: OPEN
       provenance_percent: 100
       unauthorized_memory_write: 0
-      unauthorized_protected_scope_read: 0
       assumption_to_fact_or_oracle_leakage: 0
-      unauthorized_oracle_policy_permission_change: 0
       critical_false_green: 0
-      replayable_critical_evidence_percent: 100
-      promoted_asset_without_working_rollback: 0
       minimum_improvement_any:
         correctness_percent_points: 15
         human_intervention_reduction_percent: 20
         token_or_cost_reduction_percent: 20
+    current_spec:
+      id: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES
+      version: 1.0.0
+      status: CANDIDATE
+      goal_issue: 28
+      implementation_blocked_until_spec_merged: true
 
   - id: M2
     title: Cross-model generalization and safe degradation
@@ -207,7 +208,6 @@ milestones:
       - Infrastructure sandbox
 
 next_execution_sequence:
-  - M1.0
   - M1A
   - M1B
   - M1C
