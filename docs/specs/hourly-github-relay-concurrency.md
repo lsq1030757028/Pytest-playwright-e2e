@@ -162,3 +162,57 @@ Its mandatory evidence is:
 - no development, CI or Campaign-comment write.
 
 A lightweight contention record on Goal #49 is optional and must never modify the active Run's record.
+
+## 13. Finalization and release attestation
+
+A Run cannot truthfully record a successful Lease release in FINAL before the release CAS occurs, but after release it no longer holds an ACTIVE fencing token. The Pilot therefore uses a bounded two-phase finalization protocol:
+
+```text
+PRE_FINAL while ACTIVE
+→ RELEASE CAS to IDLE
+→ RELEASE_ATTESTED FINAL update
+→ CHAT_FINAL
+```
+
+### 13.1 PRE_FINAL
+
+While the Lease is still ACTIVE and all normal fencing checks pass, update the existing Run comment with:
+
+- final business and lifecycle outcome;
+- actions, files, Commits, tests and CI;
+- blocker or error and next valid action;
+- `lease_release: PENDING`;
+- the exact intended release summary.
+
+PRE_FINAL is not the final audit claim and must not say that release succeeded.
+
+### 13.2 RELEASE
+
+Release the Lease using the latest Lease blob SHA. The release record must set operational status to `IDLE`, clear active ownership fields, and preserve:
+
+- `last_run_token` equal to the current Run Token;
+- `last_final_status`;
+- `last_ended_at`;
+- `last_summary`;
+- `last_release_error`, null only when the release update succeeded.
+
+The returned control-branch Commit SHA is the authoritative release evidence.
+
+### 13.3 RELEASE_ATTESTED FINAL exception
+
+After the release CAS succeeds, exactly one post-release mutation is allowed: update the already-existing comment identified by the current Run marker and comment ID. This exception is audit-only and does not grant development ownership.
+
+Before that update, reread the Lease and require all of:
+
+```text
+operational status == IDLE or a later Run is ACTIVE
+last_run_token == current Run Token
+sequence >= current Run sequence
+last_release_error == null
+```
+
+The update may change only the Lease-release fields from `PENDING` to `CONFIRMED`, add the release Commit SHA and record that post-release attestation was used. It must not change the business verdict, actions, files, tests, CI, next action, Campaign state, branch, PR metadata or any other repository resource.
+
+If the Lease reread does not prove the current Run's release, or the one bounded comment update fails, do not retry in a loop. The control Lease remains authoritative; Chat must report `RELEASE_ATTESTATION_INCOMPLETE` and the actual error. Such a Run does not count toward Pilot acceptance.
+
+A later Run may acquire the Lease before this audit-only comment update. That does not invalidate the exception because it touches only the prior Run's uniquely marked comment and cannot mutate the new Run's record or development state.
