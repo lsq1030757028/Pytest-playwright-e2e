@@ -11,6 +11,7 @@ on:
       - "tests/assets/ux/ux1/**"
       - "targets/percy-example-todomvc/**"
       - "tests/unit/test_ux_mutation_runtime.py"
+      - "tests/unit/test_ux1_mutation_delivery_status.py"
       - "tests/integration/test_ux_mutation_proof_integration.py"
       - "docs/ux1-todomvc-mutation-proof-runtime.md"
       - "docs/ux-assurance-status.md"
@@ -30,6 +31,7 @@ on:
       - "tests/assets/ux/ux1/**"
       - "targets/percy-example-todomvc/**"
       - "tests/unit/test_ux_mutation_runtime.py"
+      - "tests/unit/test_ux1_mutation_delivery_status.py"
       - "tests/integration/test_ux_mutation_proof_integration.py"
       - "docs/ux1-todomvc-mutation-proof-runtime.md"
       - "docs/ux-assurance-status.md"
@@ -74,12 +76,14 @@ jobs:
           src/test_workflow/ux_mutation
           src/test_workflow/cli.py
           tests/unit/test_ux_mutation_runtime.py
+          tests/unit/test_ux1_mutation_delivery_status.py
           tests/integration/test_ux_mutation_proof_integration.py
 
-      - name: Unit contract sandbox and state-machine evidence
+      - name: Unit contract sandbox state-machine and delivery evidence
         run: >-
           uv run pytest
           tests/unit/test_ux_mutation_runtime.py
+          tests/unit/test_ux1_mutation_delivery_status.py
           --junitxml=test-results/junit-ux1-mutation-unit.xml
 
       - name: Validate CLI campaign contract
