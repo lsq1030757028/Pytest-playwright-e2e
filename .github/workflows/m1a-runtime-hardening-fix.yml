@@ -75,7 +75,7 @@ jobs:
                       "        self._acl.setdefault(entry.namespace.canonical, []).append(entry)",
                       reference.index("    def append_acl_event("),
                   )
-                  acl_end = reference.index("\n\n    def list_effective_acl", acl_start)
+                  acl_end = reference.index("\\n\\n    def list_effective_acl", acl_start)
                   reference = reference[:acl_start] + new_acl + "\\n" + reference[acl_end:]
               ''',
           )
