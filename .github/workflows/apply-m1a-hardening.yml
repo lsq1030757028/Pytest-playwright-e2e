@@ -1,9 +1,9 @@
 name: Apply M1A hardening patch
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - agent/m1a-memory-runtime-contracts
     paths:
       - ".github/workflows/apply-m1a-hardening.yml"
 
@@ -16,8 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/m1a-memory-runtime-contracts
           fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v6
 
       - name: Apply governed hardening patch
         shell: bash
@@ -31,10 +32,42 @@ jobs:
           git apply --check /tmp/m1a-hardening.patch
           git apply /tmp/m1a-hardening.patch
           git rm -r tools/m1a-hardening
-          git rm tools/m1a-bootstrap/part-00.b64
           git rm .github/workflows/apply-m1a-hardening.yml
+          git diff --check
+
+      - name: Verify hardened M1A contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --extra test
+          uv run ruff check \
+            src/test_workflow/memory_contracts \
+            tests/memory_contract_fixtures.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          uv run pytest \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          rm -rf test-results/m1a-hardening-proof
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-hardening-proof \
+            --code-sha "${GITHUB_SHA}"
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-hardening-proof
+
+      - name: Commit verified hardening
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
+          git diff --cached --check
           git commit -m "Harden M1A runtime contract enforcement"
           git push origin HEAD:agent/m1a-memory-runtime-contracts
