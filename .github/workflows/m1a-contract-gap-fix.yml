@@ -1,0 +1,479 @@
+name: m1a-contract-gap-fix
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m1a-contract-gap-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  harden-contract-gaps:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m1a-runtime-contract-remediation
+          fetch-depth: 0
+
+      - name: Apply authority atomicity and evidence hardening
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{label}: expected one match, found {count}")
+              return text.replace(old, new, 1)
+
+          models_path = Path("src/test_workflow/memory_contracts/models.py")
+          models = models_path.read_text(encoding="utf-8")
+          old_identity = '''        delegated = self.delegator_ref is not None
+                  required = (
+                      bool(self.delegation_scope),
+                      self.delegation_expires_at is not None,
+                      self.audit_event_ref is not None,
+                  )
+                  if delegated != all(required):
+                      raise ValueError("delegated identity requires scope, expiry, and audit event")
+          '''
+          old_identity = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_identity.splitlines()
+          ) + "\n"
+          new_identity = '''        delegation_fields = (
+                      self.delegator_ref is not None,
+                      bool(self.delegation_scope),
+                      self.delegation_expires_at is not None,
+                      self.audit_event_ref is not None,
+                  )
+                  if any(delegation_fields) and not all(delegation_fields):
+                      raise ValueError(
+                          "delegated identity requires delegator, scope, expiry, and audit event"
+                      )
+          '''
+          new_identity = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_identity.splitlines()
+          ) + "\n"
+          models = replace_once(models, old_identity, new_identity, "principal delegation")
+          models_path.write_text(models, encoding="utf-8")
+
+          reference_path = Path("src/test_workflow/memory_contracts/reference.py")
+          reference = reference_path.read_text(encoding="utf-8")
+          reference = replace_once(
+              reference,
+              "from datetime import UTC, datetime\nfrom typing import Iterable\n",
+              "from datetime import UTC, datetime\nfrom functools import wraps\n"
+              "from threading import RLock\nfrom typing import Iterable\n",
+              "reference synchronization imports",
+          )
+          reference = replace_once(
+              reference,
+              "    AccessOperation,\n    AclEntry,\n",
+              "    AccessOperation,\n    AclEffect,\n    AclEntry,\n    AclSubjectType,\n",
+              "reference ACL imports",
+          )
+          decorator = '''
+
+          def _synchronized(method):
+              @wraps(method)
+              def wrapped(self, *args, **kwargs):
+                  with self._lock:
+                      return method(self, *args, **kwargs)
+
+              return wrapped
+
+
+          '''
+          decorator = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in decorator.splitlines()
+          )
+          reference = replace_once(
+              reference,
+              "\n\nclass DeterministicMemoryReference:\n",
+              decorator + "class DeterministicMemoryReference:\n",
+              "synchronization decorator",
+          )
+          reference = replace_once(
+              reference,
+              "    ) -> None:\n        self._revisions: dict[str, list[MemoryRevision]] = {}\n",
+              "    ) -> None:\n        self._lock = RLock()\n"
+              "        self._revisions: dict[str, list[MemoryRevision]] = {}\n",
+              "reference lock",
+          )
+          for method in (
+              "append_revision",
+              "compare_and_append_revision",
+              "append_state_event",
+              "promote",
+              "append_acl_event",
+              "append_audit_event",
+              "expire_due_memories",
+              "revoke_memory",
+              "forget_memory",
+          ):
+              reference = replace_once(
+                  reference,
+                  f"    def {method}(\n",
+                  f"    @_synchronized\n    def {method}(\n",
+                  f"synchronize {method}",
+              )
+          reference = replace_once(
+              reference,
+              "            return result.model_copy(update={\"decision\": Decision.IDEMPOTENT_REPLAY})\n",
+              "            return result\n",
+              "idempotency original result",
+          )
+          reference = replace_once(
+              reference,
+              "                error_code=ErrorCode.PROVENANCE_MISSING,\n"
+              "            )\n            self._idempotency[revision.idempotency_key] = (fingerprint, result)\n",
+              "                error_code=provenance_error,\n"
+              "            )\n            self._idempotency[revision.idempotency_key] = (fingerprint, result)\n",
+              "provenance error propagation",
+          )
+          old_provenance = '''    def _validate_provenance(self, revision: MemoryRevision) -> ErrorCode | None:
+              for source_ref, expected_hash in revision.provenance.source_content_hashes.items():
+                  if self._resolved_sources.get(source_ref) != expected_hash:
+                      return ErrorCode.PROVENANCE_MISSING
+              if not set(revision.provenance.evidence_refs) <= self._resolved_evidence:
+                  return ErrorCode.PROVENANCE_MISSING
+              return None
+          '''
+          old_provenance = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_provenance.splitlines()
+          ) + "\n"
+          new_provenance = '''    def _validate_provenance(self, revision: MemoryRevision) -> ErrorCode | None:
+              for source_ref, expected_hash in revision.provenance.source_content_hashes.items():
+                  if source_ref not in self._resolved_sources:
+                      return ErrorCode.PROVENANCE_MISSING
+                  if self._resolved_sources[source_ref] != expected_hash:
+                      return ErrorCode.INTEGRITY_FAILED
+              if not set(revision.provenance.evidence_refs) <= self._resolved_evidence:
+                  return ErrorCode.PROVENANCE_MISSING
+              return None
+          '''
+          new_provenance = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_provenance.splitlines()
+          ) + "\n"
+          reference = replace_once(
+              reference, old_provenance, new_provenance, "provenance integrity distinction"
+          )
+          old_acl = '''        self._acl.setdefault(entry.namespace.canonical, []).append(entry)
+              return MutationResult(
+                  decision=Decision.ACCEPTED,
+                  audit_event_ref=(
+                      "acl:"
+                      + canonical_sha256({"entry": entry, "correlation": correlation_id})
+                  ),
+              )
+          '''
+          old_acl = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_acl.splitlines()
+          ) + "\n"
+          new_acl = '''        subject_matches_actor = (
+              entry.subject_type is AclSubjectType.PRINCIPAL
+              and entry.subject_id == actor.principal_id
+          ) or (
+              entry.subject_type is AclSubjectType.GROUP
+              and entry.subject_id in actor.group_ids
+          ) or (
+              entry.subject_type is AclSubjectType.ROLE
+              and entry.subject_id in actor.role_ids
+          )
+              if entry.effect is AclEffect.ALLOW and subject_matches_actor:
+                  return MutationResult(
+                      decision=Decision.REJECTED,
+                      error_code=ErrorCode.ACL_DENIED,
+                  )
+              self._acl.setdefault(entry.namespace.canonical, []).append(entry)
+              audit_ref = self._record_acl_audit(
+                  actor=actor,
+                  entry=entry,
+                  correlation_id=correlation_id,
+              )
+              return MutationResult(
+                  decision=Decision.ACCEPTED,
+                  audit_event_ref=audit_ref,
+              )
+          '''
+          new_acl = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_acl.splitlines()
+          ) + "\n"
+          reference = replace_once(reference, old_acl, new_acl, "ACL self-grant and audit")
+          acl_audit = '''    def _record_acl_audit(
+              self,
+              *,
+              actor: PrincipalContext,
+              entry: AclEntry,
+              correlation_id: str,
+          ) -> str:
+              occurred_at = datetime.now(UTC)
+              previous = self._audits[-1].event_hash if self._audits else None
+              seed = {
+                  "type": "ACL_CHANGED",
+                  "namespace": entry.namespace.canonical,
+                  "rule_id": entry.rule_id,
+                  "actor": actor.principal_id,
+                  "occurred_at": occurred_at,
+                  "correlation_id": correlation_id,
+              }
+              event_id = f"audit_{canonical_sha256(seed)}"
+              payload = {
+                  "event_id": event_id,
+                  "event_type": "ACL_CHANGED",
+                  "memory_id": f"namespace:{entry.namespace.namespace_hash}",
+                  "revision_id": f"acl:{entry.rule_id}",
+                  "namespace": entry.namespace,
+                  "actor_principal_ref": actor.principal_id,
+                  "occurred_at": occurred_at,
+                  "reason_code": "ACL_RULE_APPENDED",
+                  "policy_decision_ref": "policy/m1a/acl",
+                  "previous_event_hash": previous,
+              }
+              event = AuditEvent(**payload, event_hash=canonical_sha256(payload))
+              self._audits.append(event)
+              return event.event_id
+
+          '''
+          acl_audit = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in acl_audit.splitlines()
+          ) + "\n"
+          reference = replace_once(
+              reference,
+              "    def _record_audit(\n",
+              acl_audit + "    def _record_audit(\n",
+              "ACL audit helper",
+          )
+          reference_path.write_text(reference, encoding="utf-8")
+
+          model_tests_path = Path("tests/unit/test_memory_contract_models.py")
+          model_tests = model_tests_path.read_text(encoding="utf-8")
+          model_tests = replace_once(
+              model_tests,
+              "    NamespaceScopeKind,\n    Provenance,\n",
+              "    NamespaceScopeKind,\n    PrincipalContext,\n    PrincipalType,\n    Provenance,\n",
+              "principal test imports",
+          )
+          model_tests += '''
+
+          @pytest.mark.parametrize(
+              "delegation_fields",
+              (
+                  {"delegator_ref": "user-delegator"},
+                  {"delegation_scope": (make_namespace().canonical,)},
+                  {"delegation_expires_at": FIXED_NOW + timedelta(hours=1)},
+                  {"audit_event_ref": "audit/delegation"},
+                  {
+                      "delegation_scope": (make_namespace().canonical,),
+                      "delegation_expires_at": FIXED_NOW + timedelta(hours=1),
+                      "audit_event_ref": "audit/delegation",
+                  },
+              ),
+          )
+          def test_partial_delegation_identity_is_rejected(delegation_fields: dict) -> None:
+              with pytest.raises(ValidationError, match="delegated identity requires"):
+                  PrincipalContext(
+                      principal_id="agent-delegated",
+                      principal_type=PrincipalType.AGENT,
+                      organization_id="org-1",
+                      project_id="project-1",
+                      agent_id="agent-delegated",
+                      **delegation_fields,
+                  )
+          '''
+          model_tests = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in model_tests.splitlines()
+          ) + "\n"
+          model_tests_path.write_text(model_tests, encoding="utf-8")
+
+          integration_path = Path("tests/integration/test_memory_contract_reference.py")
+          integration = integration_path.read_text(encoding="utf-8")
+          integration = replace_once(
+              integration,
+              "from datetime import timedelta\n",
+              "from concurrent.futures import ThreadPoolExecutor\n"
+              "from datetime import timedelta\nfrom threading import Barrier\n",
+              "concurrency test imports",
+          )
+          integration = replace_once(
+              integration,
+              "    assert replayed.decision is Decision.IDEMPOTENT_REPLAY\n",
+              "    assert replayed == created\n"
+              "    assert replayed.decision is Decision.ACCEPTED\n",
+              "idempotency original-result assertion",
+          )
+          integration += '''
+
+          def test_source_hash_mismatch_is_integrity_failure() -> None:
+              revision = make_semantic_revision()
+              owner = make_owner()
+              store = DeterministicMemoryReference(
+                  resolved_sources={"requirement/REQ-1@3": "0" * 64},
+                  resolved_evidence=("evidence/EV-1",),
+                  initial_acl=make_owner_acl(),
+              )
+
+              result = store.append_revision(
+                  actor=owner,
+                  revision=revision,
+                  expected_head_revision_id=None,
+                  correlation_id="source-hash-mismatch",
+              )
+
+              assert result.decision is Decision.REJECTED
+              assert result.error_code is ErrorCode.INTEGRITY_FAILED
+              assert store.list_audit_events() == ()
+
+
+          def test_acl_self_grant_is_rejected_and_other_grant_is_audited() -> None:
+              owner = make_owner()
+              namespace = make_namespace()
+              store = make_store()
+              self_grant = AclEntry(
+                  rule_id="self-grant-read",
+                  effect=AclEffect.ALLOW,
+                  subject_type=AclSubjectType.PRINCIPAL,
+                  subject_id=owner.principal_id,
+                  operations=(AccessOperation.READ_CONTENT,),
+                  namespace=namespace,
+              )
+              other_grant = self_grant.model_copy(
+                  update={"rule_id": "grant-reader", "subject_id": "agent-reader"}
+              )
+
+              denied = store.append_acl_event(
+                  actor=owner,
+                  entry=self_grant,
+                  correlation_id="self-grant",
+              )
+              accepted = store.append_acl_event(
+                  actor=owner,
+                  entry=other_grant,
+                  correlation_id="grant-reader",
+              )
+
+              assert denied.decision is Decision.REJECTED
+              assert denied.error_code is ErrorCode.ACL_DENIED
+              assert self_grant not in store.list_effective_acl(namespace=namespace)
+              assert accepted.decision is Decision.ACCEPTED
+              assert accepted.audit_event_ref is not None
+              assert store.list_audit_events()[-1].event_type == "ACL_CHANGED"
+              assert store.verify_event_chain()
+
+
+          def test_concurrent_compare_and_append_has_one_winner_and_one_conflict() -> None:
+              initial = make_semantic_revision()
+              owner = make_owner()
+              store = make_store()
+              store.append_revision(
+                  actor=owner,
+                  revision=initial,
+                  expected_head_revision_id=None,
+                  correlation_id="concurrent-base",
+              )
+
+              def candidate(nonce: str, key: str, value: str) -> MemoryRevision:
+                  return MemoryRevision.create(
+                      memory_id=initial.memory_id,
+                      revision_nonce=nonce,
+                      revision_number=2,
+                      parent_revision_refs=(initial.ref,),
+                      memory_kind=initial.memory_kind,
+                      namespace=initial.namespace,
+                      content={"fact_candidate": value},
+                      provenance=initial.provenance,
+                      retention_policy=initial.retention_policy,
+                      formation_event_ref=f"formation/{nonce}",
+                      created_by=owner.principal_id,
+                      idempotency_key=key,
+                      created_at=initial.created_at + timedelta(minutes=1),
+                  )
+
+              revisions = (
+                  candidate("concurrent-a", "idem-concurrent-a", "candidate A"),
+                  candidate("concurrent-b", "idem-concurrent-b", "candidate B"),
+              )
+              barrier = Barrier(2)
+
+              def append(revision: MemoryRevision):
+                  barrier.wait()
+                  return store.compare_and_append_revision(
+                      actor=owner,
+                      revision=revision,
+                      expected_head_revision_id=initial.revision_id,
+                      correlation_id=revision.idempotency_key,
+                  )
+
+              with ThreadPoolExecutor(max_workers=2) as executor:
+                  results = tuple(executor.map(append, revisions))
+
+              assert sorted(result.decision.value for result in results) == [
+                  Decision.ACCEPTED.value,
+                  Decision.CONFLICT.value,
+              ]
+              assert len(store.list_revision_history(
+                  actor=owner, memory_id=initial.memory_id
+              )) == 2
+          '''
+          integration = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in integration.splitlines()
+          ) + "\n"
+          integration_path.write_text(integration, encoding="utf-8")
+          PY
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify contract hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --extra test
+          uv run ruff check \
+            src/test_workflow/memory_contracts \
+            tests/memory_contract_fixtures.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          uv run pytest \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          rm -rf test-results/m1a-contract-gap-fix
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-contract-gap-fix \
+            --code-sha "${GITHUB_SHA}"
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-contract-gap-fix
+
+      - name: Commit verified hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f uv.lock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/test_workflow/memory_contracts/models.py \
+            src/test_workflow/memory_contracts/reference.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/integration/test_memory_contract_reference.py
+          git diff --cached --check
+          git commit -m "fix(m1a): close authority atomicity and evidence gaps"
+          git push origin HEAD:agent/m1a-runtime-contract-remediation
