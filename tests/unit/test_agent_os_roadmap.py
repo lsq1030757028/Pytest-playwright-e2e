@@ -15,8 +15,8 @@ def test_current_state_is_foundation_not_stage_delivery() -> None:
     assert roadmap["current_state"] == "FOUNDATION_BASELINE"
     assert roadmap["stage_delivery_status"] == "NOT_READY"
     assert roadmap["next_milestone"] == "M1"
-    assert roadmap["active_module"] == "M1A"
-    assert roadmap["active_phase"] == "SPEC_DRAFT"
+    assert roadmap["active_module"] == "M1A_RUNTIME_CONTRACTS"
+    assert roadmap["active_phase"] == "IMPLEMENTATION_NEXT"
 
 
 def test_first_stage_delivery_requires_memory_model_and_project_gates() -> None:
@@ -59,21 +59,29 @@ def test_milestone_order_and_statuses_are_unambiguous() -> None:
     }
 
 
-def test_m1_tracks_completed_baseline_and_current_spec_truthfully() -> None:
+def test_m1_tracks_closed_spec_and_next_runtime_truthfully() -> None:
     roadmap = load_roadmap()
     m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
 
-    assert m1["active_module"] == "M1A"
+    assert m1["active_module"] == "M1A_RUNTIME_CONTRACTS"
     assert m1["module_status"]["M1.0"] == "MERGED"
-    assert m1["module_status"]["M1A"] == "SPEC_DRAFT"
+    assert m1["module_status"]["M1A"] == "SPEC_MERGED_CLOSED"
+    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == "NEXT"
+    assert m1["module_status"]["M1B"] == "BLOCKED"
     assert m1["current_spec"] == {
         "id": "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES",
         "version": "1.0.0",
-        "status": "CANDIDATE",
+        "status": "APPROVED",
         "goal_issue": 28,
-        "implementation_blocked_until_spec_merged": True,
+        "approval_ref": (
+            "APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0"
+        ),
+        "merge_commit": "4cc4beb99fa9e45509ea1be240b0c2edebbe6137",
+        "implementation_blocked_until_spec_merged": False,
     }
-    assert roadmap["next_execution_sequence"][0] == "M1A"
+    assert m1["active_execution"]["status"] == "NEXT"
+    assert m1["active_execution"]["m1b_blocked_until_verified"] is True
+    assert roadmap["next_execution_sequence"][0] == "M1A_RUNTIME_CONTRACTS"
     assert m1["gates"]["status"] == "OPEN"
 
 
