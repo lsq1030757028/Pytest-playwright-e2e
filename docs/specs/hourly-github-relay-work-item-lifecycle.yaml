@@ -59,7 +59,7 @@ stagnation:
   changed_precondition_required_before_retry: true
   external_waiting_is_not_implementation_failure: true
 pilot:
-  platform_trigger_cap: 6
+  platform_trigger_cap: 8
   purpose:
     - SCHEDULING_VALIDATION
     - LEASE_VALIDATION
