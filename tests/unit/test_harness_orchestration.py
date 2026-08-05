@@ -19,7 +19,6 @@ from test_workflow.harness import (
     NodeStatus,
     Orchestrator,
     PlanStatus,
-    PlanValidationError,
     StoreExecutionContext,
     WorkflowCompiler,
     reset_checkpoint,
@@ -152,7 +151,7 @@ def test_plan_rejects_cycles_unknown_dependencies_and_binding_leaks() -> None:
                 ),
             ),
         )
-    with pytest.raises(PlanValidationError, match="cycle"):
+    with pytest.raises(ValidationError, match="cycle"):
         ExecutionPlan(
             plan_id="cycle",
             nodes=(
