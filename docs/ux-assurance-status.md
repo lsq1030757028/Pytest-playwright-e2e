@@ -6,24 +6,25 @@
 > Runtime Goal：Issue #31  
 > SPEC：`SPEC-UX0-SYNTHETIC-USER@1.0.0`  
 > Approval：`APPROVAL-UX0-SYNTHETIC-USER-SPEC@1.0.0`  
-> 当前阶段：`RUNTIME_VERIFIED_MERGE_PENDING`  
-> Runtime：`VERIFIED_MERGE_PENDING`  
+> 当前阶段：`SHADOW_RUNTIME_MERGED_CLOSED`  
+> Runtime：`MERGED_CLOSED`  
 > Gate Mode：`SHADOW_NONBLOCKING`  
-> Human UAT：`REQUIRED`
+> Human UAT：`REQUIRED`  
+> 下一模块：`TODO_MVC_UX_MUTATION_PROOF_SPEC`
 
 ## 当前状态
 
 ```text
 UX0 SPEC：MERGED / CLOSED
-ExperienceEnvironment Contract：IMPLEMENTED / VERIFIED
-SyntheticUserAgent Contract：IMPLEMENTED / VERIFIED
-Experience Oracle Contract：IMPLEMENTED / VERIFIED
-Canonical Persona / Journey Assets：IMPLEMENTED / VERIFIED
-Playwright Shadow Runner：VERIFIED / MERGE_PENDING
+ExperienceEnvironment Contract：MERGED / VERIFIED
+SyntheticUserAgent Contract：MERGED / VERIFIED
+Experience Oracle Contract：MERGED / VERIFIED
+Canonical Persona / Journey Assets：MERGED / VERIFIED
+Playwright Shadow Runner：MERGED / CLOSED
 AI Candidate Finding Adapter：RULE_FIRST / VERIFIED / NONBLOCKING
 Independent Replay：PASS
-TodoMVC UX Mutation Proof：NOT IMPLEMENTED
-False-positive / False-negative Benchmark：NOT IMPLEMENTED
+TodoMVC UX Mutation Proof：SPEC_NEXT
+False-positive / False-negative Benchmark：PLANNED
 Advisory PR Gate：DISABLED
 Blocking Release Gate：DISABLED
 Human UAT：REQUIRED
@@ -33,17 +34,15 @@ Human UAT：REQUIRED
 
 ```mermaid
 flowchart LR
-    A[✅ Goal #29]
-    --> B[✅ UX0 SPEC]
-    --> C[✅ SPEC Review / Merge]
-    --> D[🟡 Shadow Contracts & Runner<br/>VERIFIED / MERGE PENDING]
-    --> E[⬜ TodoMVC UX Mutation Proof]
-    --> F[⬜ False-positive / False-negative Benchmark]
-    --> G[⬜ Advisory Gate Candidate]
-    --> H[⬜ Blocking Policy Candidate]
+    A[✅ UX0 SPEC]
+    --> B[✅ Shadow Contracts & Runner<br/>MERGED / CLOSED]
+    --> C[🟡 TodoMVC UX Mutation Proof<br/>SPEC NEXT]
+    --> D[⬜ False-positive / False-negative Benchmark]
+    --> E[⬜ Advisory Gate Candidate]
+    --> F[⬜ Blocking Policy Candidate]
 ```
 
-## Runtime 已验证能力
+## Runtime 已交付能力
 
 ```text
 Versioned Profile / Journey / ExperienceEnvironment
@@ -66,22 +65,45 @@ Versioned Profile / Journey / ExperienceEnvironment
 
 ## 权威证据
 
-```text
-Focused Runtime Gate：Run #16 / 30991412463 — SUCCESS
-Unit / Contract：9 / 9 PASS
-CLI Validate：PASS
-Real Playwright Journeys：4 / 4 PASS
-Independent Replay：PASS
-Campaign Verdict：PASS
-Full Repository CI：Run #125 / 30991412405 — SUCCESS
-```
+### PR 与实现证据
 
 ```text
-Artifact ID：8924285005
-Artifact ZIP Digest：sha256:349f51fa11cca5c5f83bee863c69b289b19eebc63bfabe6c5623399b8254a3fc
+Baseline Focused Runtime：Run #16 / 30991412463 — SUCCESS
+Final PR Focused Runtime：Run #25 / 30992515643 — SUCCESS
+UX0 SPEC Gate：Run #17 / 30992515724 — SUCCESS
+Final PR Full Repository CI：Run #134 / 30992515715 — SUCCESS
+Unit / Contract / Delivery / Approval：17 / 17 PASS
+Real Playwright Journeys：4 / 4 PASS
+Journey Checkpoints：14 / 14 PASS
+Independent Replay：PASS
+Campaign Verdict：PASS
+```
+
+### 主干与发布
+
+```text
+Merge Commit：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+Main UX Shadow Gate：Run #26 / 30993021836 — SUCCESS
+Main Quality：Run #135 / 30993021825 — SUCCESS
+Release：Run #12 / 30993022051 — SUCCESS
+Cleanup：Run #10 / 30993021598 — SUCCESS
+Implementation Branch：DELETED
+```
+
+### 产物摘要
+
+```text
+Main UX Artifact：8924951167
+Main UX Artifact Digest：sha256:afd95dfea4ba738494bc24e2c9b2c2247eb64cbaff1b5d07901ea20c4b758134
+Python Distribution：8924921509
+Python Distribution Digest：sha256:6ff953f33d5699d64dc832bb7bf73d63425eb5e5ae2a2f24bec9558c0996e16d
+Docker Build Record：8924949424
+Docker Build Record Digest：sha256:89e9c4b4c971f4e9a0524abdb75a2514434a3b53e72b81add762f31fe74eafc9
+Image Tags：main / sha-f687fd9
+Image Digest：sha256:a0d20ae869f323a0622e71dad8c4257fac3f32963552ea3ac9781086c3e2797d
+Image Config：sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
 Semantic Digest：sha256:1dda03adfcc3a264240b20a883daf2a230e3ce6dcd00c43dccfb84da40b885c5
 Artifact Manifest Digest：sha256:702fdce96eedbb8b81566dda08768d33434346a7edf88653594587f676c92fa4
-Manifest Files：19
 ```
 
 ## 当前边界
@@ -100,10 +122,12 @@ Blocking 模式只有在 Mutation Proof、False-positive / False-negative Benchm
 ## 下一节点
 
 ```text
-合并 Shadow Runtime
-→ Main / Release / Cleanup
-→ TodoMVC UX Mutation Proof SPEC
-→ 缺失反馈 / 状态丢失 / 键盘障碍 / 恢复失败 Mutations
+TodoMVC UX Mutation Proof SPEC
+→ 缺失反馈 Mutation
+→ 可见成功但状态丢失 Mutation
+→ 键盘 / 焦点 / 语义障碍 Mutation
+→ 刷新恢复失败 Mutation
+→ Baseline / Mutation / Restored 三阶段证据
 → False-positive / False-negative Benchmark
-→ 评估是否晋升 ADVISORY
+→ 评估是否具备 ADVISORY 候选条件
 ```
