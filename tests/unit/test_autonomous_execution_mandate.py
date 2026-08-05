@@ -99,9 +99,11 @@ def test_ssot_and_templates_reference_standing_mandate_authorization() -> None:
     assert "Autonomous execution mandate validation" in ci
 
 
-def test_mandate_does_not_claim_m1_runtime_completion() -> None:
+def test_mandate_does_not_claim_m1_gate_completion() -> None:
     status = (ROOT / "docs/implementation-status.md").read_text(encoding="utf-8")
 
     assert "M1.0 SPEC" in status
     assert "M1.0 Benchmark Harness" in status
-    assert "尚未实现" in status
+    assert "IMPLEMENTED / EVIDENCE_PENDING" in status
+    assert "M1 Memory Gate：0 / 1" in status
+    assert "Stage Delivery：NOT_READY" in status
