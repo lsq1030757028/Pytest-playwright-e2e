@@ -71,9 +71,10 @@ def test_approval_remains_historical_after_shadow_runtime_closure() -> None:
     assert invariants["initial_runtime_mode"] == "SHADOW"
     assert invariants["blocking_gate_enabled"] is False
 
-    assert "Runtime：`MERGED_CLOSED`" in status
+    assert "UX0 Playwright Shadow Runtime：MERGED / CLOSED" in status
+    assert "TodoMVC UX Mutation Proof：SPEC_DRAFT" in status
+    assert "UX Mutation Proof Runner：NOT_IMPLEMENTED" in status
     assert "Gate Mode：`SHADOW_NONBLOCKING`" in status
-    assert "TodoMVC UX Mutation Proof：SPEC_NEXT" in status
     assert "Blocking Release Gate：DISABLED" in status
     assert "Human UAT：`REQUIRED`" in status
 
