@@ -1,5 +1,5 @@
 name: Goal / Change
-description: Define an approved goal, scope, acceptance criteria, risks, mandate, and release constraints
+description: Define an approved goal, scope, acceptance criteria, risks, UX impact, mandate, and release constraints
 title: "[Goal] "
 labels: []
 assignees: []
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form for nontrivial development goals. The final SPEC, implementation, evidence, and release follow `docs/github-development-ssot.md`.
+        Use this form for nontrivial development goals. The final SPEC, implementation, functional evidence, experience evidence, and release follow `docs/github-development-ssot.md` and `docs/ux-assurance-ssot.md`.
 
   - type: textarea
     id: outcome
@@ -36,10 +36,11 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Use observable, falsifiable outcomes. Do not prescribe test counts.
+      description: Use observable, falsifiable outcomes. Include user-visible success and recovery when applicable. Do not prescribe test counts.
       placeholder: |
         - Given ..., when ..., then ...
         - The system must reject ...
+        - The user must observe ...
     validations:
       required: true
 
@@ -47,8 +48,8 @@ body:
     id: authority
     attributes:
       label: Requirement and decision authority
-      description: Identify who or what can approve Requirement, Oracle, Policy, scope, or Mandate changes.
-      placeholder: Product owner, approved requirement, ADR, production invariant, security policy...
+      description: Identify who or what can approve Requirement, Oracle, Experience Oracle, Policy, scope, or Mandate changes.
+      placeholder: Product owner, approved requirement, design system, ADR, production invariant, security policy...
     validations:
       required: true
 
@@ -73,23 +74,52 @@ body:
         - M1 Memory and Controlled Evolution
         - M2 Cross-model Generalization
         - M3 Project and Architecture Generalization
+        - Cross-cutting M1-M3 quality plane
         - Outside M1-M3
         - Not applicable
     validations:
       required: true
 
   - type: dropdown
+    id: user_facing_effect
+    attributes:
+      label: User-facing effect
+      description: Unknown impact defaults to UX2 during planning.
+      options:
+        - No user-facing behavior change
+        - Normal user-facing change
+        - Important workflow or visible business-rule change
+        - Critical money, auth, privacy, destructive, irreversible, or data-loss journey
+        - Unknown or requires investigation
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_journeys
+    attributes:
+      label: Affected user journeys and Human UAT
+      description: Identify user goals, Experience Oracle or Journey references, accessibility/recovery impact, and whether Human UAT is required.
+      placeholder: |
+        Journeys:
+        - ...
+        Accessibility / recovery impact:
+        - ...
+        Human UAT:
+        - required / not required with authority
+
+  - type: dropdown
     id: risk_signals
     attributes:
       label: Known risk signals
-      description: Select every known signal. The final DEV profile may be escalated later.
+      description: Select every known signal. The final DEV and UX profiles may be escalated later.
       multiple: true
       options:
         - Documentation or non-behavioral only
         - Isolated deterministic logic
         - API, storage, schema, workflow, or process boundary
-        - Oracle, Policy, Permission, or Assurance Floor
+        - Oracle, Experience Oracle, Policy, Permission, or Assurance Floor
         - Memory, self-evolution, or asset promotion
+        - Synthetic User, UX Gate, or UAT readiness
         - Model routing or automated escalation
         - Browser, mobile, mini-program, embedded, or real device
         - Financial, privacy, security, destructive, or irreversible behavior
@@ -102,22 +132,22 @@ body:
     id: constraints
     attributes:
       label: Constraints and dependencies
-      description: Include technology, environment, model, device, data, secret, cost, timing, and compatibility constraints.
+      description: Include technology, environment, persona, journey, model, device, locale, accessibility, network, data, secret, cost, timing, and compatibility constraints.
       placeholder: Dependencies, unavailable environments, device limits, cost ceilings, deadlines...
 
   - type: textarea
     id: current_evidence
     attributes:
       label: Existing evidence and assets
-      description: Link related tests, incidents, Replay Bundles, benchmarks, ADRs, requirements, SPECs, or prior PRs.
+      description: Link related tests, journeys, traces, Replay Bundles, benchmarks, ADRs, requirements, SPECs, design-system assets, or prior PRs.
       placeholder: Existing evidence, asset paths, or GitHub references...
 
   - type: textarea
     id: deployment
     attributes:
       label: Deployment, recovery, and rollback expectations
-      description: State whether this changes runtime, data, models, memory, devices, CI, or releases.
-      placeholder: Deployment path, canary, rollback, recovery, irreversible effects...
+      description: State whether this changes runtime, data, models, memory, devices, UX Gate mode, CI, or releases.
+      placeholder: Deployment path, shadow/advisory/blocking mode, canary, rollback, recovery, irreversible effects...
 
   - type: dropdown
     id: auto_merge
@@ -136,9 +166,11 @@ body:
     attributes:
       label: Governance acknowledgement
       options:
-        - label: I understand that requirement or mandate changes must be versioned and re-assessed rather than silently overwriting prior evidence.
+        - label: I understand that Requirement, Experience Oracle, or Mandate changes must be versioned and re-assessed rather than silently overwriting prior evidence.
           required: true
-        - label: I understand that test evidence is selected by risk and real boundaries, not by a fixed test-count checklist.
+        - label: I understand that functional and experience evidence is selected by risk and real boundaries, not by a fixed test-count checklist.
+          required: true
+        - label: I understand that AI-only UX findings cannot block and Synthetic Users do not replace Human UAT.
           required: true
         - label: I understand that production data, secrets, destructive external writes, material irreversible cost, and DEV-E production actions are not covered by routine autonomy.
           required: true
