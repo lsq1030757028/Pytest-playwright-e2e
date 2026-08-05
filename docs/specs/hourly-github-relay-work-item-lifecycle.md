@@ -94,14 +94,14 @@ The Relay must distinguish long work from stuck work.
 
 ## 6. Pilot versus production Relay
 
-The current `COUNT=6` schedule is only a bounded control-plane Pilot. It validates scheduling, lease, fencing, GitHub records and Chat reporting. It is not the time budget for M1–M3 and must not be mapped to roadmap steps.
+The current `COUNT=8` schedule is only a bounded control-plane Pilot. It validates scheduling, lease, fencing, GitHub records and Chat reporting. It is not the time budget for M1–M3 and must not be mapped to roadmap steps.
 
 Pilot termination means one of:
 
 - the Relay mechanism is accepted and a separately authorized production Relay schedule may be created;
 - the Pilot is rejected or blocked and no production Relay is created.
 
-The Pilot may safely advance an already authorized Campaign, but failure to finish that Campaign within six invocations is not a Pilot failure.
+The Pilot may safely advance an already authorized Campaign, but failure to finish that Campaign within eight invocations is not a Pilot failure.
 
 ## 7. Production Relay lifecycle
 
