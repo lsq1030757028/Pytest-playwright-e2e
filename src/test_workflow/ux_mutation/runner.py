@@ -285,7 +285,6 @@ class UXMutationProofRunner:
         }
         return UXMutationCampaignReport(
             **core,
-            metrics=metrics,
             semantic_digest=canonical_digest(core),
         )
 
