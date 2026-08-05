@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import tempfile
 from pathlib import Path
 
 import typer
@@ -22,6 +23,7 @@ from .serialization import load_model
 from .specs import EnvironmentSpec, MockPlan, TestSpec
 from .targets import TargetManager
 from .ux import UXShadowRunner, UXVerdict
+from .ux_mutation import ProofCampaignVerdict, UXMutationProofRunner
 from .virtual_service import create_virtual_service, load_behavior
 
 app = typer.Typer(no_args_is_help=True, help="Pytest + Skill + Playwright workflow CLI")
@@ -39,6 +41,10 @@ ux_app = typer.Typer(
     no_args_is_help=True,
     help="Validate, execute, and replay Synthetic User SHADOW campaigns",
 )
+ux_mutation_app = typer.Typer(
+    no_args_is_help=True,
+    help="Validate, execute, and replay TodoMVC UX Mutation Proof campaigns",
+)
 app.add_typer(spec_app, name="spec")
 app.add_typer(bundle_app, name="bundle")
 app.add_typer(env_app, name="env")
@@ -47,6 +53,7 @@ app.add_typer(proof_app, name="proof")
 app.add_typer(target_app, name="target")
 app.add_typer(memory_app, name="memory")
 app.add_typer(ux_app, name="ux")
+app.add_typer(ux_mutation_app, name="ux-mutation")
 
 
 @app.command()
@@ -366,6 +373,84 @@ def replay_ux_campaign(
         )
     )
     if report.verdict in {UXVerdict.INVALID, UXVerdict.BLOCKED}:
+        raise typer.Exit(code=2)
+
+
+@ux_mutation_app.command("validate")
+def validate_ux_mutation_campaign(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+) -> None:
+    """Validate the governed UX Mutation Proof plan and five-mutation catalog."""
+    loaded = UXMutationProofRunner().validate(plan_file)
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": loaded.plan.campaign_id,
+                "spec_ref": loaded.plan.spec_ref,
+                "parent_runtime_ref": loaded.plan.parent_runtime_ref,
+                "mode": loaded.plan.mode,
+                "release_effect": loaded.plan.release_effect,
+                "mutations": len(loaded.selected_mutations),
+                "human_uat_required": loaded.plan.human_uat_required,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
+
+@ux_mutation_app.command("run")
+def run_ux_mutation_campaign(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+    workspace: Path = typer.Option(
+        Path(tempfile.gettempdir()) / "test-workflow-ux-mutation",
+    ),
+    output: Path = typer.Option(Path("test-results/ux-mutation")),
+    verify_replay: bool = typer.Option(True),
+) -> None:
+    """Execute the five-mutation Baseline/Mutated/Restored SHADOW proof."""
+    report = UXMutationProofRunner().run(
+        plan_file,
+        workspace=workspace,
+        output_dir=output,
+        verify_replay=verify_replay,
+    )
+    typer.echo(report.model_dump_json(indent=2))
+    if report.verdict != ProofCampaignVerdict.PASS:
+        raise typer.Exit(code=2)
+
+
+@ux_mutation_app.command("replay")
+def replay_ux_mutation_campaign(
+    bundle_dir: Path = typer.Argument(..., exists=True, file_okay=False),
+    workspace: Path = typer.Option(
+        Path(tempfile.gettempdir()) / "test-workflow-ux-mutation-replay",
+    ),
+) -> None:
+    """Verify artifact hashes and independently replay the UX mutation proof."""
+    try:
+        report = UXMutationProofRunner().replay(
+            bundle_dir,
+            workspace=workspace,
+        )
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=2) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": report.campaign_id,
+                "verdict": report.verdict.value,
+                "release_effect": report.release_effect,
+                "human_uat_required": report.human_uat_required,
+                "semantic_digest": report.semantic_digest,
+            },
+            indent=2,
+        )
+    )
+    if report.verdict != ProofCampaignVerdict.PASS:
         raise typer.Exit(code=2)
 
 

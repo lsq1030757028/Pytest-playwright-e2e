@@ -30,6 +30,7 @@ jobs:
             "agent/todomvc-target-adapter"
             "agent/m1-0-memory-benchmark-harness"
             "agent/ux0-synthetic-user-shadow-runner"
+            "agent/ux1-todomvc-mutation-proof-runner"
             "docs/final-delivery-ledger"
             "docs/agent-os-evolution-roadmap"
             "docs/github-development-ssot"
