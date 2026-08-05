@@ -1,5 +1,5 @@
 name: Goal / Change
-about: Define an approved goal, scope, acceptance criteria, risks, and release constraints
+description: Define an approved goal, scope, acceptance criteria, risks, and release constraints
 title: "[Goal] "
 labels: []
 assignees: []
