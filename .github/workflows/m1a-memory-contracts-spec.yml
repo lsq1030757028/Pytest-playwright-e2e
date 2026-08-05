@@ -1,0 +1,76 @@
+name: m1a-memory-contracts-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/m1a-memory-contracts-namespaces-spec.md"
+      - "docs/specs/m1a-memory-contracts-namespaces.yaml"
+      - "docs/testing/m1a-memory-contracts-namespaces-test-design.md"
+      - "tests/assets/memory/m1a/**"
+      - "tests/unit/test_m1a_memory_contracts_spec.py"
+      - "docs/agent-os-roadmap.yaml"
+      - "docs/implementation-status.md"
+      - ".github/workflows/m1a-memory-contracts-spec.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/m1a-memory-contracts-namespaces-spec.md"
+      - "docs/specs/m1a-memory-contracts-namespaces.yaml"
+      - "docs/testing/m1a-memory-contracts-namespaces-test-design.md"
+      - "tests/assets/memory/m1a/**"
+      - "tests/unit/test_m1a_memory_contracts_spec.py"
+      - "docs/agent-os-roadmap.yaml"
+      - "docs/implementation-status.md"
+      - ".github/workflows/m1a-memory-contracts-spec.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: M1A Memory Contracts SPEC validation
+        run: |
+          mkdir -p test-results
+          uv run pytest tests/unit/test_m1a_memory_contracts_spec.py \
+            --junitxml=test-results/junit-m1a-memory-contracts-spec.xml
+
+      - name: Upload M1A SPEC evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1a-memory-contracts-spec-results
+          path: test-results
+          if-no-files-found: error
+          retention-days: 30
+
+  cleanup-spec-branch:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate-spec
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged M1A SPEC branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SPEC_BRANCH: spec/m1a-memory-contracts-namespaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GH_REPO}/git/ref/heads/${SPEC_BRANCH}" >/dev/null 2>&1; then
+            gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${SPEC_BRANCH}"
+            echo "deleted ${SPEC_BRANCH}"
+          else
+            echo "already absent ${SPEC_BRANCH}"
+          fi
