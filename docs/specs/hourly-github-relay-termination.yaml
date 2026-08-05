@@ -1,0 +1,80 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.0
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+status: CANDIDATE_PILOT_APPROVED
+pilot:
+  hard_invocation_cap: 6
+  renewal_requires_owner_instruction: true
+  acceptance:
+    successful_lease_runs_required: 3
+    consecutive: true
+    busy_runs_count_as_success: false
+    failed_acquisition_count_as_success: false
+    criteria:
+      - UNIQUE_MONOTONIC_RUN_TOKENS
+      - CAS_ACQUIRE_AND_RELEASE_SUCCESS
+      - FENCING_BEFORE_MUTATION
+      - START_AND_FINAL_CORRECT_AUTHORITY
+      - NO_DUPLICATE_RUN_COMMENT
+      - CHAT_FINAL_GENERATED
+      - NO_OVERLAPPING_DEVELOPMENT_OWNERSHIP
+      - COMMITS_TRACE_TO_RUN_TOKEN
+      - NO_GATE_BYPASS
+      - RUNTIME_FIELDS_TRUTHFUL_OR_UNKNOWN
+      - NO_UNRESOLVED_LEASE_OR_AUDIT_INCONSISTENCY
+  accepted_status: PILOT_ACCEPTED_STOP_REQUESTED
+  after_acceptance:
+    lease_operational_status: IDLE
+    development_writes: forbidden
+    campaign_writes: forbidden
+    ci_writes: forbidden
+    later_invocation_status: NO_ACTION_PILOT_TERMINAL
+    owner_review_required: true
+  abort_when_any:
+    - OWNER_STOP_OR_REVOCATION
+    - SAFETY_OR_AUTHORITY_BOUNDARY
+    - TWO_CONSECUTIVE_UNRECOVERABLE_LEASE_STATE_INVALID
+    - WRITE_WITHOUT_VALID_LEASE
+    - FENCING_VIOLATION
+    - DUPLICATE_RUN_IDENTITY
+    - DUPLICATE_ACTIVE_OWNERSHIP
+    - MATERIAL_CHAT_GITHUB_FINAL_DISAGREEMENT
+    - DESIGN_PR_REJECTED_OR_SUPERSEDED
+  aborted_status: PILOT_ABORTED
+program_completion:
+  current_authorized_boundary: M1_M3_STAGE
+  required_all:
+    - M1_MEMORY_GATE_PASS_CLOSED
+    - M2_MODEL_GENERALIZATION_GATE_PASS_CLOSED
+    - M3_PROJECT_ARCHITECTURE_GENERALIZATION_GATE_PASS_CLOSED
+    - GLOBAL_SAFETY_GATE_PASS
+    - STAGE_DELIVERY_TEST_AGENT_RUNTIME_BETA
+    - ALL_REQUIRED_M1_M3_GOALS_CLOSED
+    - ALL_REQUIRED_M1_M3_PRS_MERGED_OR_CLOSED_TRUTHFULLY
+    - MAIN_RELEASE_LEDGER_CLEANUP_CLOSED
+    - NO_BLOCKING_HUMAN_UAT_OR_REQUIRED_EVIDENCE
+  terminal_status: PROGRAM_COMPLETE
+  terminal_actions:
+    - RELEASE_LEASE
+    - WRITE_FINAL_DELIVERY_SUMMARY
+    - STOP_SELECTING_NEW_WORK
+  future_scope_requires_separate_owner_authority:
+    - M4_TASK_DECOMPOSITION_MULTI_AGENT
+    - M5_DURABLE_RUNTIME_CONTROL_PLANE
+    - M6_LATER_PRODUCT_WORK
+not_completion_alone:
+  - NO_ACTION
+  - WAITING_CI
+  - INFRASTRUCTURE_OUTAGE
+  - SINGLE_MODULE_CLOSED
+  - NO_CHANGE_IN_ONE_HOUR
+  - DRAFT_OR_UNMERGED_PR
+  - PR_CI_PASS_WITHOUT_MAIN_RELEASE_LEDGER_CLEANUP
+termination_evaluation_order:
+  - OWNER_STOP_OR_REVOCATION
+  - PILOT_ABORTED
+  - PILOT_ACCEPTED
+  - PROGRAM_COMPLETE
+  - ACTIVE_CAMPAIGN
+  - BLOCKED_WAITING_NO_ACTION
+terminal_states_forbid_new_scope: true
