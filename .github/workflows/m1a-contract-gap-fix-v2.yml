@@ -1,0 +1,91 @@
+name: m1a-contract-gap-fix-v2
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m1a-contract-gap-fix-v2.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  harden-contract-gaps:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m1a-runtime-contract-remediation
+          fetch-depth: 0
+
+      - name: Apply corrected governed hardening script
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow_path = Path(".github/workflows/m1a-contract-gap-fix.yml")
+          workflow = workflow_path.read_text(encoding="utf-8")
+          start_marker = "          from pathlib import Path\n"
+          end_marker = "          PY\n\n      - uses: astral-sh/setup-uv@v6"
+          start = workflow.index(start_marker)
+          end = workflow.index(end_marker, start)
+          script_lines = workflow[start:end].splitlines()
+          script = "\n".join(line[10:] for line in script_lines) + "\n"
+          broken_indent_transform = (
+              'line[10:] if line.startswith("          ") else line'
+          )
+          occurrences = script.count(broken_indent_transform)
+          if occurrences != 9:
+              raise RuntimeError(
+                  f"expected 9 governed indentation transforms, found {occurrences}"
+              )
+          script = script.replace(broken_indent_transform, "line")
+          compile(script, str(workflow_path), "exec")
+          exec(script, {"__name__": "__main__"})
+          PY
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify contract hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --extra test
+          uv run ruff check \
+            src/test_workflow/memory_contracts \
+            tests/memory_contract_fixtures.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          uv run pytest \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          rm -rf test-results/m1a-contract-gap-fix
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-contract-gap-fix \
+            --code-sha "${GITHUB_SHA}"
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-contract-gap-fix
+
+      - name: Commit verified hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f uv.lock
+          git rm .github/workflows/m1a-contract-gap-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/test_workflow/memory_contracts/models.py \
+            src/test_workflow/memory_contracts/reference.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/integration/test_memory_contract_reference.py
+          git diff --cached --check
+          git commit -m "fix(m1a): close authority atomicity and evidence gaps"
+          git push origin HEAD:agent/m1a-runtime-contract-remediation
