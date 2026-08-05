@@ -1,6 +1,6 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T13:35:00+08:00
+updated_at: 2026-08-05T13:45:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
@@ -169,7 +169,7 @@ modules:
 
   - module_id: m1.0-memory-benchmark-harness
     title: Deterministic Memory benchmark harness and replay gate
-    status: VERIFIED
+    status: MERGED
     code_paths:
       - src/test_workflow/memory_benchmark/models.py
       - src/test_workflow/memory_benchmark/catalog.py
@@ -181,24 +181,29 @@ modules:
       - docs/testing/m1.0-memory-benchmark-harness-test-design.md
       - docs/specs/m1.0-memory-benchmark-threat-model-spec.md
     test_evidence:
-      unit_command: uv run pytest tests/unit/test_memory_benchmark.py
-      unit_result: 9 PASS, 0 failed, 0 errors in PR CI 30978317793
-      integration_command: focused Integration plus CLI validate, 60-run campaign and independent replay
-      integration_result: 2 Integration PASS; 16 scenarios and 60 runs PASS; Critical False Green 0; unauthorized reads, writes and authority escalation 0; replay PASS
+      unit_result: 9 focused Unit/Contract PASS and 160 Core Unit/API PASS
+      integration_result: 2 focused Integration PASS; 16 scenarios and 60 runs PASS; independent replay PASS; Critical False Green 0
       asset_paths:
         - benchmarks/memory/m1.0
         - tests/unit/test_memory_benchmark.py
         - tests/integration/test_memory_benchmark_harness_integration.py
         - github-actions-artifact:8919174436
-    branch: agent/m1-0-memory-benchmark-harness
+        - python-distribution-artifact:8919397617
+    branch: main
     pull_request: 26
-    commit: ad10ecae59be3b4f4be50fdaa81798eeeff3eeec
-    ci_run: 30978317793
+    commit: 0038a741a130add9432f8dc2dbc626a1ba1e0a00
+    ci_run: 30978957682
     notes:
       - Goal Issue #25
       - SPEC-M1.0-MEMORY-BENCHMARK@1.0.0
       - MANDATE-AUTONOMY-M1-M3@1.0.0
+      - PR evidence runs 30978317793 and 30978729480; main quality run 30978957682
+      - release run 30978957679; cleanup run 30978957722
       - Campaign verdict PASS; value gate PASS; full M1 Memory Gate remains open
       - semantic digest sha256:001fd1b17d903983a0dae4fd6b7b3c9f492fa663a45d0073c6d1c3b761af254b
-      - artifact manifest digest sha256:8a76a5ae95e5dd1c58d6cc7fb9c5c157fe13de552d8622e708c37f9c417f985a
-      - CI artifact digest sha256:4942f98a3f40996f6c5f8b7e888954137e4f1b90267051c301db9fa8e559de5f
+      - benchmark artifact manifest digest sha256:8a76a5ae95e5dd1c58d6cc7fb9c5c157fe13de552d8622e708c37f9c417f985a
+      - PR evidence ZIP digest sha256:4942f98a3f40996f6c5f8b7e888954137e4f1b90267051c301db9fa8e559de5f
+      - Python distribution digest sha256:77691660a29856b4a67e6f22bd0cd2fad19f8ca9148abd8542fee4cbba9cbc49
+      - GHCR tags main and sha-0038a74
+      - image digest sha256:b3a8338e278674d3b9fd727382d46993085dfd81c45e4c836d335509ef779810
+      - image config sha256:ecb1ef2c5e8d6be36006f3a29a1150eb8345195937cf3b1d57736e3779e924ce

@@ -32,6 +32,7 @@ jobs:
             "docs/final-delivery-ledger"
             "docs/agent-os-evolution-roadmap"
             "docs/github-development-ssot"
+            "docs/m1-0-memory-benchmark-final-ledger"
             "spec/m1-0-memory-benchmark-threat-model"
             "spec/autonomous-execution-mandate"
             "chore/final-branch-cleanup"
