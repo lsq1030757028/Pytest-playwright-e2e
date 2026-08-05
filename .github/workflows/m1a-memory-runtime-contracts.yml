@@ -39,7 +39,9 @@ jobs:
         run: uv sync --extra test
 
       - name: Prepare evidence directory
-        run: mkdir -p test-results/m1a-memory-runtime
+        run: |
+          mkdir -p test-results/m1a-memory-runtime
+          printf 'status=started\n' > test-results/m1a-memory-runtime/run-state.txt
 
       - name: Lint M1A runtime contracts
         run: |
