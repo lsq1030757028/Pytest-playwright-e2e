@@ -1,0 +1,115 @@
+name: m1a-memory-runtime-contracts
+
+on:
+  pull_request:
+    paths:
+      - "src/test_workflow/memory_contracts/**"
+      - "tests/memory_contract_fixtures.py"
+      - "tests/unit/test_memory_contract_*.py"
+      - "tests/integration/test_memory_contract_*.py"
+      - "docs/m1a-memory-runtime-contracts.md"
+      - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
+      - ".github/workflows/m1a-memory-runtime-contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/test_workflow/memory_contracts/**"
+      - "tests/memory_contract_fixtures.py"
+      - "tests/unit/test_memory_contract_*.py"
+      - "tests/integration/test_memory_contract_*.py"
+      - "docs/m1a-memory-runtime-contracts.md"
+      - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
+      - ".github/workflows/m1a-memory-runtime-contracts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  runtime-contract-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Prepare evidence directory
+        run: mkdir -p test-results/m1a-memory-runtime
+
+      - name: Lint M1A runtime contracts
+        run: |
+          uv run ruff check \
+            src/test_workflow/memory_contracts \
+            tests/memory_contract_fixtures.py \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+
+      - name: Unit and contract validation
+        run: |
+          uv run pytest \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            --junitxml=test-results/m1a-memory-runtime/junit-unit-contract.xml
+
+      - name: Reference adapter integration
+        run: |
+          uv run pytest \
+            tests/integration/test_memory_contract_reference.py \
+            --junitxml=test-results/m1a-memory-runtime/junit-reference-integration.xml
+
+      - name: Replay and tamper integration
+        run: |
+          uv run pytest \
+            tests/integration/test_memory_contract_proof.py \
+            --junitxml=test-results/m1a-memory-runtime/junit-proof-replay.xml
+
+      - name: Run deterministic M1A contract proof
+        run: |
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-memory-runtime/proof \
+            --code-sha "${GITHUB_SHA}"
+
+      - name: Independent replay
+        run: |
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-memory-runtime/proof
+
+      - name: Upload M1A runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1a-memory-runtime-contract-results
+          path: test-results/m1a-memory-runtime
+          if-no-files-found: error
+          retention-days: 30
+
+  cleanup-implementation-branch:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: runtime-contract-proof
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged M1A runtime implementation branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          IMPLEMENTATION_BRANCH: agent/m1a-memory-runtime-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GH_REPO}/git/ref/heads/${IMPLEMENTATION_BRANCH}" \
+            >/dev/null 2>&1; then
+            gh api --method DELETE \
+              "repos/${GH_REPO}/git/refs/heads/${IMPLEMENTATION_BRANCH}"
+            echo "deleted ${IMPLEMENTATION_BRANCH}"
+          else
+            echo "already absent ${IMPLEMENTATION_BRANCH}"
+          fi
