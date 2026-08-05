@@ -28,10 +28,12 @@ jobs:
             "agent/test-agent-complete"
             "agent/todomvc-mutation-proof"
             "agent/todomvc-target-adapter"
+            "agent/m1-0-memory-benchmark-harness"
             "docs/final-delivery-ledger"
             "docs/agent-os-evolution-roadmap"
             "docs/github-development-ssot"
             "spec/m1-0-memory-benchmark-threat-model"
+            "spec/autonomous-execution-mandate"
             "chore/final-branch-cleanup"
           )
 
