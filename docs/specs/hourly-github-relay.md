@@ -6,95 +6,78 @@
 > Owner authority: repository owner instruction recorded in Issue #49  
 > Assurance: `DEV3 / UX0`  
 > Product runtime effect: none  
-> Pilot effect: hourly ChatGPT task may perform bounded GitHub development writes  
-> Auto-merge: forbidden in the pilot
+> Pilot effect: a bounded scheduled ChatGPT Run may perform governed GitHub development writes  
+> Auto-merge: forbidden in the Pilot
 
-## 1. Purpose
+## 1. Effective protocol bundle
 
-Define a durable relay control loop in which an hourly ChatGPT scheduled task wakes a temporary AI, restores the current development Campaign from GitHub, advances the authoritative work without losing project context, and leaves consistent progress in both the Chat conversation and GitHub.
+This base SPEC is interpreted together with the versioned addenda in the same PR:
 
-The system is not a collection of unrelated micro-tasks. It follows:
+- `ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1`;
+- `ADDENDUM-HOURLY-GITHUB-RELAY-CONTENTION@0.1.2`;
+- `ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1`;
+- `ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0`.
+
+When an addendum is more specific or newer than a statement in this base document, the addendum controls. The machine-readable YAML files must express the same effective rules. A contradiction between Markdown, YAML, the scheduled-task entrypoint and the operational Lease is `REPLAN_REQUIRED`; it must not be silently resolved by model preference.
+
+## 2. Purpose and unit model
+
+The Relay lets a temporary scheduled AI restore durable development state from GitHub, advance the current authorized work and leave consistent Chat and GitHub evidence.
+
+The effective unit hierarchy is:
 
 ```text
-long-lived Project
-→ long-lived Campaign
-→ short-lived Run
+Program
+→ Campaign
+→ Work Item
+→ Run / Checkpoint
 ```
 
-Each Run has global project and Campaign understanding, but performs only a bounded, semantically complete increment before a natural checkpoint.
+- **Program**: the currently authorized M1–M3 delivery scope and terminal gates.
+- **Campaign**: a coherent Goal or module spanning multiple Runs.
+- **Work Item**: a semantic objective with explicit completion criteria; it may span many Runs.
+- **Run**: one scheduled execution window that advances the active Work Item to a durable natural checkpoint.
 
-## 2. Authority and boundaries
+An hourly Run is not a roadmap phase and is not a promise to finish a Work Item in one hour. Execution is cut; context is not.
 
-Issue #49 is the durable Owner-approved Goal for this design and pilot. This Goal does not extend `MANDATE-AUTONOMY-M1-M3@1.0.0` to M4 or M5 and does not claim that a durable runtime product has been implemented.
+## 3. Authority and boundaries
 
-The pilot may:
+Issue #49 is the Owner-approved Goal for the design and Pilot. The Pilot does not extend `MANDATE-AUTONOMY-M1-M3@1.0.0` to M4, M5 or M6 and does not claim a durable runtime product.
 
-- read repository rules, status, issues, PRs, branches, commits, reviews and CI;
-- update one authoritative PR or Issue execution record;
+The Pilot may:
+
+- read repository rules, status, Goals, SPECs, issues, PRs, branches, commits, reviews, CI and artifacts;
+- maintain one authoritative Run record;
 - modify code, tests or documentation only inside an already authorized Goal, approved SPEC and current authoritative branch;
-- create commits and push to an existing authorized branch;
-- create a new branch or Draft PR only when the current repository authority explicitly requires it;
-- rerun or inspect CI when permitted by available tools.
+- commit and push to an existing authorized branch;
+- create a branch or Draft PR only when repository authority requires it;
+- inspect or rerun CI when the available tools and current preconditions justify it.
 
-The pilot must not:
+The Pilot must not:
 
 - merge a PR or enable auto-merge;
 - write directly to `main`;
 - change Oracle, Experience Oracle, Policy, Permission, production invariants or release protection;
-- touch production data, personal data, Secrets, real devices or irreversible external resources;
+- touch production or personal data, Secrets, real devices or irreversible external resources;
 - bypass failed CI, Review, Evidence, Replay, Mutation, Benchmark, Release or Human UAT gates;
-- start work outside a recorded Goal and approved SPEC;
-- create parallel competing authority for the same Campaign.
+- invent work outside a recorded Goal and approved SPEC;
+- create parallel competing authority for one Campaign.
 
-## 3. Core principles
+## 4. Durable context
 
-### 3.1 GitHub is durable state
+GitHub is the durable state and audit plane. Chat is the primary reading channel but is not authoritative state.
 
-Chat history is useful context but is not authoritative. Durable state is reconstructed from:
+Every Run restores:
 
-- `AGENTS.md` and mandatory SSOT files;
-- the current Goal, SPEC, mandate or Owner authority;
-- the authoritative Issue, PR, branch and head SHA;
-- Campaign handoff and decision records;
-- CI, Review, Commit, Artifact and release evidence;
-- previous Run records.
+1. `AGENTS.md` and all mandatory SSOT files;
+2. current roadmap, status, mandate and safety boundaries;
+3. the authoritative Goal, SPEC, Issue, PR, branch and head SHA;
+4. the active Campaign and Work Item checkpoint;
+5. decisions, rejected alternatives, failed attempts and retry preconditions;
+6. recent Run records, CI, Review, Artifact and release evidence;
+7. current Human UAT and closure truth.
 
-### 3.2 Cut execution, not context
-
-A Run must not receive only an isolated task sentence. It must restore the whole Campaign first, then choose one continuous work increment.
-
-A valid increment may include diagnosis, implementation, tests, commit, CI observation and handoff. It ends at a natural checkpoint such as:
-
-- a verified semantic capability increment;
-- a real CI result that requires a later Run;
-- an external blocker;
-- a phase or authority transition;
-- an approaching lease or execution boundary.
-
-### 3.3 Chat is the reading channel; GitHub is the audit channel
-
-Every Run must generate a final Chinese Chat response. GitHub must independently retain START and FINAL evidence, because conversation delivery and task execution are separate reliability layers.
-
-### 3.4 Fail closed
-
-Unknown authority, concurrent ownership, missing model visibility, failed gates or unavailable tools must be recorded truthfully. They must never be converted into fabricated progress.
-
-## 4. Context model
-
-### 4.1 Project context
-
-Stable repository-wide context:
-
-- product purpose and roadmap;
-- architecture and protected invariants;
-- GitHub development SSOT;
-- user communication SSOT;
-- active mandates and Owner approvals;
-- safety and release boundaries.
-
-### 4.2 Campaign context
-
-A Campaign spans multiple Runs and represents a coherent Goal or module. Recommended assets after implementation:
+Recommended Campaign assets after a separately approved implementation include:
 
 ```text
 .agent/relay/campaigns/<campaign-id>/
@@ -102,296 +85,192 @@ A Campaign spans multiple Runs and represents a coherent Goal or module. Recomme
 ├── handoff.md
 ├── decisions.yaml
 ├── failed-attempts.yaml
-├── lease.json
 └── runs/
     └── <run-token>.json
 ```
 
-Campaign state must include:
+A Work Item handoff preserves objective, status, completion criteria, current checkpoint, completed evidence, unresolved questions, candidate and rejected options, next valid action and Run history.
 
-- Goal and business objective;
-- authority references;
-- current phase and lifecycle status;
-- authoritative Issue, PR, branch and head SHA;
-- completed capabilities;
-- unresolved findings and blockers;
-- decisions and rejected alternatives;
-- failed attempts and do-not-repeat conditions;
-- next valid actions and completion criteria;
-- current Human UAT and release truth.
+## 5. Pilot schedule and termination
 
-### 4.3 Run context
+The current Pilot has eight intended hourly invocations from `2026-08-06 02:00` through `09:00` in `Asia/Shanghai`. This cap validates the control plane only; it is not the M1–M3 product budget and is not tied to roadmap-step count.
 
-A Run is one scheduled execution. It records:
+Before selecting work, evaluate:
 
-- Run Token;
-- schedule, start and end timestamps;
-- Chat or Codex surface visibility;
-- model and reasoning-mode visibility;
-- selected Campaign and authority snapshot;
-- lease state;
-- actions, files, commits, tests and CI;
-- final status and next handoff.
+```text
+OWNER_STOP_OR_REVOCATION
+→ PILOT_ABORTED
+→ PILOT_ACCEPTED
+→ PROGRAM_COMPLETE
+→ ACTIVE_WORK_ITEM_OR_CAMPAIGN
+→ BLOCKED / WAITING / NO_ACTION
+```
 
-## 5. Hourly schedule
+Three consecutive lease-acquiring Runs must satisfy all acceptance criteria before `PILOT_ACCEPTED_STOP_REQUESTED`. Later Pilot invocations then perform no Campaign, CI, branch or PR mutation.
 
-The pilot runs once per hour, beginning at the next whole hour in `Asia/Shanghai`.
-
-The schedule is fixed, not a condition watch. Every invocation must generate a final response, including `NO_ACTION`, `WAITING_CI`, `BUSY`, `BLOCKED` or `OUT_OF_MANDATE`.
+Program completion requires truthful closure of M1, M2, M3, the Global Safety Gate, `TEST_AGENT_RUNTIME_BETA`, all required Goals/PRs/main-release evidence/ledgers/cleanup and required Human UAT. M4–M6 never start automatically.
 
 ## 6. Run lifecycle
+
+The effective lifecycle is:
 
 ```text
 WAKE
 → ATTEST_RUNTIME
 → LOCATE_AUTHORITY
+→ EVALUATE_TERMINATION
 → ACQUIRE_LEASE
+→ VERIFY_HOLDER
 → WRITE_START
 → HYDRATE_CONTEXT
 → SELECT_INCREMENT
 → WORKING / VERIFYING
-→ WRITE_FINAL
-→ RELEASE_LEASE
+→ PRE_FINAL
+→ RELEASE_CAS
+→ RELEASE_ATTESTED_FINAL
 → CHAT_FINAL
 ```
 
-### 6.1 WAKE and runtime attestation
-
-The Run declares only information actually visible to the runtime:
+Runtime identity is self-reported only from actually visible information:
 
 ```text
 surface: CHAT | CODEX | UNKNOWN
-model: visible model name | UNKNOWN
+model: visible name | UNKNOWN
 reasoning_mode: visible mode | UNKNOWN
 attestation: SELF_REPORTED
 ```
 
-The task must not infer the surface from tool availability or infer the model from the prompt.
+Do not infer identity from the prompt or tool availability.
 
-### 6.2 Authority location
+## 7. Atomic Lease and fencing
 
-Read `AGENTS.md` and mandatory SSOT files. Resolve the active Campaign using repository truth, not hard-coded PR numbers. A configured preferred PR is only a starting hint.
-
-If repository truth conflicts with the handoff, first repair or report the state mismatch. Do not implement against stale authority.
-
-### 6.3 Lease and concurrency
-
-Before any development write, acquire a Campaign lease using GitHub compare-and-swap semantics.
-
-Recommended lease fields:
-
-```yaml
-token: relay-<campaign>-<sequence>-<started-at-utc>
-status: ACTIVE
-owner_surface: CHAT | CODEX | UNKNOWN
-started_at: RFC3339
-heartbeat_at: RFC3339
-expires_at: RFC3339
-target_issue: integer | null
-target_pr: integer | null
-branch: string | null
-head_sha: string | null
-```
-
-Pilot rules:
-
-- lease duration: 55 minutes;
-- heartbeat after each meaningful write or CI transition;
-- another Run with an unexpired lease exits as `BUSY` and performs no development write;
-- a stale lease may be replaced only after verifying the previous branch, PR and Run record;
-- lease acquisition failure is a safe stop, not a retry storm.
-
-Until repository lease files are implemented, the Pilot must use the unique GitHub START marker as a best-effort lock and stop when another active hourly Run is visible.
-
-### 6.4 Run Token
-
-A Run Token must be unique and durable:
+Operational state is stored only on:
 
 ```text
-relay-<campaign-id>-<monotonic-sequence>-<UTC-start-time>
+branch: ops/hourly-github-relay-control
+path: .agent/relay/leases/hourly-github-relay.json
 ```
 
-Every commit created by the Run contains:
+Before every other mutation, acquire the Lease through GitHub Contents blob-SHA compare-and-swap. Acquisition atomically increments the monotonic sequence and establishes:
 
 ```text
-[RELAY:<run-token>]
+relay-<campaign-id>-<sequence>-<UTC-start-time>
 ```
 
-Every GitHub execution comment contains:
+Effective Lease duration is **90 minutes**. Heartbeats occur after meaningful transitions and before long CI observation, extending expiry by 90 minutes.
 
-```html
-<!-- scheduled-relay:<run-token> -->
-```
-
-### 6.5 Three-stage GitHub record
-
-Use one top-level comment on the authoritative PR, or the authoritative Issue when no PR exists.
-
-#### START
-
-Write immediately after minimum authority resolution and before code or test mutation.
-
-Required fields:
-
-- `STARTED`;
-- Run Token;
-- scheduled and visible start time;
-- Chat/Codex/UNKNOWN;
-- model and reasoning mode or UNKNOWN;
-- Campaign, Issue, PR, branch and head;
-- lease result;
-- intended semantic increment.
-
-#### WORKING
-
-Update the same comment after meaningful changes:
-
-- action and rationale;
-- modified files;
-- test command and result;
-- commit SHA;
-- branch and PR;
-- CI run ID and status;
-- heartbeat timestamp.
-
-Do not create a new progress comment for the same Run.
-
-#### FINAL
-
-Update the same comment before ending. Allowed statuses:
+Before every mutation, reread the Lease and require:
 
 ```text
-SUCCESS
-WAITING_CI
-NO_ACTION
-BUSY
-BLOCKED
-FAILED
-REPLAN_REQUIRED
-MODEL_UNVERIFIED
-OUT_OF_MANDATE
+status == ACTIVE
+run_token == current Run Token
+current time < expires_at
+target_branch == current authoritative branch
 ```
 
-Required fields:
+Before every development Commit, also require actual branch Head to equal Lease `target_head_sha`. After a self-created Commit, update the Lease Head through CAS before another mutation. Unexpected movement is `REPLAN_REQUIRED`; force push, reset and overwrite are forbidden.
 
-- visible end time;
-- final runtime attestation;
-- actual actions and files;
-- commits and CI;
-- blocker or failure with the actual tool/system error;
-- next valid action;
-- lease release or expiry truth.
+An old or delayed Run stops immediately with `LOST_LEASE` when fencing no longer matches.
 
-If START cannot be written, perform no further GitHub write and report the actual error in Chat.
+## 8. Contention truth
 
-## 7. Campaign hydration and drift control
+`BUSY` is a no-write control decision, not proof that another AI is alive.
 
-Every Run reads:
+A foreign unexpired Lease is `ACTIVE_CONFIRMED` only when there is activity within 15 minutes through a heartbeat, holder Run-comment update, token-attributable branch/PR update or queued/running CI for the holder Commit. Otherwise use `LEASE_HELD_UNCONFIRMED` and state that live activity is not confirmed.
 
-1. Project rules and status;
-2. current Campaign state and handoff;
-3. authoritative Issue, PR and branch;
-4. recent Run records;
-5. current CI and Review evidence.
+After an acquisition conflict, reread once. If the Lease is already `IDLE`, retry acquisition exactly once with the new blob SHA. Never loop.
 
-The Run must preserve decision reasons, not only outcomes. Handoff must contain:
+Malformed Lease state such as ACTIVE without token, invalid expiry, Campaign/branch mismatch or expiry before heartbeat is `LEASE_STATE_INVALID`, not normal concurrency.
 
-- current objective;
-- completed and verified facts;
-- unresolved items;
-- decisions and rejected alternatives;
-- failed attempts and retry preconditions;
-- do-not-do rules;
-- next valid action and completion standard.
+## 9. Increment selection and stagnation
 
-Perform a Reorientation instead of normal implementation when any condition is true:
-
-- five Runs since the last Reorientation;
-- Campaign phase changed;
-- authoritative PR merged, closed or superseded;
-- handoff conflicts with GitHub truth;
-- a major architecture or requirement change occurred;
-- repeated failed attempts indicate plan drift.
-
-Reorientation rereads the relevant architecture and SPEC, validates the Campaign summary and rewrites the handoff without inventing new authority.
-
-## 8. Increment selection
-
-The Run has full Campaign context but chooses one bounded semantic increment.
-
-Priority order:
+Select the next bounded semantic increment in this priority order:
 
 ```text
 safety or authority conflict
 → real CI failure
 → blocking Review finding
 → missing approved behavior
-→ missing trustworthy test/evidence
+→ missing trustworthy test or evidence
 → closure and release verification
 → next approved SPEC step
 ```
 
-Do not create code churn to make an infrastructure failure look active. When CI fails before repository code executes, record `BLOCKED` or `WAITING_CI` and stop unless there is independent evidence of a repository defect.
+Do not create code churn when failure occurs before repository code executes. External waiting is not implementation failure.
 
-## 9. Mandatory Chat final response
+A lease-holding Run should reserve time for verification, FINAL, handoff and release. Up to roughly 45 minutes may be used for active work, but the earliest safe natural checkpoint controls when runtime time remaining is not visible.
 
-Every invocation must produce one user-visible Chinese final response. Silence is forbidden.
+Three consecutive lease-holding Runs without new evidence, decision, checkpoint or blocker change trigger `REORIENT`. Six trigger `REPLAN_REQUIRED`. Repeating the same failed action without a changed precondition is forbidden.
 
-The first line must be:
+## 10. GitHub Run record
 
-```text
-Run Token：<token>；状态：<status>
+Use exactly one top-level comment on the authoritative PR, or authoritative Issue when no PR exists. The marker is:
+
+```html
+<!-- scheduled-relay:<run-token> -->
 ```
 
-The response must include:
+### START
 
-1. business progress and current lifecycle state;
-2. actual work performed;
-3. modified files and Commit SHA, or explicit `无`;
-4. authoritative Issue/PR/branch and CI status;
-5. blocker or actual tool/system error;
-6. next valid action;
-7. GitHub execution record location and comment ID when available;
-8. runtime surface, model and reasoning mode, with UNKNOWN when unavailable.
+After Lease acquisition and holder verification, before code/test/CI mutation, record Run Token, visible start time, runtime attestation, Campaign, Work Item, Issue/PR/branch/head, Lease result and intended increment.
 
-The Chat response and GitHub FINAL record must agree. The task must still generate the Chat response even when it cannot verify client notification delivery.
+### WORKING / VERIFYING
 
-## 10. Idempotency and recovery
+Update the same comment after meaningful progress with actions, rationale, files, tests, Commits, CI, checkpoint and heartbeat. Never create a second comment for the same Run Token.
 
-- Search for the Run marker before creating a comment;
-- update the existing comment when the marker exists;
-- never create two Run records with the same Token;
-- verify branch head before committing;
-- do not force-update branches;
-- on partial failure, preserve created Commit/PR evidence and record the incomplete state;
-- on task disablement, no later GitHub write is permitted;
-- rollback is disabling the scheduled task and reverting or closing Pilot-only governance assets.
+### PRE_FINAL
 
-## 11. Pilot target and behavior
+While ACTIVE and normally fenced, record the final business verdict, lifecycle status, actual actions/files/Commits/tests/CI, blocker or error, next valid action and:
 
-Initial Pilot behavior:
+```text
+lease_release: PENDING
+```
 
-- inspect the current authoritative repository Campaign, currently expected near Issue #43 and PR #45 but never hard-code authority without verification;
-- continue only approved existing work;
-- no automatic merge;
-- no production or release-setting changes;
-- one run per hour;
-- Chat response every Run;
-- GitHub START and FINAL every Run when GitHub writes are available.
+PRE_FINAL must not claim release success.
 
-## 12. Acceptance and promotion
+### RELEASE_ATTESTED FINAL
 
-The Pilot is accepted only after at least three consecutive hourly Runs satisfy:
+Release the Lease to IDLE using the latest blob SHA, preserving the current Run as `last_run_token`, final status, end time and summary. The returned control Commit is authoritative release evidence.
 
-- unique Run Tokens;
-- START and FINAL records on the correct authority;
-- no duplicate comments;
-- a final Chat response generated each Run;
-- no overlapping development ownership;
-- all commits trace to Run Tokens;
-- new AI restores the Campaign without depending on prior Chat history;
-- failed gates are not bypassed;
-- Chat/Codex, model and reasoning fields are truthful or UNKNOWN;
-- disabling the task stops future writes.
+Exactly one audit-only post-release update may then change only `PENDING` to `CONFIRMED`, add the release Commit SHA and record use of post-release attestation. It grants no development ownership. If attestation cannot be proven or updated, report `RELEASE_ATTESTATION_INCOMPLETE`; the Run does not count toward Pilot acceptance.
 
-Promotion beyond Pilot requires a separate approved implementation plan for durable lease files, schemas, tests and operational monitoring. This SPEC does not authorize auto-merge or M5 completion claims.
+## 11. Commit attribution and idempotency
+
+Every development Commit created by a Run contains:
+
+```text
+[RELAY:<run-token>]
+```
+
+Search for the Run marker before creating a comment. Never duplicate a Run record or Run Token. Preserve partial Commit/PR evidence after failure. Never force-update a branch.
+
+## 12. Mandatory Chat result
+
+Every invocation returns a Chinese final response, including `BUSY`, `NO_ACTION`, `WAITING_CI`, `BLOCKED` and terminal states.
+
+First line:
+
+```text
+Run Token：<token or UNACQUIRED>；状态：<status>
+```
+
+Include business progress, lifecycle truth, Campaign and Work Item checkpoint, actual actions, files and Commits or `无`, Issue/PR/branch, CI, blocker/error, next valid action, GitHub Run-record location, runtime attestation and Lease release truth. BUSY responses also include contention class, holder token, heartbeat, expiry and activity evidence or `UNCONFIRMED`.
+
+Chat and GitHub FINAL must agree.
+
+## 13. Pilot acceptance and promotion
+
+The Pilot is accepted only after three consecutive successful lease-acquiring Runs have:
+
+- unique monotonic Run Tokens;
+- CAS acquisition, fencing, heartbeat and release success;
+- correct START and release-attested FINAL with no duplicate comments;
+- generated Chat final responses;
+- no overlapping ownership;
+- all created Commits traceable to Run Tokens;
+- Campaign restoration without private prior-chat dependency;
+- no failed gate bypass;
+- truthful runtime fields or `UNKNOWN`;
+- no unresolved Lease, lost-ownership or audit inconsistency.
+
+Promotion beyond the Pilot requires separate Owner authority and an approved implementation plan for durable Campaign/Work-Item state, schemas, tests and operational monitoring. This SPEC does not authorize auto-merge or an M5 completion claim.
