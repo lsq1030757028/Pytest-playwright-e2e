@@ -2,29 +2,25 @@
 
 > 状态源：Synthetic User / UAT Readiness 跨切面状态  
 > 最近更新：2026-08-05  
-> SPEC Goal：Issue #29  
-> Runtime Goal：Issue #31  
-> SPEC：`SPEC-UX0-SYNTHETIC-USER@1.0.0`  
-> Approval：`APPROVAL-UX0-SYNTHETIC-USER-SPEC@1.0.0`  
-> 当前阶段：`SHADOW_RUNTIME_MERGED_CLOSED`  
-> Runtime：`MERGED_CLOSED`  
+> UX0 SPEC Goal：Issue #29  
+> UX0 Runtime Goal：Issue #31  
+> UX1 Mutation SPEC Goal：Issue #34  
+> UX0 SPEC：`SPEC-UX0-SYNTHETIC-USER@1.0.0`  
+> UX0 Runtime：`UX0-SYNTHETIC-USER-SHADOW@1.0.0`  
+> UX1 SPEC：`SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0 CANDIDATE`  
+> 当前阶段：`UX1_MUTATION_PROOF_SPEC_DRAFT`  
 > Gate Mode：`SHADOW_NONBLOCKING`  
-> Human UAT：`REQUIRED`  
-> 下一模块：`TODO_MVC_UX_MUTATION_PROOF_SPEC`
+> Human UAT：`REQUIRED`
 
 ## 当前状态
 
 ```text
-UX0 SPEC：MERGED / CLOSED
-ExperienceEnvironment Contract：MERGED / VERIFIED
-SyntheticUserAgent Contract：MERGED / VERIFIED
-Experience Oracle Contract：MERGED / VERIFIED
-Canonical Persona / Journey Assets：MERGED / VERIFIED
-Playwright Shadow Runner：MERGED / CLOSED
-AI Candidate Finding Adapter：RULE_FIRST / VERIFIED / NONBLOCKING
-Independent Replay：PASS
-TodoMVC UX Mutation Proof：SPEC_NEXT
-False-positive / False-negative Benchmark：PLANNED
+UX0 Synthetic User SPEC：MERGED / CLOSED
+UX0 Playwright Shadow Runtime：MERGED / CLOSED
+UX0 Independent Replay：PASS
+UX1 TodoMVC UX Mutation Proof：SPEC_DRAFT
+UX Mutation Proof Runner：NOT_IMPLEMENTED
+UX False-positive / False-negative Benchmark：PLANNED
 Advisory PR Gate：DISABLED
 Blocking Release Gate：DISABLED
 Human UAT：REQUIRED
@@ -35,14 +31,15 @@ Human UAT：REQUIRED
 ```mermaid
 flowchart LR
     A[✅ UX0 SPEC]
-    --> B[✅ Shadow Contracts & Runner<br/>MERGED / CLOSED]
-    --> C[🟡 TodoMVC UX Mutation Proof<br/>SPEC NEXT]
-    --> D[⬜ False-positive / False-negative Benchmark]
-    --> E[⬜ Advisory Gate Candidate]
-    --> F[⬜ Blocking Policy Candidate]
+    --> B[✅ Shadow Runtime<br/>MERGED / CLOSED]
+    --> C[🟡 UX1 TodoMVC Mutation Proof<br/>SPEC DRAFT]
+    --> D[⬜ Mutation Proof Runner]
+    --> E[⬜ False-positive / False-negative Benchmark]
+    --> F[⬜ Advisory Gate Candidate]
+    --> G[⬜ Blocking Policy Candidate]
 ```
 
-## Runtime 已交付能力
+## UX0 已交付能力
 
 ```text
 Versioned Profile / Journey / ExperienceEnvironment
@@ -56,78 +53,93 @@ Versioned Profile / Journey / ExperienceEnvironment
 → Independent Replay
 ```
 
-已执行四条真实 Journey：
+已完成四条真实 Journey：
 
 - `novice-add-task`：3 / 3 Checkpoint PASS；
 - `returning-filter-persistence`：4 / 4 Checkpoint PASS；
 - `keyboard-primary`：4 / 4 Checkpoint PASS；
 - `interrupted-resume`：3 / 3 Checkpoint PASS。
 
-## 权威证据
-
-### PR 与实现证据
+最终交付事实：
 
 ```text
-Baseline Focused Runtime：Run #16 / 30991412463 — SUCCESS
-Final PR Focused Runtime：Run #25 / 30992515643 — SUCCESS
-UX0 SPEC Gate：Run #17 / 30992515724 — SUCCESS
-Final PR Full Repository CI：Run #134 / 30992515715 — SUCCESS
-Unit / Contract / Delivery / Approval：17 / 17 PASS
+Runtime Merge：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+Final Ledger Merge：8760cf785ecb4d75415b8a155739fc7d69e7546d
+Main Quality：Run #142 / 30994343760 — SUCCESS
+UX Shadow Gate：Run #33 / 30994343819 — SUCCESS
+Release：Run #13 / 30994343839 — SUCCESS
+Cleanup：Run #11 / 30994343939 — SUCCESS
 Real Playwright Journeys：4 / 4 PASS
 Journey Checkpoints：14 / 14 PASS
 Independent Replay：PASS
-Campaign Verdict：PASS
+Critical False Green：0
 ```
 
-### 主干与发布
+## UX1 当前 SPEC
+
+UX1 证明 Synthetic User 不只会让健康页面通过，还能可靠识别体验退化。
 
 ```text
-Merge Commit：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
-Main UX Shadow Gate：Run #26 / 30993021836 — SUCCESS
-Main Quality：Run #135 / 30993021825 — SUCCESS
-Release：Run #12 / 30993022051 — SUCCESS
-Cleanup：Run #10 / 30993021598 — SUCCESS
-Implementation Branch：DELETED
+Pinned Baseline PASS
+→ Apply one bounded UX Mutation
+→ Mutation KILLED with E3/E4 Oracle evidence
+→ Restore exact source bytes
+→ Restored PASS
+→ Independent Replay PASS
 ```
 
-### 产物摘要
+当前已定义五类 Mutation：
+
+1. `MISSING_FEEDBACK`；
+2. `VISIBLE_SUCCESS_STATE_LOSS`；
+3. `KEYBOARD_FOCUS_SEMANTIC_BARRIER`；
+4. `INTERRUPTED_RESUME_FAILURE`；
+5. `FILTER_ROUTE_STATE_DRIFT`。
+
+固定目标：
 
 ```text
-Main UX Artifact：8924951167
-Main UX Artifact Digest：sha256:afd95dfea4ba738494bc24e2c9b2c2247eb64cbaff1b5d07901ea20c4b758134
-Python Distribution：8924921509
-Python Distribution Digest：sha256:6ff953f33d5699d64dc832bb7bf73d63425eb5e5ae2a2f24bec9558c0996e16d
-Docker Build Record：8924949424
-Docker Build Record Digest：sha256:89e9c4b4c971f4e9a0524abdb75a2514434a3b53e72b81add762f31fe74eafc9
-Image Tags：main / sha-f687fd9
-Image Digest：sha256:a0d20ae869f323a0622e71dad8c4257fac3f32963552ea3ac9781086c3e2797d
-Image Config：sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
-Semantic Digest：sha256:1dda03adfcc3a264240b20a883daf2a230e3ce6dcd00c43dccfb84da40b885c5
-Artifact Manifest Digest：sha256:702fdce96eedbb8b81566dda08768d33434346a7edf88653594587f676c92fa4
+Repository：percy/example-todomvc
+Revision：4a2344b2207a72c680e5c559c72617498fb5b75b
+Mutable File：index.html
+Preimage SHA-256：8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+Mutation Application：EXACT_TEXT_REPLACE
+Replacement Count：1
 ```
+
+当前 SPEC 资产：
+
+- `docs/specs/ux1-todomvc-mutation-proof-spec.md`；
+- `docs/specs/ux1-todomvc-mutation-proof.yaml`；
+- `tests/assets/ux/ux1/mutation-catalog.yaml`；
+- `tests/assets/ux/ux1/negative-cases.yaml`；
+- `tests/assets/ux/ux1/target-index-preimage.html`；
+- `docs/testing/ux1-todomvc-mutation-proof-test-design.md`；
+- `tests/unit/test_ux1_todomvc_mutation_spec.py`。
+
+本阶段不修改目标、不执行 Mutation，也不实现 Runner。
 
 ## 当前边界
 
-当前能力仍是 SHADOW：
-
-- 体验 FAIL 会进入报告，但不会直接修改 Release Verdict；
-- AI Finding 只能是非阻断 Candidate；
-- Experience Oracle 对 Actor 隐藏；
-- 仅使用 Synthetic Fixture；
-- Human UAT 保持 REQUIRED；
-- Advisory / Blocking 必须继续关闭。
-
-Blocking 模式只有在 Mutation Proof、False-positive / False-negative Benchmark、Independent Replay、Rollback 和版本化 Policy Promotion 全部通过后才允许评估。
+- Runtime 仍为 `SHADOW`；
+- Release Effect 仍为 `NONBLOCKING_SHADOW`；
+- AI Finding 只能是非阻断 Candidate，不能成为 Mutation Kill Authority；
+- Experience Oracle、Mutation ID 和预期失败对 Actor 隐藏；
+- 只允许一次性本地目标 Checkout；
+- 禁止修改当前仓库、远程系统、生产数据和真实用户账号；
+- Human UAT 保持 `REQUIRED`；
+- Advisory / Blocking 保持 `DISABLED`。
 
 ## 下一节点
 
 ```text
-TodoMVC UX Mutation Proof SPEC
-→ 缺失反馈 Mutation
-→ 可见成功但状态丢失 Mutation
-→ 键盘 / 焦点 / 语义障碍 Mutation
-→ 刷新恢复失败 Mutation
-→ Baseline / Mutation / Restored 三阶段证据
+UX1 SPEC Review / Merge
+→ UX1 Mutation Proof Runner Goal
+→ Domain Models / Catalog
+→ Disposable Target Sandbox
+→ Exact Mutation Application
+→ Three-phase Runner
+→ Five-mutation Campaign
 → False-positive / False-negative Benchmark
 → 评估是否具备 ADVISORY 候选条件
 ```

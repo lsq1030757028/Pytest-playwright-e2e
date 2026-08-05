@@ -1,0 +1,475 @@
+spec_id: SPEC-UX1-TODOMVC-MUTATION-PROOF
+version: 1.0.0
+status: CANDIDATE
+goal_issue: 34
+scope_kind: CROSS_CUTTING_M1_M3_UX_ASSURANCE
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+parent_spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+parent_runtime_ref: UX0-SYNTHETIC-USER-SHADOW@1.0.0
+parent_runtime_merge: f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+parent_runtime_closure: 8760cf785ecb4d75415b8a155739fc7d69e7546d
+
+assurance:
+  spec_phase: DEV3
+  implementation_phase: DEV3
+  ux_level: UX3
+  threat_model_required: true
+  autonomous_execution_allowed_under_active_mandate: true
+  runtime_mode: SHADOW
+  release_effect: NONBLOCKING_SHADOW
+  human_uat: REQUIRED
+  advisory_gate: DISABLED
+  blocking_gate: DISABLED
+
+purpose: >-
+  Define a deterministic three-phase mutation proof that demonstrates the
+  governed Synthetic User Shadow Runtime kills bounded TodoMVC experience
+  regressions and restores the pinned target exactly without using AI opinion
+  as proof authority.
+
+scope:
+  includes:
+    - pinned_target_and_mutated_file_inventory
+    - exact_text_mutation_contract
+    - baseline_mutated_restored_phase_model
+    - exact_source_restoration
+    - experience_oracle_and_journey_mapping
+    - hidden_mutation_metadata_boundary
+    - deterministic_evidence_and_proof_verdict
+    - false_positive_false_green_and_survival_accounting
+    - artifact_manifest_and_independent_replay
+    - target_sandbox_permission_timeout_and_cleanup
+    - machine_mutation_catalog_and_negative_assets
+    - future_runner_port_boundary
+  excludes:
+    - mutation_runner_implementation_in_spec_pr
+    - arbitrary_llm_generated_mutations
+    - arbitrary_shell_or_command_payloads
+    - repository_source_mutation
+    - production_or_remote_service_mutation
+    - production_personal_data_or_secret_access
+    - real_llm_provider_evaluation
+    - mobile_mini_program_embedded_or_real_device_mutation
+    - advisory_or_blocking_promotion
+    - replacement_of_human_uat
+    - general_purpose_mutation_framework
+
+protected_invariants:
+  - runtime_mode_remains_shadow
+  - release_effect_remains_nonblocking_shadow
+  - human_uat_remains_required
+  - ai_candidate_finding_is_not_kill_evidence
+  - experience_oracle_is_not_actor_visible
+  - mutation_metadata_is_not_actor_visible
+  - repository_and_production_sources_are_not_mutated
+  - exact_restoration_required_before_pass
+  - dirty_target_cannot_pass
+  - m1a_remains_current_main_module
+  - m1_memory_gate_remains_open
+  - stage_delivery_remains_not_ready
+
+source_truth:
+  target_repository: https://github.com/percy/example-todomvc.git
+  target_revision: 4a2344b2207a72c680e5c559c72617498fb5b75b
+  target_manifest_path: targets/percy-example-todomvc/target.yaml
+  runtime_catalog_path: benchmarks/ux/ux0/catalog.yaml
+  mutation_catalog_path: tests/assets/ux/ux1/mutation-catalog.yaml
+  mutable_root: disposable_target_checkout_only
+  repository_root_mutation_forbidden: true
+  mutable_files:
+    - path: index.html
+      git_blob_sha1: 2f5a055475c5a4810bbf948f6b5acf6ed45fdc4a
+      preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+      byte_length: 1459
+  immutable_runtime_files:
+    - path: dist/bundle.js
+      git_blob_sha1: 37a8ebb2fb20d2eed0d25a2fe3fed828b9e7ce6d
+
+mutation_contract:
+  mutation_id_pattern: ^UXM-[0-9]{3}$
+  mutation_ids_ordered_and_contiguous: true
+  application_type: EXACT_TEXT_REPLACE
+  allowed_operations: [READ_FILE, EXACT_TEXT_REPLACE, HASH_FILE, RESTORE_BYTES]
+  forbidden_operations:
+    - REGEX_REPLACE
+    - ARBITRARY_COMMAND
+    - SHELL_PAYLOAD
+    - PATH_TRAVERSAL
+    - NETWORK_WRITE
+    - REPOSITORY_SOURCE_WRITE
+    - PRODUCTION_WRITE
+  required_fields:
+    - mutation_id
+    - family
+    - severity
+    - target_path
+    - preimage_sha256
+    - search_text
+    - search_sha256
+    - replacement_text
+    - replacement_sha256
+    - expected_replacement_count
+    - postimage_sha256
+    - affected_journey_refs
+    - oracle_refs
+    - expected_failed_checkpoints
+    - expected_failure_classification
+    - minimum_evidence_level
+  path_requirements:
+    relative_only: true
+    remain_inside_target_checkout: true
+    symlink_escape_forbidden: true
+  preconditions:
+    target_revision_exact_match: true
+    target_worktree_clean: true
+    target_file_preimage_hash_match: true
+    search_text_hash_match: true
+    replacement_text_hash_match: true
+    replacement_count_exactly_one: true
+  postconditions:
+    mutated_file_postimage_hash_match: true
+    only_declared_file_changed: true
+    target_process_not_started_before_mutation_verified: true
+  isolation:
+    one_mutation_per_checkout: true
+    one_target_process_per_phase: true
+    random_port_per_process: true
+    browser_context_per_journey: true
+    synthetic_fixture_only: true
+    process_timeout_required: true
+    cleanup_on_every_outcome: true
+
+mutation_families:
+  - MISSING_FEEDBACK
+  - VISIBLE_SUCCESS_STATE_LOSS
+  - KEYBOARD_FOCUS_SEMANTIC_BARRIER
+  - INTERRUPTED_RESUME_FAILURE
+  - FILTER_ROUTE_STATE_DRIFT
+
+proof_phases:
+  BASELINE:
+    target_state: CLEAN_PREIMAGE
+    expected_journey_verdict: PASS
+    evidence_level_minimum: E3
+    false_positive_if_failed: true
+  MUTATED:
+    target_state: VERIFIED_POSTIMAGE
+    expected_journey_verdict: FAIL
+    evidence_level_minimum: E3
+    kill_requires_expected_oracle_failure: true
+    ai_candidate_only_is_kill: false
+  RESTORED:
+    target_state: EXACT_PREIMAGE_RESTORED
+    expected_journey_verdict: PASS
+    evidence_level_minimum: E3
+    clean_worktree_required: true
+
+phase_pin_invariants:
+  equal_across_all_phases:
+    - target_revision
+    - journey_revision
+    - profile_revision
+    - experience_environment_revision
+    - requirement_revision
+    - design_system_revision
+    - fixture_revision
+    - browser_revision
+    - playwright_revision
+    - evaluator_revision
+    - capability_versions
+    - random_seed
+    - budgets
+  allowed_phase_difference:
+    - target_file_content_hash
+    - proof_phase
+  actor_input_hash_rule: >-
+    Actor contract and hidden-field exclusion must be identical across phases;
+    runtime-visible application observations may differ only because the target
+    behavior differs.
+
+hidden_evaluation_boundary:
+  actor_visible:
+    - user_goal
+    - synthetic_user_profile
+    - experience_environment
+    - visible_application_state
+    - allowed_capabilities
+    - budgets
+  evaluator_only:
+    - mutation_id
+    - mutation_family
+    - target_path
+    - search_text
+    - replacement_text
+    - postimage_sha256
+    - expected_failed_checkpoints
+    - expected_failure_classification
+    - phase_expected_verdict
+    - evaluator_scoring_key
+  actor_input_forbidden_fields:
+    - mutation_id
+    - mutation_family
+    - mutation_patch
+    - changed_file
+    - expected_failed_checkpoint
+    - preferred_locator_sequence
+    - expected_phase_verdict
+    - evaluator_scoring_key
+  leakage_action: INVALID_EVIDENCE
+
+state_machine:
+  initial_state: PLANNED
+  success_path:
+    - PLANNED
+    - BASELINE_RUNNING
+    - BASELINE_PROVEN
+    - MUTATION_APPLYING
+    - MUTATION_VERIFIED
+    - MUTATED_RUNNING
+    - MUTATION_KILLED
+    - RESTORING
+    - RESTORE_VERIFIED
+    - RESTORED_RUNNING
+    - CLOSED_PASS
+  failure_states:
+    - BASELINE_FAILED
+    - MUTATION_APPLY_FAILED
+    - MUTATION_SURVIVED
+    - RESTORE_FAILED
+    - REPLAY_DRIFTED
+    - INVALID_EVIDENCE
+    - BLOCKED
+  transitions:
+    PLANNED: [BASELINE_RUNNING, BLOCKED, INVALID_EVIDENCE]
+    BASELINE_RUNNING: [BASELINE_PROVEN, BASELINE_FAILED, BLOCKED, INVALID_EVIDENCE]
+    BASELINE_PROVEN: [MUTATION_APPLYING, BLOCKED, INVALID_EVIDENCE]
+    MUTATION_APPLYING: [MUTATION_VERIFIED, MUTATION_APPLY_FAILED, INVALID_EVIDENCE]
+    MUTATION_VERIFIED: [MUTATED_RUNNING, RESTORING, BLOCKED, INVALID_EVIDENCE]
+    MUTATED_RUNNING: [MUTATION_KILLED, MUTATION_SURVIVED, BLOCKED, INVALID_EVIDENCE]
+    MUTATION_KILLED: [RESTORING, INVALID_EVIDENCE]
+    RESTORING: [RESTORE_VERIFIED, RESTORE_FAILED, INVALID_EVIDENCE]
+    RESTORE_VERIFIED: [RESTORED_RUNNING, INVALID_EVIDENCE]
+    RESTORED_RUNNING: [CLOSED_PASS, RESTORE_FAILED, REPLAY_DRIFTED, INVALID_EVIDENCE]
+    CLOSED_PASS: []
+    BASELINE_FAILED: []
+    MUTATION_APPLY_FAILED: []
+    MUTATION_SURVIVED: []
+    RESTORE_FAILED: []
+    REPLAY_DRIFTED: []
+    INVALID_EVIDENCE: []
+    BLOCKED: []
+  later_phase_after_required_failure_forbidden: true
+  every_transition_requires_event: true
+
+verdict_contract:
+  per_mutation:
+    KILLED:
+      requirements:
+        - baseline_passed
+        - mutation_postimage_verified
+        - expected_oracle_checkpoint_failed
+        - deterministic_evidence_at_least_E3
+        - ai_candidate_not_used_as_authority
+        - exact_restoration_verified
+        - restored_phase_passed
+        - replay_passed
+    SURVIVED:
+      conditions:
+        - mutated_phase_passed_affected_oracle
+        - only_ai_candidate_finding_observed
+        - failure_did_not_match_expected_oracle_clause
+    INVALID:
+      conditions:
+        - baseline_failed
+        - target_revision_or_preimage_mismatch
+        - zero_or_multiple_replacements
+        - postimage_hash_mismatch
+        - mutation_metadata_leaked_to_actor
+        - undeclared_file_changed
+        - dirty_or_inexact_restoration
+        - artifact_tampered
+        - replay_drifted
+    BLOCKED:
+      conditions:
+        - required_tool_unavailable
+        - target_cannot_be_materialized
+        - process_or_browser_boundary_unavailable
+        - permission_or_timeout_boundary_prevents_valid_execution
+  campaign:
+    PASS:
+      requires:
+        - all_required_mutations_killed
+        - all_baselines_passed
+        - all_restored_phases_passed
+        - critical_false_green_zero
+        - baseline_false_positive_zero
+        - exact_restore_percent_100
+        - replay_percent_100
+    FAIL:
+      conditions:
+        - any_required_mutation_survived
+        - any_critical_false_green
+        - any_baseline_false_positive
+    INVALID:
+      conditions:
+        - any_invalid_proof
+        - any_restore_failure
+        - any_evidence_tamper
+        - any_hidden_metadata_leakage
+    BLOCKED:
+      conditions:
+        - valid_proof_cannot_execute_due_to_external_boundary
+
+proof_metrics:
+  required:
+    - total_mutations
+    - killed_mutations
+    - survived_mutations
+    - invalid_mutations
+    - blocked_mutations
+    - critical_mutation_kill_rate_percent
+    - baseline_false_positive_count
+    - critical_false_green_count
+    - exact_restore_percent
+    - replay_percent
+    - oracle_clause_coverage_percent
+    - journey_coverage_percent
+    - evidence_level_distribution
+  formulas:
+    critical_mutation_kill_rate_percent: killed_critical / total_critical * 100
+    exact_restore_percent: exact_restores / attempted_restores * 100
+    replay_percent: successful_replays / required_replays * 100
+    oracle_clause_coverage_percent: covered_required_clauses / required_clauses * 100
+  divide_by_zero_action: INVALID
+
+required_evidence:
+  per_phase:
+    - campaign_and_phase_pins
+    - actor_input_hash
+    - target_revision
+    - target_file_hashes
+    - git_status
+    - interaction_event_stream
+    - before_after_state_hashes
+    - playwright_trace
+    - screenshot
+    - semantic_accessibility_snapshot
+    - checkpoint_results
+    - deterministic_evaluation
+    - target_stdout_stderr
+  mutation_application:
+    - preimage_hash
+    - search_and_replacement_hashes
+    - observed_replacement_count
+    - postimage_hash
+    - changed_file_list
+  restoration:
+    - restored_file_hash
+    - expected_preimage_hash
+    - clean_git_status
+    - changed_file_list_empty
+  campaign:
+    - json_report
+    - markdown_report
+    - artifact_manifest
+    - replay_manifest
+    - semantic_proof_digest
+    - source_inventory
+
+artifact_and_replay_contract:
+  artifact_hash_algorithm: sha256
+  manifest_append_only_for_one_run: true
+  input_files_pinned: true
+  runtime_artifacts_pinned: true
+  mutation_metadata_evaluator_only: true
+  independent_replay_without_llm_required: true
+  replay_verifies:
+    - artifact_manifest_digest
+    - every_file_hash
+    - target_revision
+    - mutation_catalog_digest
+    - phase_pins
+    - semantic_proof_digest
+    - final_campaign_verdict
+  tamper_or_drift_action: INVALID
+
+runner_port_boundary:
+  implementation_status: NOT_IMPLEMENTED
+  ports:
+    MutationCatalogPort:
+      operations: [load_catalog, validate_catalog, resolve_mutation]
+    TargetSandboxPort:
+      operations:
+        - materialize_disposable_checkout
+        - verify_clean_preimage
+        - list_changed_files
+        - restore_exact_bytes
+        - verify_clean_restore
+    MutationApplicationPort:
+      operations:
+        - verify_search_and_replacement_hashes
+        - count_exact_matches
+        - apply_exact_text_replacement
+        - verify_postimage
+    UXPhaseExecutionPort:
+      operations:
+        - execute_baseline
+        - execute_mutated
+        - execute_restored
+    MutationAdjudicationPort:
+      operations:
+        - evaluate_expected_oracle_failure
+        - classify_killed_survived_invalid_blocked
+        - aggregate_campaign
+    MutationReplayPort:
+      operations:
+        - verify_bundle
+        - replay_semantic_proof
+  common_mutation_request_fields:
+    - mutation_ref
+    - target_revision
+    - journey_refs
+    - profile_environment_pins
+    - workspace
+    - output_directory
+    - correlation_id
+  external_side_effects:
+    - disposable_local_target_checkout_write
+    - local_process_start_stop
+    - local_browser_start_stop
+    - local_artifact_write
+  forbidden_side_effects:
+    - repository_write
+    - remote_target_write
+    - production_data_write
+    - secret_access
+
+acceptance_gates:
+  required_mutation_families: 5
+  required_mutation_ids: [UXM-001, UXM-002, UXM-003, UXM-004, UXM-005]
+  target_revision_pinned: true
+  mutated_file_preimage_sha256_pinned: true
+  unique_ordered_mutation_ids: true
+  exact_replacement_count: 1
+  baseline_false_positive_count: 0
+  critical_mutation_kill_rate_percent: 100
+  critical_false_green_count: 0
+  exact_restore_percent: 100
+  replay_percent: 100
+  hidden_metadata_leakage_count: 0
+  ai_only_kills: 0
+  undeclared_changed_files: 0
+  advisory_gate_enabled: false
+  blocking_gate_enabled: false
+  human_uat_required: true
+
+implementation_sequence:
+  - UX1_SPEC
+  - UX1_DOMAIN_MODELS_AND_CATALOG
+  - UX1_TARGET_SANDBOX_AND_EXACT_PATCH
+  - UX1_THREE_PHASE_RUNNER
+  - UX1_DETERMINISTIC_ADJUDICATION
+  - UX1_ARTIFACT_AND_REPLAY
+  - UX1_TODOMVC_MUTATION_CAMPAIGN
+  - UX1_FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK
+  - UX_ADVISORY_CANDIDATE_ASSESSMENT

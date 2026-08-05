@@ -1,0 +1,66 @@
+name: ux1-todomvc-mutation-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/ux1-todomvc-mutation-proof-spec.md"
+      - "docs/specs/ux1-todomvc-mutation-proof.yaml"
+      - "docs/testing/ux1-todomvc-mutation-proof-test-design.md"
+      - "tests/assets/ux/ux1/**"
+      - "tests/unit/test_ux1_todomvc_mutation_spec.py"
+      - "docs/ux-assurance-status.md"
+      - "docs/implementation-status.md"
+      - ".github/workflows/ux1-todomvc-mutation-spec.yml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/cleanup-implementation-branches.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/ux1-todomvc-mutation-proof-spec.md"
+      - "docs/specs/ux1-todomvc-mutation-proof.yaml"
+      - "docs/testing/ux1-todomvc-mutation-proof-test-design.md"
+      - "tests/assets/ux/ux1/**"
+      - "tests/unit/test_ux1_todomvc_mutation_spec.py"
+      - "docs/ux-assurance-status.md"
+      - "docs/implementation-status.md"
+      - ".github/workflows/ux1-todomvc-mutation-spec.yml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/cleanup-implementation-branches.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Prepare evidence directory
+        run: mkdir -p test-results
+
+      - name: Lint UX1 SPEC policy tests
+        run: uv run ruff check tests/unit/test_ux1_todomvc_mutation_spec.py
+
+      - name: Validate TodoMVC UX Mutation Proof SPEC
+        run: >-
+          uv run pytest tests/unit/test_ux1_todomvc_mutation_spec.py
+          --junitxml=test-results/junit-ux1-todomvc-mutation-spec.xml
+
+      - name: Upload UX1 SPEC evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux1-todomvc-mutation-spec-results
+          path: test-results
+          if-no-files-found: error
+          retention-days: 30

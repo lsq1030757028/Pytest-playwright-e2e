@@ -1,0 +1,140 @@
+catalog_id: UX1-TODOMVC-MUTATION-CATALOG
+version: 1.0.0
+spec_ref: SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0
+status: CANDIDATE
+
+target:
+  target_id: percy-example-todomvc
+  repository: https://github.com/percy/example-todomvc.git
+  revision: 4a2344b2207a72c680e5c559c72617498fb5b75b
+  target_manifest_path: targets/percy-example-todomvc/target.yaml
+  mutable_file:
+    path: index.html
+    git_blob_sha1: 2f5a055475c5a4810bbf948f6b5acf6ed45fdc4a
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    byte_length: 1459
+  required_unmodified_files:
+    - path: dist/bundle.js
+      git_blob_sha1: 37a8ebb2fb20d2eed0d25a2fe3fed828b9e7ce6d
+
+mutation_contract:
+  id_pattern: ^UXM-[0-9]{3}$
+  application_type: EXACT_TEXT_REPLACE
+  expected_replacement_count: 1
+  regex_allowed: false
+  arbitrary_command_allowed: false
+  path_must_be_relative: true
+  path_traversal_forbidden: true
+  one_mutation_per_checkout: true
+  exact_preimage_required: true
+  exact_postimage_required: true
+  exact_restore_required: true
+
+mutations:
+  - mutation_id: UXM-001
+    family: MISSING_FEEDBACK
+    title: Hide submitted task and remaining-count feedback
+    severity: CRITICAL
+    target_path: index.html
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    search_text: "\t\t<link rel=\"stylesheet\" href=\"node_modules/todomvc-app-css/index.css\">"
+    search_sha256: sha256:763a799d33ef4f2f654de708ccfd55322eff97f521c373f864bdfe3c7d976d71
+    replacement_text: "\t\t<link rel=\"stylesheet\" href=\"node_modules/todomvc-app-css/index.css\">\n\t\t<style>.todo-list,.todo-count{visibility:hidden!important}</style>"
+    replacement_sha256: sha256:9aa95b4fa7eb53d4d01dd0c46d1a63f989cfaf3716b5b988293f8fb00d80c869
+    expected_replacement_count: 1
+    postimage_sha256: sha256:068c6b821a716fd5ddf8fd01c4ee29b65fe2adb6750b7822ef92d5c7e508507f
+    affected_journey_refs: [novice-add-task@1.0.0]
+    oracle_refs: [UX-ORACLE-ADD-TASK@1.0.0]
+    expected_failed_checkpoints:
+      - task_is_visible_after_submit
+      - remaining_count_is_consistent
+    expected_failure_classification: DETERMINISTIC_FEEDBACK_FAILURE
+    minimum_evidence_level: E3
+    disallowed_kill_basis: AI_CANDIDATE_ONLY
+
+  - mutation_id: UXM-002
+    family: VISIBLE_SUCCESS_STATE_LOSS
+    title: Keep in-memory success visible while preventing LocalStorage persistence
+    severity: CRITICAL
+    target_path: index.html
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    search_text: "\t\t<script src=\"dist/bundle.js\"></script>"
+    search_sha256: sha256:4ab19f33b9de9fb55501b7e4447a32012cef5741210f2ff863480e9e14b2877a
+    replacement_text: "\t\t<script>\n\t\t\tconst originalSetItem = Storage.prototype.setItem;\n\t\t\tStorage.prototype.setItem = function (key, value) {\n\t\t\t\tif (key === \"todos-vanilla-es6\") return;\n\t\t\t\treturn originalSetItem.call(this, key, value);\n\t\t\t};\n\t\t</script>\n\t\t<script src=\"dist/bundle.js\"></script>"
+    replacement_sha256: sha256:31e3bbe687686b01b0f630ed57f6ff25b7415e01f69f713dcfa8c9e879591760
+    expected_replacement_count: 1
+    postimage_sha256: sha256:109ac2b7b514344205c161a77af8968e7786c7f51c7d5827938853b3195418e4
+    affected_journey_refs:
+      - interrupted-resume@1.0.0
+      - returning-filter-persistence@1.0.0
+    oracle_refs:
+      - UX-ORACLE-INTERRUPTED@1.0.0
+      - UX-ORACLE-FILTER-PERSIST@1.0.0
+    expected_failed_checkpoints:
+      - task_persists_after_reload
+      - visible_state_matches_storage
+      - state_persists_after_reload
+    expected_failure_classification: DETERMINISTIC_STATE_LOSS
+    minimum_evidence_level: E3
+    disallowed_kill_basis: AI_CANDIDATE_ONLY
+
+  - mutation_id: UXM-003
+    family: KEYBOARD_FOCUS_SEMANTIC_BARRIER
+    title: Remove the primary input semantic name
+    severity: CRITICAL
+    target_path: index.html
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    search_text: "\t\t\t\t<input class=\"new-todo\" placeholder=\"What needs to be done?\" autofocus>"
+    search_sha256: sha256:4bf1d184a4c55943d46a54becbd1020414241c1037f164b00a762f9c725b6b7a
+    replacement_text: "\t\t\t\t<input class=\"new-todo\" placeholder=\"\" autofocus>"
+    replacement_sha256: sha256:eda0b6d0fcf385943d383e3f664849c2e69a3fa377f14e73caa5df38115c321b
+    expected_replacement_count: 1
+    postimage_sha256: sha256:5a7883b1edadbffedb7780801eec3a344d9ffbe25ada3c2d97c43932173b08a3
+    affected_journey_refs: [keyboard-primary@1.0.0]
+    oracle_refs: [UX-ORACLE-KEYBOARD@1.0.0]
+    expected_failed_checkpoints: [semantic_name_is_present]
+    expected_failure_classification: DETERMINISTIC_ACCESSIBILITY_FAILURE
+    minimum_evidence_level: E3
+    disallowed_kill_basis: AI_CANDIDATE_ONLY
+
+  - mutation_id: UXM-004
+    family: INTERRUPTED_RESUME_FAILURE
+    title: Clear persisted tasks when a page interruption begins
+    severity: CRITICAL
+    target_path: index.html
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    search_text: "\t\t<script src=\"node_modules/todomvc-common/base.js\"></script>"
+    search_sha256: sha256:6f20e30f3e10f1b65fc70d33586d0ba163636662a61645ddf9632cc458d8cbbd
+    replacement_text: "\t\t<script>\n\t\t\twindow.addEventListener(\"beforeunload\", function () {\n\t\t\t\twindow.localStorage.removeItem(\"todos-vanilla-es6\");\n\t\t\t});\n\t\t</script>\n\t\t<script src=\"node_modules/todomvc-common/base.js\"></script>"
+    replacement_sha256: sha256:a8dce8ed6c4303a435fe35cdd6417fb154f9e5021092ba0fe7d902b801dc7c36
+    expected_replacement_count: 1
+    postimage_sha256: sha256:7f342331a6d5053a5e95426771fee3c39b488ef88250544f6cb44750dc4feb67
+    affected_journey_refs: [interrupted-resume@1.0.0]
+    oracle_refs: [UX-ORACLE-INTERRUPTED@1.0.0]
+    expected_failed_checkpoints:
+      - task_persists_after_reload
+      - visible_state_matches_storage
+    expected_failure_classification: DETERMINISTIC_RECOVERY_FAILURE
+    minimum_evidence_level: E3
+    disallowed_kill_basis: AI_CANDIDATE_ONLY
+
+  - mutation_id: UXM-005
+    family: FILTER_ROUTE_STATE_DRIFT
+    title: Route the Completed affordance to the Active filter
+    severity: CRITICAL
+    target_path: index.html
+    preimage_sha256: sha256:8abcb565e24e7fdbe75feb21f986e9b7550173c04122727e4e07e7ec9c4d5f70
+    search_text: "\t\t\t\t\t\t<a href=\"#/completed\">Completed</a>"
+    search_sha256: sha256:ce5b55ec7b66249146eb5eb18266814c6aa061833f6693e7cbb336afbfe42a20
+    replacement_text: "\t\t\t\t\t\t<a href=\"#/active\">Completed</a>"
+    replacement_sha256: sha256:26f6d800f63b12b4746a6fb1960aa0e9766f4f55dfc08ca045bd6ca9c62613a2
+    expected_replacement_count: 1
+    postimage_sha256: sha256:4d18d28427bc7473924fde400658849c4732cf4d3000d1536105f8e79c028128
+    affected_journey_refs: [returning-filter-persistence@1.0.0]
+    oracle_refs: [UX-ORACLE-FILTER-PERSIST@1.0.0]
+    expected_failed_checkpoints:
+      - completed_filter_is_consistent
+      - filter_route_persists_after_reload
+    expected_failure_classification: DETERMINISTIC_FILTER_ROUTE_FAILURE
+    minimum_evidence_level: E3
+    disallowed_kill_basis: AI_CANDIDATE_ONLY

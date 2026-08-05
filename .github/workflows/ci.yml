@@ -44,6 +44,11 @@ jobs:
           uv run pytest tests/unit/test_ux0_synthetic_user_spec.py
           --junitxml=test-results/junit-ux0-synthetic-user-spec.xml
 
+      - name: UX1 TodoMVC Mutation Proof SPEC validation
+        run: >-
+          uv run pytest tests/unit/test_ux1_todomvc_mutation_spec.py
+          --junitxml=test-results/junit-ux1-todomvc-mutation-spec.xml
+
       - name: M1.0 Memory SPEC validation
         run: >-
           uv run pytest tests/unit/test_m1_0_memory_spec.py
