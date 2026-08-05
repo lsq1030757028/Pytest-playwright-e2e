@@ -23,25 +23,28 @@ def test_real_todomvc_shadow_journeys_and_independent_replay(
     code_sha = os.getenv("UX_CODE_SHA", "b" * 40)
     monkeypatch.setenv("UX_CODE_SHA", code_sha)
     runner = UXShadowRunner()
-    output = tmp_path / "ux-output"
+    configured_output = os.getenv("UX_EVIDENCE_DIR")
+    output = Path(configured_output).resolve() if configured_output else tmp_path / "ux-output"
+    workspace = output.parent / "workspace" if configured_output else tmp_path / "workspace"
 
     report = runner.run(
         CAMPAIGN,
-        workspace=tmp_path / "workspace",
+        workspace=workspace,
         output_dir=output,
     )
 
-    assert report.verdict == UXVerdict.PASS
+    diagnostic = report.model_dump_json(indent=2)
+    assert report.verdict == UXVerdict.PASS, diagnostic
     assert report.mode.value == "SHADOW"
     assert report.release_effect == "NONBLOCKING_SHADOW"
     assert report.human_uat_required is True
     assert len(report.runs) == 4
-    assert all(run.evaluation.verdict == UXVerdict.PASS for run in report.runs)
-    assert all(run.metrics.task_completed for run in report.runs)
+    assert all(run.evaluation.verdict == UXVerdict.PASS for run in report.runs), diagnostic
+    assert all(run.metrics.task_completed for run in report.runs), diagnostic
     assert all(
         run.metrics.checkpoint_completed == run.metrics.checkpoint_total
         for run in report.runs
-    )
+    ), diagnostic
     assert all(not finding.blocking for run in report.runs for finding in run.findings)
 
     run_map = {run.journey_ref.split("@", maxsplit=1)[0]: run for run in report.runs}
@@ -71,6 +74,6 @@ def test_real_todomvc_shadow_journeys_and_independent_replay(
     assert any(path.endswith("trace.zip") for path in manifest.files)
     assert any(path.endswith("semantic.json") for path in manifest.files)
 
-    replayed = runner.replay(output, workspace=tmp_path / "replay-workspace")
-    assert replayed.verdict == UXVerdict.PASS
+    replayed = runner.replay(output, workspace=output.parent / "replay-workspace")
+    assert replayed.verdict == UXVerdict.PASS, replayed.model_dump_json(indent=2)
     assert replayed.semantic_digest == report.semantic_digest
