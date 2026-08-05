@@ -1,9 +1,22 @@
-addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.0
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1
 parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
 goal_issue: 49
 status: CANDIDATE_PILOT_APPROVED
 pilot:
-  hard_invocation_cap: 6
+  hard_invocation_cap: 8
+  schedule:
+    timezone: Asia/Shanghai
+    dtstart: "2026-08-06T02:00:00+08:00"
+    cadence: HOURLY
+    count: 8
+    intended_last_occurrence: "2026-08-06T09:00:00+08:00"
+  cap_scope: CONTROL_PLANE_PILOT_ONLY
+  cap_not_tied_to:
+    - ROADMAP_STEP_COUNT
+    - WORK_ITEM_COMPLETION
+    - CAMPAIGN_COMPLETION
+    - M1_M3_PRODUCT_BUDGET
+  work_item_may_span_multiple_runs: true
   renewal_requires_owner_instruction: true
   acceptance:
     successful_lease_runs_required: 3
@@ -30,6 +43,7 @@ pilot:
     ci_writes: forbidden
     later_invocation_status: NO_ACTION_PILOT_TERMINAL
     owner_review_required: true
+    product_campaign_completion_implied: false
   abort_when_any:
     - OWNER_STOP_OR_REVOCATION
     - SAFETY_OR_AUTHORITY_BOUNDARY
@@ -70,11 +84,12 @@ not_completion_alone:
   - NO_CHANGE_IN_ONE_HOUR
   - DRAFT_OR_UNMERGED_PR
   - PR_CI_PASS_WITHOUT_MAIN_RELEASE_LEDGER_CLEANUP
+  - WORK_ITEM_REQUIRES_MULTIPLE_RUNS
 termination_evaluation_order:
   - OWNER_STOP_OR_REVOCATION
   - PILOT_ABORTED
   - PILOT_ACCEPTED
   - PROGRAM_COMPLETE
-  - ACTIVE_CAMPAIGN
+  - ACTIVE_WORK_ITEM_OR_CAMPAIGN
   - BLOCKED_WAITING_NO_ACTION
 terminal_states_forbid_new_scope: true
