@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..integrity import sha256_bytes, sha256_file
 from ..targets import MaterializedTarget
-from .models import PatchEvidence, UXMutation
+from .models import PatchEvidence, RequiredUnmodifiedFile, UXMutation
 
 
 def _digest(value: str) -> str:
@@ -31,10 +31,33 @@ def changed_files(checkout: Path) -> tuple[str, ...]:
     return tuple(sorted(line[3:] for line in output.splitlines() if len(line) >= 4))
 
 
+def _resolve_declared_file(root: Path, relative: str, label: str) -> Path:
+    path = Path(relative)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"{label} must be a relative path without traversal")
+    current = root
+    for part in path.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError(f"{label} cannot contain a symbolic link")
+    resolved = current.resolve()
+    if not resolved.is_relative_to(root.resolve()):
+        raise ValueError(f"{label} escaped target application directory")
+    return resolved
+
+
+def _repository_path(checkout: Path, path: Path) -> str:
+    resolved = path.resolve()
+    if not resolved.is_relative_to(checkout.resolve()):
+        raise ValueError("declared target file escaped target checkout")
+    return resolved.relative_to(checkout.resolve()).as_posix()
+
+
 @dataclass(frozen=True)
 class AppliedPatch:
     mutation: UXMutation
     target_path: Path
+    repository_path: str
     original_bytes: bytes
     preimage_sha256: str
     postimage_sha256: str
@@ -43,28 +66,55 @@ class AppliedPatch:
 
 
 class TargetMutationSandbox:
-    def __init__(self, target: MaterializedTarget, mutation: UXMutation) -> None:
+    def __init__(
+        self,
+        target: MaterializedTarget,
+        mutation: UXMutation,
+        *,
+        expected_mutable_blob_sha1: str | None = None,
+        required_unmodified_files: tuple[RequiredUnmodifiedFile, ...] = (),
+    ) -> None:
         self.target = target
         self.mutation = mutation
         self.checkout = target.checkout_dir.resolve()
         self.app_dir = target.app_dir.resolve()
-        self.target_path = (self.app_dir / mutation.target_path).resolve()
+        self.target_path = _resolve_declared_file(
+            self.app_dir,
+            mutation.target_path,
+            "mutation target_path",
+        )
+        self.repository_path = _repository_path(self.checkout, self.target_path)
+        self.expected_mutable_blob_sha1 = expected_mutable_blob_sha1
+        self.required_unmodified_files = required_unmodified_files
         self._applied: AppliedPatch | None = None
 
     def verify_clean_preimage(self) -> None:
-        if not self.target_path.is_relative_to(self.app_dir):
-            raise ValueError("mutation path escaped target application directory")
-        if self.target_path.is_symlink():
-            raise ValueError("mutation target cannot be a symbolic link")
         if not self.target_path.is_file():
-            raise ValueError(f"mutation target file does not exist: {self.mutation.target_path}")
+            raise ValueError(
+                f"mutation target file does not exist: {self.mutation.target_path}"
+            )
         if changed_files(self.checkout):
             raise ValueError("target checkout must be clean before mutation proof")
+        if self.expected_mutable_blob_sha1 is not None:
+            observed_blob = _git(
+                self.checkout,
+                "rev-parse",
+                f"HEAD:{self.repository_path}",
+            )
+            if observed_blob != self.expected_mutable_blob_sha1:
+                raise ValueError(
+                    "mutable target Git blob mismatch: "
+                    f"expected={self.expected_mutable_blob_sha1}, "
+                    f"observed={observed_blob}"
+                )
+        self._verify_required_unmodified_files()
+
         observed = sha256_file(self.target_path)
         if observed != _digest(self.mutation.preimage_sha256):
             raise ValueError(
                 f"mutation preimage hash mismatch for {self.mutation.mutation_id}: "
-                f"expected={_digest(self.mutation.preimage_sha256)}, observed={observed}"
+                f"expected={_digest(self.mutation.preimage_sha256)}, "
+                f"observed={observed}"
             )
         original = self.target_path.read_text(encoding="utf-8")
         if sha256_bytes(self.mutation.search_text.encode("utf-8")) != _digest(
@@ -81,6 +131,29 @@ class TargetMutationSandbox:
                 f"mutation {self.mutation.mutation_id} expected exactly one match, "
                 f"observed={observed_count}"
             )
+
+    def _verify_required_unmodified_files(self) -> None:
+        for declared in self.required_unmodified_files:
+            path = _resolve_declared_file(
+                self.app_dir,
+                declared.path,
+                "required unmodified file",
+            )
+            if not path.is_file():
+                raise ValueError(
+                    f"required unmodified target file does not exist: {declared.path}"
+                )
+            repository_path = _repository_path(self.checkout, path)
+            observed_blob = _git(
+                self.checkout,
+                "rev-parse",
+                f"HEAD:{repository_path}",
+            )
+            if observed_blob != declared.git_blob_sha1:
+                raise ValueError(
+                    f"required unmodified Git blob mismatch for {declared.path}: "
+                    f"expected={declared.git_blob_sha1}, observed={observed_blob}"
+                )
 
     def apply(self) -> AppliedPatch:
         if self._applied is not None:
@@ -100,10 +173,11 @@ class TargetMutationSandbox:
             self.target_path.write_bytes(original_bytes)
             raise ValueError(
                 f"mutation postimage hash mismatch for {self.mutation.mutation_id}: "
-                f"expected={_digest(self.mutation.postimage_sha256)}, observed={postimage}"
+                f"expected={_digest(self.mutation.postimage_sha256)}, "
+                f"observed={postimage}"
             )
         observed_changes = changed_files(self.checkout)
-        if observed_changes != (self.mutation.target_path,):
+        if observed_changes != (self.repository_path,):
             self.target_path.write_bytes(original_bytes)
             raise ValueError(
                 f"mutation changed undeclared files: {observed_changes}"
@@ -111,6 +185,7 @@ class TargetMutationSandbox:
         applied = AppliedPatch(
             mutation=self.mutation,
             target_path=self.target_path,
+            repository_path=self.repository_path,
             original_bytes=original_bytes,
             preimage_sha256=sha256_bytes(original_bytes),
             postimage_sha256=postimage,
