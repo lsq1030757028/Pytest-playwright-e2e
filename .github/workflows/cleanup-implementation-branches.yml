@@ -29,6 +29,7 @@ jobs:
             "agent/todomvc-mutation-proof"
             "agent/todomvc-target-adapter"
             "agent/m1-0-memory-benchmark-harness"
+            "agent/m1a-memory-runtime-contracts"
             "agent/ux0-synthetic-user-shadow-runner"
             "agent/ux1-todomvc-mutation-proof-runner"
             "docs/final-delivery-ledger"
