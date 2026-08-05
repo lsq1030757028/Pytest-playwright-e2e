@@ -45,6 +45,8 @@ def semantic_snapshot(page: Any) -> dict[str, Any]:
 def normalized_todo_state(page: Any, adapter: TodoMVCAdapter) -> dict[str, Any]:
     """Return replay-stable user-visible state without generated IDs or transient focus."""
     state = adapter.read(page)
+    active_count = sum(not item.completed for item in state.items)
+    completed_count = sum(item.completed for item in state.items)
     storage = {
         "items": [
             {
@@ -53,8 +55,8 @@ def normalized_todo_state(page: Any, adapter: TodoMVCAdapter) -> dict[str, Any]:
             }
             for item in state.items
         ],
-        "active_count": state.active_count,
-        "completed_count": state.completed_count,
+        "active_count": active_count,
+        "completed_count": completed_count,
     }
     return {
         "storage": storage,
