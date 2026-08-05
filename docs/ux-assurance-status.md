@@ -9,7 +9,8 @@
 > UX0 SPEC：`SPEC-UX0-SYNTHETIC-USER@1.0.0`  
 > UX0 Runtime：`UX0-SYNTHETIC-USER-SHADOW@1.0.0`  
 > UX1 SPEC：`SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0 MERGED`  
-> 当前阶段：`UX1_MUTATION_PROOF_IMPLEMENTATION_VERIFIED`  
+> 当前阶段：`UX1_MUTATION_PROOF_MERGED_CLOSED`  
+> 下一阶段：`UX2_FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK_SPEC`  
 > Gate Mode：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`
 
@@ -19,10 +20,11 @@
 UX0 Synthetic User SPEC：MERGED / CLOSED
 UX0 Playwright Shadow Runtime：MERGED / CLOSED
 UX0 Independent Replay：PASS
-UX1 TodoMVC UX Mutation Proof：SPEC MERGED / CLOSED
-UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
+UX1 TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
+UX1 Mutation Proof Runner：MERGED / CLOSED
 Five-mutation Campaign：5 / 5 KILLED
 Independent Replay：PASS / 100%
+Exact Restore：100%
 Critical False Green：0
 UX False-positive / False-negative Benchmark：NEXT / SPEC
 Advisory PR Gate：DISABLED
@@ -30,11 +32,11 @@ Blocking Release Gate：DISABLED
 Human UAT：REQUIRED
 ```
 
-历史 SPEC 阶段记录（非当前状态）：
+历史阶段记录（非当前状态）：
 
 ```text
-TodoMVC UX Mutation Proof：SPEC_DRAFT
 UX Mutation Proof Runner：NOT_IMPLEMENTED
+UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
 ```
 
 ## 当前执行链
@@ -44,7 +46,7 @@ flowchart LR
     A[✅ UX0 SPEC]
     --> B[✅ Shadow Runtime<br/>MERGED / CLOSED]
     --> C[✅ UX1 Mutation SPEC<br/>MERGED / CLOSED]
-    --> D[✅ Mutation Proof Runner<br/>VERIFIED / MERGE_PENDING]
+    --> D[✅ UX1 Mutation Proof Runner<br/>MERGED / CLOSED]
     --> E[🟡 False-positive / False-negative Benchmark<br/>NEXT / SPEC]
     --> F[⬜ Advisory Gate Candidate]
     --> G[⬜ Blocking Policy Candidate]
@@ -79,7 +81,7 @@ Independent Replay：PASS
 Critical False Green：0
 ```
 
-## UX1 已验证实现
+## UX1 最终交付事实
 
 UX1 证明 Synthetic User 不只会让健康页面通过，还能可靠识别体验退化。
 
@@ -111,25 +113,39 @@ Mutation Application：EXACT_TEXT_REPLACE
 Replacement Count：1
 ```
 
-权威 PR 证据：
+权威交付证据：
 
 ```text
-Implementation PR：#37
-Focused UX1 Gate：Run #10 / 31001744148 — SUCCESS
-Historical UX0 Gate：Run #53 / 31001743622 — SUCCESS
-Focused Unit / Contract：7 / 7 PASS
+Goal：Issue #36 — CLOSED
+Implementation PR：#37 — MERGED
+Implementation Merge：2b5bc958e5c302cef8649e28ff13d8ebafa3afcc
+Final PR UX1 Gate：Run #16 / 31002474167 — SUCCESS
+Final PR Full Quality：Run #173 / 31002474184 — SUCCESS
+Main UX1 Gate：Run #17 / 31002717005 — SUCCESS
+Main Full Quality：Run #174 / 31002716954 — SUCCESS
+Release：Run #14 / 31002716980 — SUCCESS
+Cleanup：Run #12 / 31002717017 — SUCCESS
+Implementation Branch：DELETED
+Focused Unit / Contract / Delivery：10 / 10 PASS
 Real Mutation Campaign：5 / 5 KILLED
 Baseline False Positive：0
 Critical False Green：0
 Exact Restore：100%
 Independent Replay：100%
+Oracle / Journey Coverage：100% / 100%
 Hidden Metadata Leakage：0
 Undeclared Changed Files：0
 AI-only Kills：0
-Artifact：8928601100
-Artifact Digest：sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
-Semantic Digest：sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
-Manifest Digest：sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
+Main UX Artifact：8929019254
+Main UX Artifact Digest：sha256:c7e5f7e9ce4e2190c7e043765b3176fcc459782439f58c472954de417396c1fa
+Main Semantic Digest：sha256:0ec56a6ca9f0b5f2c9b4564b5bc173df7f0621e32a15d1d84fa8711dad1c6322
+Main Manifest Digest：sha256:34c8915bccb010a814b7783f43db25bcaf320c8a4634497e3eb70a4417622fed
+Python Distribution：8928961328
+Python Digest：sha256:bd18044e8fa442c54afb0e1d4e90d25e0caec81fc07b7b1be6b7152a2880d086
+Docker Build Record：8928992374
+Docker Digest：sha256:5e857db4bfe699961cb3d6934926e8587728763d5422c3f5c93ccb3dfb0f4761
+Image Digest：sha256:e119014c9810d745ff989bf5b46f5aa19f71acf094e854130c968a26d2aa10ac
+Image Config：sha256:7f6d6488d9562074a53ac0acd0de8768d93764b2c2bf1757a400ea0d2023287e
 ```
 
 ## 当前边界
@@ -146,9 +162,8 @@ Manifest Digest：sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bb
 ## 下一节点
 
 ```text
-UX1 Implementation PR Final CI / Review / Merge
-→ Main / Release / Cleanup Verification
-→ UX1 Closure Ledger
+UX1 Closure Ledger Merge
 → False-positive / False-negative Benchmark SPEC
+→ Benchmark Runtime / Replay
 → 评估是否具备 ADVISORY 候选条件
 ```
