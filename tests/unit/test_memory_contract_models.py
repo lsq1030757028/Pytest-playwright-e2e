@@ -175,6 +175,7 @@ def test_working_memory_requires_ttl_even_with_campaign_close() -> None:
             created_at=FIXED_NOW,
         )
 
+
 @pytest.mark.parametrize(
     "delegation_fields",
     (
