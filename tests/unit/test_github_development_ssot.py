@@ -24,6 +24,7 @@ def test_repository_has_one_active_github_development_ssot() -> None:
         "AGENTS.md",
         "docs/github-development-ssot.md",
         "docs/github-development-ssot.yaml",
+        "docs/testing/github-development-ssot-test-design.md",
         ".github/pull_request_template.md",
         ".github/ISSUE_TEMPLATE/goal.yml",
     }
@@ -88,6 +89,22 @@ def test_lifecycle_requires_main_and_release_verification_before_close() -> None
     assert release["release_failure_prevents_closed_status"] is True
     assert "main_and_release_verified" in done
     assert "temporary_state_cleaned" in done
+
+
+def test_github_templates_and_ci_expose_the_ssot_process() -> None:
+    issue_form = yaml.safe_load(
+        (ROOT / ".github/ISSUE_TEMPLATE/goal.yml").read_text(encoding="utf-8")
+    )
+    pr_template = (ROOT / ".github/pull_request_template.md").read_text(encoding="utf-8")
+    ci_workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert issue_form["description"]
+    assert any(item.get("id") == "risk_signals" for item in issue_form["body"])
+    assert "Test and evidence selection" in pr_template
+    assert "Intentionally skipped" in pr_template
+    assert "Auto-merge eligibility" in pr_template
+    assert "Development SSOT validation" in ci_workflow
+    assert "tests/unit/test_github_development_ssot.py" in ci_workflow
 
 
 def test_ssot_changes_cannot_relax_governance_silently() -> None:
