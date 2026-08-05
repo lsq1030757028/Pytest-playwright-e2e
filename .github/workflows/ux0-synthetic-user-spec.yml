@@ -5,12 +5,14 @@ on:
     paths:
       - "docs/specs/ux0-synthetic-user-agent-spec.md"
       - "docs/specs/ux0-synthetic-user-agent.yaml"
+      - "docs/specs/ux0-synthetic-user-agent-approval.yaml"
       - "docs/ux-assurance-ssot.md"
       - "docs/ux-assurance-ssot.yaml"
       - "docs/ux-assurance-status.md"
       - "docs/testing/ux0-synthetic-user-agent-test-design.md"
       - "tests/assets/ux/ux0/**"
       - "tests/unit/test_ux0_synthetic_user_spec.py"
+      - "tests/unit/test_ux0_synthetic_user_approval.py"
       - "AGENTS.md"
       - ".github/ISSUE_TEMPLATE/goal.yml"
       - ".github/pull_request_template.md"
@@ -20,12 +22,14 @@ on:
     paths:
       - "docs/specs/ux0-synthetic-user-agent-spec.md"
       - "docs/specs/ux0-synthetic-user-agent.yaml"
+      - "docs/specs/ux0-synthetic-user-agent-approval.yaml"
       - "docs/ux-assurance-ssot.md"
       - "docs/ux-assurance-ssot.yaml"
       - "docs/ux-assurance-status.md"
       - "docs/testing/ux0-synthetic-user-agent-test-design.md"
       - "tests/assets/ux/ux0/**"
       - "tests/unit/test_ux0_synthetic_user_spec.py"
+      - "tests/unit/test_ux0_synthetic_user_approval.py"
       - "AGENTS.md"
       - ".github/ISSUE_TEMPLATE/goal.yml"
       - ".github/pull_request_template.md"
@@ -49,13 +53,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      - name: Lint UX0 policy test
-        run: uv run ruff check tests/unit/test_ux0_synthetic_user_spec.py
+      - name: Lint UX0 policy tests
+        run: >-
+          uv run ruff check
+          tests/unit/test_ux0_synthetic_user_spec.py
+          tests/unit/test_ux0_synthetic_user_approval.py
 
-      - name: Validate UX0 Synthetic User contracts
+      - name: Validate UX0 Synthetic User contracts and approval
         run: |
           mkdir -p test-results
-          uv run pytest tests/unit/test_ux0_synthetic_user_spec.py \
+          uv run pytest \
+            tests/unit/test_ux0_synthetic_user_spec.py \
+            tests/unit/test_ux0_synthetic_user_approval.py \
             --junitxml=test-results/junit-ux0-synthetic-user-spec.xml
 
       - name: Upload UX0 SPEC evidence
