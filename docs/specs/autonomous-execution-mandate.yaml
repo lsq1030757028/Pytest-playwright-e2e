@@ -1,6 +1,7 @@
 mandate_id: MANDATE-AUTONOMY-M1-M3
 version: 1.0.0
 status: ACTIVE
+activation_condition: merged_to_main
 effective_at: 2026-08-05T12:41:00+08:00
 authority:
   type: repository_owner_instruction
