@@ -41,24 +41,15 @@ jobs:
                   for line in value.splitlines()
               ) + "\n"
 
-          def patch_once(old: str, new: str, label: str) -> None:
+          def replace_region(start_token: str, end_token: str, replacement: str) -> None:
               global program
-              old = normalized(old)
-              new = normalized(new)
-              count = program.count(old)
-              if count != 1:
-                  raise RuntimeError(f'{label} block count={count}')
-              program = program.replace(old, new, 1)
+              region_start = program.index(start_token)
+              region_end = program.index(end_token, region_start)
+              program = program[:region_start] + normalized(replacement) + program[region_end:]
 
-          patch_once(
-              '''if "benchmark_refs_resolved" not in reference:
-                  reference = replace_once(
-                      reference,
-                      old_promotion_call,
-                      new_promotion_call,
-                      "reference promotion resolution",
-                  )
-              ''',
+          replace_region(
+              'if "benchmark_refs_resolved" not in reference:\n',
+              '\nold_acl =',
               '''if "benchmark_refs_resolved" not in reference:
                   promotion_start = reference.index(
                       "        decision = validate_promotion(",
@@ -75,12 +66,10 @@ jobs:
                       + reference[promotion_end:]
                   )
               ''',
-              'promotion',
           )
-          patch_once(
-              '''if 'event_type="ACL_CHANGED"' not in reference:
-                  reference = replace_once(reference, old_acl, new_acl, "ACL audit and self-grant")
-              ''',
+          replace_region(
+              'if \'event_type="ACL_CHANGED"\' not in reference:\n',
+              '\nif "def _record_namespace_audit("',
               '''if 'event_type="ACL_CHANGED"' not in reference:
                   acl_start = reference.index(
                       "        self._acl.setdefault(entry.namespace.canonical, []).append(entry)",
@@ -89,7 +78,6 @@ jobs:
                   acl_end = reference.index("\n\n    def list_effective_acl", acl_start)
                   reference = reference[:acl_start] + new_acl + "\\n" + reference[acl_end:]
               ''',
-              'acl',
           )
           exec(compile(program, 'm1a-runtime-hardening-program', 'exec'), {'__name__': '__main__'})
           Path('.github/workflows/m1a-runtime-hardening-fix.yml').unlink()
