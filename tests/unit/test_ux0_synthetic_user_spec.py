@@ -176,7 +176,8 @@ def test_ux_levels_and_verdicts_are_risk_adaptive_not_mechanical() -> None:
     levels = spec["ux_assurance_levels"]
     verdict = spec["verdict_contract"]
 
-    assert set(levels) == {"UX0", "UX1", "UX2", "UX3"}
+    assert {"UX0", "UX1", "UX2", "UX3"} <= set(levels)
+    assert levels["escalation_only_without_explicit_evidence"] is True
     assert levels["UX0"]["journey_required"] is False
     assert levels["UX1"]["minimum_matrix"]["journeys"] == 1
     assert levels["UX2"]["minimum_matrix"]["recovery_paths"] == 1
