@@ -215,6 +215,15 @@ def test_spec_aligns_with_active_roadmap_and_development_ssot() -> None:
     assert "memory_write_share_promotion_forget" in (
         development_ssot["assurance_profiles"]["DEV3"]["default_for"]
     )
-    assert "memory_prompt_procedure_skill_or_capability_promotion" in (
-        development_ssot["agent_autonomy"]["explicit_human_approval_required_for"]
+    assert development_ssot["active_autonomous_mandate"]["id"] == (
+        "MANDATE-AUTONOMY-M1-M3"
+    )
+    assert development_ssot["assurance_profiles"]["DEV3"]["authorization_mode"] == (
+        "standing_mandate_or_explicit_human_approval"
+    )
+    assert "active_mandate_covers_goal_profile_and_spec_when_dev3" in (
+        development_ssot["agent_autonomy"]["auto_merge_conditions"]
+    )
+    assert "candidate_asset_direct_production_promotion" in (
+        development_ssot["agent_autonomy"]["prohibited"]
     )
