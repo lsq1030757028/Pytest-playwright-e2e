@@ -101,3 +101,64 @@ A BUSY Run must:
 - generate the mandatory Chat final response;
 - optionally record a lightweight BUSY Run on Goal #49, without modifying the active Campaign PR;
 - report the active Run Token, lease expiry and last heartbeat when visible.
+
+## 9. Fencing checks before every mutation
+
+Atomic acquisition prevents two new Runs from holding the same lease, but it does not automatically stop an old delayed Run after expiry or takeover. Therefore the lease Run Token is also a fencing token.
+
+Immediately before every mutating GitHub action, the Run must reread the current lease and verify:
+
+```text
+status == ACTIVE
+run_token == current Run Token
+current time < expires_at
+target branch == recorded target branch
+```
+
+Mutating actions include:
+
+- source, test, documentation or Campaign-state writes;
+- Commit creation or branch-ref movement;
+- PR metadata or execution-comment updates;
+- CI reruns;
+- lease heartbeat and release.
+
+If the token, state or expiry no longer matches, the Run has lost ownership. It must stop further mutation and finish as `BUSY`, `REPLAN_REQUIRED` or `BLOCKED`, with `LOST_LEASE` recorded as the cause.
+
+An old Run must never continue merely because it remembers acquiring the lease earlier.
+
+## 10. Branch-head compare-and-swap
+
+The lease coordinates Relay Agents, but a human or another authorized non-Relay actor may still change the Campaign branch.
+
+Before every development Commit, the Run must verify that the actual branch head equals the lease field `target_head_sha`.
+
+- After a successful self-created Commit, update `target_head_sha` in the lease before the next mutation.
+- Unexpected head movement causes `REPLAN_REQUIRED`.
+- Do not force-push, reset, overwrite, or silently replay a stale patch.
+
+This protects both Agent-Agent concurrency and Agent-human concurrency.
+
+## 11. Sequence and Run Token
+
+The lease record owns a monotonic `sequence` field. Acquisition increments it atomically in the same compare-and-swap update that changes the lease to `ACTIVE`.
+
+The Run Token is then derived from the acquired sequence:
+
+```text
+relay-<campaign-id>-<sequence>-<UTC-start-time>
+```
+
+A Run must not invent a sequence before successful acquisition. This prevents two contenders from publishing the same logical Run identity.
+
+## 12. BUSY audit exception
+
+A contender that never acquires the lease does not write START or FINAL to the active Campaign PR, because that would create a second apparent owner.
+
+Its mandatory evidence is:
+
+- a Chinese Chat final response with status `BUSY`;
+- the observed active Run Token, target, heartbeat and expiry;
+- no development, CI or Campaign-comment write.
+
+A lightweight contention record on Goal #49 is optional and must never modify the active Run's record.
