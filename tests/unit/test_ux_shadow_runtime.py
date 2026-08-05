@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from test_workflow.serialization import load_document
 from test_workflow.ux.catalog import load_ux_campaign
 from test_workflow.ux.evaluator import (
     RuleBasedUXCritic,
@@ -24,7 +23,6 @@ from test_workflow.ux.models import (
 
 ROOT = Path(__file__).resolve().parents[2]
 CAMPAIGN = ROOT / "benchmarks/ux/ux0/campaign.yaml"
-CATALOG = ROOT / "benchmarks/ux/ux0/catalog.yaml"
 CODE_SHA = "a" * 40
 
 
@@ -126,8 +124,8 @@ def test_sensitive_persona_and_production_account_are_rejected() -> None:
 def test_catalog_rejects_unknown_persona_and_environment_refs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("UX_CODE_SHA", CODE_SHA)
-    payload = load_document(CATALOG)
+    loaded = loaded_campaign(monkeypatch)
+    payload = loaded.catalog.model_dump(mode="json")
     payload["environments"][0]["persona_revision"] = "missing@1.0.0"
     with pytest.raises(ValidationError, match="unknown persona"):
         UXCatalog.model_validate(payload)
