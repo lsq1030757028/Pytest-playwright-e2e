@@ -37,6 +37,7 @@ jobs:
             "docs/m1-0-memory-benchmark-final-ledger"
             "docs/ux0-shadow-final-ledger"
             "docs/ux1-mutation-final-ledger"
+            "policy/user-communication-ssot"
             "spec/m1-0-memory-benchmark-threat-model"
             "spec/autonomous-execution-mandate"
             "spec/ux0-synthetic-user-agent"
