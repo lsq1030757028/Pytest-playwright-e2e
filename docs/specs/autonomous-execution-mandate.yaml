@@ -1,0 +1,93 @@
+mandate_id: MANDATE-AUTONOMY-M1-M3
+version: 1.0.0
+status: ACTIVE
+effective_at: 2026-08-05T12:41:00+08:00
+authority:
+  type: repository_owner_instruction
+  issue: 23
+  statement: 进入自治吧，按规范运行，不需要人类批准。
+
+scope:
+  milestones: [M1, M2, M3]
+  profiles: [DEV0, DEV1, DEV2, DEV3]
+  phases:
+    - goal
+    - spec
+    - implementation
+    - evidence
+    - review
+    - merge
+    - release
+    - ledger
+    - cleanup
+  includes:
+    - M1.0_memory_benchmark_harness
+    - M1_memory_and_controlled_evolution
+    - M2_cross_model_generalization
+    - M3_project_and_architecture_generalization
+
+preconditions:
+  approved_goal_required: true
+  approved_spec_required_when_applicable: true
+  mandate_reference_in_dev3_pr_required: true
+  profile_specific_evidence_required: true
+  threat_model_required_for_dev3: true
+  rollback_or_recovery_required: true
+  required_checks_green: true
+  unresolved_review_threads: 0
+  blockers: 0
+  critical_false_green: 0
+  post_merge_main_release_cleanup_required: true
+
+permissions:
+  may:
+    - create_goal_issue
+    - create_change_event
+    - create_spec_branch_and_pr
+    - create_implementation_branch_and_pr
+    - select_and_escalate_assurance_profile
+    - implement_within_approved_goal_and_spec
+    - create_and_manage_test_assets
+    - repair_evidence_backed_failures
+    - review_and_merge_in_scope_dev0_to_dev3
+    - publish_packages_and_ghcr_images
+    - verify_main_release_and_cleanup
+    - update_status_and_ledgers
+  may_not:
+    - direct_push_to_main
+    - lower_oracle_policy_permission_or_assurance_floor_for_progress
+    - bypass_failed_evidence_or_review
+    - promote_candidate_memory_or_skill_without_governed_gate
+
+out_of_mandate:
+  - milestone_outside_M1_M2_M3_without_scope_change
+  - real_production_data_write
+  - personal_data_exposure
+  - secret_acquisition_or_disclosure
+  - destructive_production_migration
+  - irreversible_external_write
+  - material_irreversible_spend
+  - uncontrolled_external_resource_creation
+  - dangerous_real_device_action_without_bounded_device_spec
+  - higher_authority_or_oracle_conflict
+  - dev_e_production_action
+
+out_of_mandate_action: BLOCKED
+scope_expansion_action: REPLAN_REQUIRED
+higher_authority_conflict_action: OUT_OF_MANDATE
+
+revocation:
+  supported: true
+  requires_versioned_change_event: true
+  prevents_new_autonomous_merges: true
+  preserves_historical_evidence: true
+  default_expiry: none
+
+invariants:
+  unauthorized_oracle_change: 0
+  unauthorized_policy_change: 0
+  unauthorized_permission_change: 0
+  out_of_mandate_action_executed: 0
+  autonomous_dev3_without_active_mandate: 0
+  critical_false_green: 0
+  hidden_failed_evidence: 0
