@@ -1,0 +1,35 @@
+name: Apply M1A hardening patch
+
+on:
+  push:
+    branches:
+      - agent/m1a-memory-runtime-contracts
+    paths:
+      - ".github/workflows/apply-m1a-hardening.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply governed hardening patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tools/m1a-hardening/chunk-*.b64 | base64 --decode > /tmp/m1a-hardening.patch
+          git apply --check /tmp/m1a-hardening.patch
+          git apply /tmp/m1a-hardening.patch
+          git rm -r tools/m1a-hardening
+          git rm tools/m1a-bootstrap/part-00.b64
+          git rm .github/workflows/apply-m1a-hardening.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Harden M1A runtime contract enforcement"
+          git push origin HEAD:agent/m1a-memory-runtime-contracts
