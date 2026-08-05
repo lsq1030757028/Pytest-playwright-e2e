@@ -55,7 +55,7 @@
 ## 5. Exit criteria
 
 - Focused tests 全绿；
-- Runtime Proof 10/10 PASS；
+- Runtime Proof 15/15 PASS；
 - Independent Replay PASS；
 - Tamper rejection PASS；
 - Unauthorized Namespace/Promotion 0；
