@@ -81,6 +81,10 @@ verification:
     repository_cleanup_run_id: 31018460929
     result: SUCCESS
     implementation_branch_deleted: true
+  authoritative_delivery_probe:
+    run_id: 31019141491
+    result: SUCCESS
+    verified_merge_main_ci_release_and_branch_cleanup: true
   review_threads: 0
   focused_tests:
     total: 29
