@@ -34,7 +34,8 @@ def _expand_environment(value: Any) -> Any:
             try:
                 return os.environ[variable]
             except KeyError as exc:
-                raise ValueError(f"required benchmark environment variable is unset: {variable}") from exc
+                message = f"required benchmark environment variable is unset: {variable}"
+                raise ValueError(message) from exc
     return value
 
 
