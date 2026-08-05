@@ -104,6 +104,6 @@ def test_mandate_does_not_claim_m1_gate_completion() -> None:
 
     assert "M1.0 SPEC" in status
     assert "M1.0 Benchmark Harness" in status
-    assert "IMPLEMENTED / EVIDENCE_PENDING" in status
+    assert "VERIFIED / READY_TO_MERGE" in status
     assert "M1 Memory Gate：0 / 1" in status
     assert "Stage Delivery：NOT_READY" in status
