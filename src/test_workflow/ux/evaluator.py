@@ -6,16 +6,16 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from .models import (
-    AICandidateFinding,
     ActorJourneyInput,
+    AICandidateFinding,
     EvidenceLevel,
     ExperienceEnvironment,
     FindingStatus,
     SyntheticUserProfile,
     UXEvaluation,
+    UXJourney,
     UXMetrics,
     UXVerdict,
-    UXJourney,
 )
 
 
