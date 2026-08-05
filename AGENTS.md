@@ -8,11 +8,12 @@ Before planning or editing, read:
 
 1. `docs/github-development-ssot.md` — normative GitHub development lifecycle.
 2. `docs/github-development-ssot.yaml` — machine-readable policy invariants.
-3. `docs/implementation-status.md` — current project state and next milestone.
-4. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
-5. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
+3. `docs/specs/autonomous-execution-mandate.yaml` — active standing authorization.
+4. `docs/implementation-status.md` — current project state and next milestone.
+5. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
+6. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
 
-A chat instruction may define the current Goal, but it does not replace repository state, approved requirements, Oracle, Policy, Permission, or this SSOT.
+A chat instruction may define or change a Goal, but durable authority must be recorded through a repository Goal, Change Event, SPEC, mandate, or approved policy asset.
 
 ## 2. Repository operating model
 
@@ -36,7 +37,34 @@ Goal / Issue
 
 Never push directly to `main`.
 
-## 3. SPEC-first module rule
+## 3. Standing autonomous mandate
+
+`MANDATE-AUTONOMY-M1-M3@1.0.0` authorizes the Agent to execute the approved M1–M3 roadmap without requesting repeated per-module human approval.
+
+Within a covered Goal and approved SPEC, the Agent may autonomously:
+
+- create Goal, Change Event, SPEC, implementation, test, benchmark, and release assets;
+- select or escalate `DEV0`—`DEV3`;
+- repair evidence-backed failures;
+- review and merge eligible PRs after all gates pass;
+- publish packages and GHCR images;
+- verify `main`, release, ledger, and branch cleanup.
+
+Autonomy changes authorization cadence, not safety requirements. The Agent must still stop with `BLOCKED`, `REPLAN_REQUIRED`, or `OUT_OF_MANDATE` for:
+
+- work outside M1–M3 without a recorded scope extension;
+- higher-authority, Oracle, production-invariant, Policy, or Permission conflict;
+- real production data or personal data;
+- real Secret acquisition or disclosure;
+- destructive production migration or irreversible external write;
+- material irreversible cost or uncontrolled resource creation;
+- dangerous real-device or hardware-fleet action without an approved bounded Device SPEC and recovery path;
+- failed CI, evidence, replay, mutation, benchmark, rollback, or review gates;
+- `DEV-E` production action.
+
+The mandate is versioned and revocable. A revoked or non-covering mandate cannot authorize a new autonomous DEV3 merge.
+
+## 4. SPEC-first module rule
 
 Every nontrivial module or independently deliverable behavior change starts with an explicit SPEC before runtime implementation begins.
 
@@ -64,71 +92,67 @@ Goal
 Rules:
 
 - Runtime implementation must not begin before the relevant SPEC is approved and merged.
-- The SPEC and implementation must use separate PR phases unless the change is a small `DEV0` or narrowly scoped `DEV1` change whose complete inline SPEC remains independently reviewable.
-- A `DEV0` change may use a lightweight inline SPEC in the Goal or PR when there is no runtime or governance effect.
-- `DEV-E` may use an emergency SPEC containing the minimum safe scope, risk, evidence, rollout and rollback plan; full SPEC and evidence backfill remain mandatory with a deadline.
-- Requirement changes after SPEC merge create a versioned Change Event and impact assessment. Do not silently edit the meaning of an approved SPEC.
+- The SPEC and implementation use separate PR phases unless the change is a small `DEV0` or narrowly scoped `DEV1` whose complete inline SPEC remains independently reviewable.
+- `DEV-E` requires a minimum emergency SPEC before action and a time-bounded evidence backfill.
+- Requirement changes after SPEC merge create a versioned Change Event and impact assessment.
 - SPEC completion does not mean module implementation or milestone completion.
 
-## 4. Do not use mechanical test rules
+## 5. Do not use mechanical test rules
 
-Do not automatically require the same unit and integration test commands for every change.
+Do not automatically require the same unit and integration commands for every change.
 
 For each change:
 
-1. Identify the affected business rules, contracts, state, data, capabilities, policies, environments, and release surfaces.
-2. Select a development assurance profile from `DEV0`, `DEV1`, `DEV2`, `DEV3`, or `DEV-E`.
-3. Define falsifiable test obligations and the cheapest trustworthy evidence for each obligation.
-4. State why a test layer is selected or skipped.
-5. Escalate when new evidence reveals a larger blast radius.
+1. identify affected business rules, contracts, state, data, capabilities, policies, environments, and release surfaces;
+2. select and justify `DEV0`, `DEV1`, `DEV2`, `DEV3`, or `DEV-E`;
+3. define falsifiable obligations and the cheapest trustworthy evidence;
+4. explain selected and skipped layers;
+5. escalate when evidence reveals a larger blast radius.
 
 Examples:
 
-- Documentation-only changes normally need formatting, schema, link, or policy validation—not invented unit tests.
-- Isolated deterministic logic normally needs focused unit or contract tests.
-- API, storage, workflow, capability, or process-boundary changes normally need boundary integration evidence.
-- Oracle, Policy, Permission, Memory promotion, model routing, device control, release, destructive data, financial, privacy, or security changes require `DEV3` evidence and human approval.
+- documentation-only changes normally need formatting, schema, link, or policy validation;
+- isolated deterministic logic normally needs focused Unit, Property, or Contract evidence;
+- API, storage, workflow, capability, process, browser, or device boundaries need real boundary evidence;
+- Memory, model routing, asset promotion, Oracle, Policy, Permission, device control, financial, privacy, security, or destructive behavior requires `DEV3` evidence. An active covering mandate or separate explicit authority is required.
 
-The repository-wide CI regression suite may still run on every PR. That is a release-protection baseline, not a substitute for change-specific test design.
+The repository-wide CI suite is a release-protection baseline, not a substitute for change-specific test design.
 
-## 5. Required engineering behavior
+## 6. Required engineering behavior
 
-Every nontrivial change must make the following explicit in its Issue, SPEC, or PR:
+Every nontrivial change must make explicit:
 
 - Goal and approved scope;
+- SPEC ID/version and mandate reference when applicable;
 - change and dependency map;
 - assurance profile and escalation reasons;
 - acceptance criteria and test obligations;
-- selected evidence and skipped evidence with reasons;
-- affected and newly created assets;
+- selected evidence and skip reasons;
+- affected, added, invalidated, and retired assets;
 - migration, deployment, rollback, and recovery impact;
-- requirement or Oracle changes;
-- unresolved assumptions, risks, and blockers.
+- Requirement, Oracle, Policy, Permission, mandate, or authority changes;
+- assumptions, risks, blockers, and residual limitations.
 
-Prefer a small vertical slice that can be independently reviewed and rolled back. Do not create large speculative frameworks without an executable acceptance path.
+Prefer a small vertical slice that can be independently reviewed and rolled back.
 
-## 6. Truth and safety boundaries
+## 7. Truth and safety boundaries
 
-An agent may propose candidates, but it must not silently:
+An Agent may propose candidates, but it must not silently:
 
-- change a confirmed Oracle;
+- change a confirmed Oracle or production invariant;
 - lower a Policy floor or assurance level;
 - widen Permission;
 - promote an assumption into a fact;
 - promote Memory, Prompt, Procedure, Skill, test, or Capability into production status;
 - delete or weaken assertions to make CI green;
 - add fixed sleeps or blind retries to hide nondeterminism;
-- modify production data, secrets, devices, or release settings outside approved scope.
+- modify production data, secrets, devices, or release settings outside approved scope and mandate.
 
-Any such change requires explicit authority, dedicated evidence, and the approval rules in the SSOT.
-
-## 7. Requirement and scope changes
-
-When a requirement changes during or after SPEC implementation:
+## 8. Requirement and scope changes
 
 ```text
 Change Event
-→ authority check
+→ authority and mandate check
 → semantic and risk classification
 → impact graph
 → invalidate only affected SPEC sections, plans, assets, and evidence
@@ -136,32 +160,30 @@ Change Event
 → recompile remaining work
 ```
 
-Do not overwrite prior requirements, SPECs, or evidence. Preserve history and mark it `SUPERSEDED`, `REQUIRES_REVIEW`, or `REQUIRES_RERUN` as appropriate.
+Do not overwrite prior requirements, SPECs, mandates, or evidence. Preserve history and mark it `SUPERSEDED`, `REQUIRES_REVIEW`, `REQUIRES_RERUN`, or `REVOKED`.
 
-## 8. Pull Request and merge behavior
+## 9. Pull Request and merge behavior
 
 A PR is ready only when:
 
-- the approved Goal and SPEC are still represented accurately;
+- the approved Goal, SPEC, and mandate scope are represented accurately;
 - required checks are green;
-- change-specific evidence is sufficient for the selected assurance profile;
-- no unresolved review thread or blocker remains;
-- test, replay, benchmark, migration, and release assets are registered where applicable;
-- deployment and rollback are credible;
-- status and ledger changes are truthful.
+- change-specific evidence is sufficient;
+- unresolved review threads and blockers are zero;
+- assets, deployment, rollback, recovery, status, and ledgers are truthful.
 
-Within an already approved Goal, an agent may auto-merge an eligible `DEV0`, `DEV1`, or `DEV2` PR after all SSOT gates pass. `DEV3`, emergency production actions, Oracle/Policy/Permission changes, secrets, real-device fleet changes, destructive migrations, and release-control changes require explicit human approval.
+The Agent may auto-merge `DEV0`—`DEV3` when the active mandate covers the Goal, profile, and SPEC and all SSOT gates pass. `DEV-E` production actions and out-of-mandate boundaries are never covered by routine auto-merge.
 
-## 9. Completion report
+## 10. Completion report
 
-Report completion using evidence, not confidence language:
+Report completion using evidence:
 
-- Goal, SPEC, branch, PR, and merge commit;
+- Goal, SPEC, mandate, branch, PR, and merge commit;
 - assurance profile;
-- tests and evidence actually executed;
+- tests and evidence executed;
 - CI and release run IDs;
-- artifacts and hashes when relevant;
+- artifacts and hashes;
 - assets added, changed, invalidated, or retired;
-- remaining risks, assumptions, and next state.
+- residual risks and next state.
 
 The full normative process is `docs/github-development-ssot.md`.
