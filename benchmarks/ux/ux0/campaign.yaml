@@ -1,0 +1,18 @@
+schema_version: "1.0"
+campaign_id: ux0-todomvc-shadow
+spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+approval_ref: APPROVAL-UX0-SYNTHETIC-USER-SPEC@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+mode: SHADOW
+catalog_path: catalog.yaml
+target_manifest_path: target-manifest.yaml
+journey_ids: ["*"]
+pins:
+  code_sha: ${UX_CODE_SHA}
+  target_revision: 4a2344b2207a72c680e5c559c72617498fb5b75b
+  catalog_revision: UX0-TODOMVC-SHADOW-CATALOG@1.0.0
+  playwright_revision: 1.57.x
+  browser_revision: chromium-pinned
+  evaluator_revision: deterministic-ux-evaluator-v1
+  random_seed: 1030757028
+human_uat_required: true
