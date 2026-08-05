@@ -1,0 +1,116 @@
+name: Goal / Change
+about: Define an approved goal, scope, acceptance criteria, risks, and release constraints
+title: "[Goal] "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for nontrivial development goals. The final implementation and evidence follow `docs/github-development-ssot.md`.
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Goal and expected outcome
+      description: Describe the business or engineering outcome rather than a preferred implementation.
+      placeholder: What must be true when this Goal is complete?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: State both in-scope and out-of-scope work.
+      placeholder: |
+        In scope:
+        - ...
+
+        Out of scope:
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, falsifiable outcomes. Do not prescribe test counts.
+      placeholder: |
+        - Given ..., when ..., then ...
+        - The system must reject ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: authority
+    attributes:
+      label: Requirement and decision authority
+      description: Identify who or what can approve requirement, Oracle, Policy, or scope changes.
+      placeholder: Product owner, approved requirement, ADR, production invariant, security policy...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk_signals
+    attributes:
+      label: Known risk signals
+      description: Select every known signal. The final DEV profile may be escalated later.
+      multiple: true
+      options:
+        - Documentation or non-behavioral only
+        - Isolated deterministic logic
+        - API, storage, schema, workflow, or process boundary
+        - Oracle, Policy, Permission, or Assurance Floor
+        - Memory, self-evolution, or asset promotion
+        - Model routing or automated escalation
+        - Browser, mobile, mini-program, embedded, or real device
+        - Financial, privacy, security, destructive, or irreversible behavior
+        - CI, release, deployment, secret, or production data
+        - Unknown or requires investigation
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and dependencies
+      description: Include technology, environment, model, device, data, secret, cost, timing, and compatibility constraints.
+      placeholder: Dependencies, unavailable environments, device limits, cost ceilings, deadlines...
+
+  - type: textarea
+    id: current_evidence
+    attributes:
+      label: Existing evidence and assets
+      description: Link related tests, incidents, Replay Bundles, benchmarks, ADRs, requirements, or prior PRs.
+      placeholder: Existing evidence, asset paths, or GitHub references...
+
+  - type: textarea
+    id: deployment
+    attributes:
+      label: Deployment, recovery, and rollback expectations
+      description: State whether this changes runtime, data, models, memory, devices, CI, or releases.
+      placeholder: Deployment path, canary, rollback, recovery, irreversible effects...
+
+  - type: dropdown
+    id: auto_merge
+    attributes:
+      label: Agent auto-merge authority within this Goal
+      description: DEV3 and other protected changes still require explicit human approval under the SSOT.
+      options:
+        - Allowed when SSOT gates pass
+        - Not allowed; human merge approval required
+        - Undecided
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Governance acknowledgement
+      options:
+        - label: I understand that requirement changes must be versioned and re-assessed rather than silently overwriting prior evidence.
+          required: true
+        - label: I understand that test evidence is selected by risk and change boundaries, not by a fixed test-count checklist.
+          required: true
