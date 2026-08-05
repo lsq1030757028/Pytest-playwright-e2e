@@ -69,6 +69,8 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 "src/test_workflow/harness/__init__.py" = ["I001"]
 "src/test_workflow/ledger_cli.py" = ["B008"]
 "src/test_workflow/proof.py" = ["I001"]
+# ActorJourneyInput is intentionally part of the runner module's typed public boundary.
+"src/test_workflow/ux/runner.py" = ["F401"]
 "tests/integration/test_todomvc_target.py" = ["I001"]
 "tests/unit/test_bundle.py" = ["I001"]
 "tests/unit/test_harness_intelligence.py" = ["E501"]
