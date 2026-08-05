@@ -65,6 +65,18 @@ class TodoMVCJourneyExecutor:
             )
         )
 
+    def _settle_filter_route(self) -> None:
+        self.page.wait_for_function(
+            "() => ['#/completed', '#/active'].includes(window.location.hash)"
+        )
+        self.page.evaluate(
+            """
+            () => new Promise((resolve) => {
+                requestAnimationFrame(() => requestAnimationFrame(resolve));
+            })
+            """
+        )
+
     def todo_add(self) -> dict[str, Any]:
         new_todo = self.page.locator(".new-todo")
         discoverable = new_todo.is_visible() and bool(new_todo.get_attribute("placeholder"))
@@ -123,11 +135,13 @@ class TodoMVCJourneyExecutor:
             result="Completed the first task.",
         )
         self.page.get_by_role("link", name="Completed").click()
+        self._settle_filter_route()
         completed_labels = self.page.locator(
             ".todo-list li:visible label"
         ).all_text_contents()
         filter_ok = completed_labels == ["Completed journey"]
         self.page.reload(wait_until="domcontentloaded")
+        self._settle_filter_route()
         state = self.adapter.read(self.page)
         persistence_ok = len(state.items) == 2 and state.items[0].completed
         route_ok = self.page.url.endswith("#/completed")
