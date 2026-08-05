@@ -1,0 +1,24 @@
+schema_version: "1.0"
+campaign_id: m1a-runtime-contracts-v1
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+assurance_profile: DEV3
+ux_assurance: UX0
+code_revision: repository-head
+expected_critical_false_green: 0
+scenario_ids:
+  - canonical_hash_stability
+  - session_formation_boundary
+  - exact_namespace_isolation
+  - deny_overrides_allow
+  - provenance_integrity
+  - lifecycle_transition_closure
+  - promotion_authority_boundary
+  - expiration_revoke_forget
+  - cas_conflict_no_last_write_wins
+  - idempotency_replay
+  - compatibility_and_executable_boundary
+  - deterministic_query_pagination
+  - audit_chain_and_tamper
+  - vendor_neutral_ports
