@@ -44,12 +44,16 @@ Frozen Domain Models
 
 - Namespace 在 ACL 与相关性之前裁决；
 - Namespace 不匹配时，即使显式 ALLOW 或高相关性也拒绝；
+- Campaign、Agent、Shared 与委派范围必须精确匹配，过期委派立即拒绝；
 - 显式 DENY 覆盖 Principal、Group 和 Role 的 ALLOW；
 - Promotion 只表示进入声明的检索范围；
 - State Event 不得修改 Revision 内容；
+- Revision 与 Provenance 的嵌套 JSON 在创建后也不可原地修改；
 - 所有 Revision 只能 Append；
 - CAS 冲突不会改变 Head；
 - Same key / same payload 返回原结果，same key / different payload 拒绝；
+- Compatibility 的代码、Schema 与 Capability 版本范围必须真实执行；
+- Promotion 的 Actor、Evidence 与 Benchmark 引用必须可解析并相互绑定；
 - Forget 删除有效内容，仅保留不含原文的 Tombstone；
 - Audit Event 不保存 Memory 内容，并形成可验证链。
 
@@ -59,7 +63,7 @@ Frozen Domain Models
 
 - 领域模型、Hash、Namespace、ACL、Lifecycle、Promotion 与 Compatibility Unit/Contract；
 - 参考适配器真实 write/read/transition/query/conflict/revoke/forget Integration；
-- 十项确定性 Runtime Contract Proof；
+- 十五项确定性 Runtime Contract Proof；
 - Artifact Manifest、独立 Replay 与 Tamper 拒绝；
 - 全仓库回归。
 
