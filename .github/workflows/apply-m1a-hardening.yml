@@ -41,7 +41,6 @@ jobs:
             tools/m1a-hardening/chunk-06.b64
           )
           cat "${chunks[@]}" > /tmp/m1a-hardening.patch.b64
-          echo "fbf34ec3ba75d2e2ede1560c18016bc3b6dc9f6880f3a9494ce8eb508c37421a  /tmp/m1a-hardening.patch.b64" | sha256sum -c -
           base64 --decode /tmp/m1a-hardening.patch.b64 > /tmp/m1a-hardening.patch
           echo "9d16033226beb3e69a49f33fa97ed87ac60fcff202757a2b2e236619298dce84  /tmp/m1a-hardening.patch" | sha256sum -c -
           git apply --check /tmp/m1a-hardening.patch
@@ -49,6 +48,9 @@ jobs:
           git rm -r tools/m1a-hardening
           git rm -f --ignore-unmatch tools/m1a-bootstrap/part-00.b64
           git rm .github/workflows/apply-m1a-hardening.yml
+          cp .github/m1a-memory-runtime-contracts.base.yml \
+            .github/workflows/m1a-memory-runtime-contracts.yml
+          rm .github/m1a-memory-runtime-contracts.base.yml
           git diff --check
 
       - name: Verify hardened M1A contracts
