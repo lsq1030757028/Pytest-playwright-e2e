@@ -3,6 +3,22 @@ name: m1a-memory-runtime-contracts
 on:
   pull_request:
     paths:
+      - "src/test_workflow/memory_contracts/**"
+      - "tests/memory_contract_fixtures.py"
+      - "tests/unit/test_memory_contract_*.py"
+      - "tests/integration/test_memory_contract_*.py"
+      - "docs/m1a-memory-runtime-contracts.md"
+      - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
+      - ".github/workflows/m1a-memory-runtime-contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/test_workflow/memory_contracts/**"
+      - "tests/memory_contract_fixtures.py"
+      - "tests/unit/test_memory_contract_*.py"
+      - "tests/integration/test_memory_contract_*.py"
+      - "docs/m1a-memory-runtime-contracts.md"
+      - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
       - ".github/workflows/m1a-memory-runtime-contracts.yml"
   workflow_dispatch:
 
@@ -10,38 +26,25 @@ permissions:
   contents: write
 
 jobs:
-  apply-governed-hardening:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
+  runtime-contract-proof:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/m1a-memory-runtime-contracts
-          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
-      - name: Apply reviewed hardening patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          sha256sum tools/m1a-hardening/chunk-*.b64
-          cat tools/m1a-hardening/chunk-*.b64 | base64 --decode > /tmp/m1a-hardening.patch
-          test -s /tmp/m1a-hardening.patch
-          git apply --check /tmp/m1a-hardening.patch
-          git apply /tmp/m1a-hardening.patch
-          rm -rf tools/m1a-hardening
-          rm -f .github/workflows/apply-m1a-hardening.yml
-          cp .github/m1a-memory-runtime-contracts.base.yml \
-            .github/workflows/m1a-memory-runtime-contracts.yml
-          rm .github/m1a-memory-runtime-contracts.base.yml
-          git diff --check
+      - name: Install dependencies
+        run: uv sync --extra test
 
-      - name: Verify hardened contracts and evidence
-        shell: bash
+      - name: Prepare evidence directory
         run: |
-          set -euo pipefail
-          uv sync --extra test
+          mkdir -p test-results/m1a-memory-runtime
+          printf 'status=started\n' > test-results/m1a-memory-runtime/run-state.txt
+
+      - name: Lint M1A runtime contracts
+        run: |
           uv run ruff check \
             src/test_workflow/memory_contracts \
             tests/memory_contract_fixtures.py \
@@ -50,26 +53,65 @@ jobs:
             tests/unit/test_memory_contract_ports.py \
             tests/integration/test_memory_contract_reference.py \
             tests/integration/test_memory_contract_proof.py
+
+      - name: Unit and contract validation
+        run: |
           uv run pytest \
             tests/unit/test_memory_contract_models.py \
             tests/unit/test_memory_contract_policy.py \
             tests/unit/test_memory_contract_ports.py \
-            tests/integration/test_memory_contract_reference.py \
-            tests/integration/test_memory_contract_proof.py
-          rm -rf test-results/m1a-hardening-proof
-          uv run python -m test_workflow.memory_contracts.proof run \
-            --output-dir test-results/m1a-hardening-proof \
-            --code-sha "${GITHUB_SHA}"
-          uv run python -m test_workflow.memory_contracts.proof replay \
-            --output-dir test-results/m1a-hardening-proof
+            --junitxml=test-results/m1a-memory-runtime/junit-unit-contract.xml
 
-      - name: Publish verified hardening commit
+      - name: Reference adapter integration
+        run: |
+          uv run pytest \
+            tests/integration/test_memory_contract_reference.py \
+            --junitxml=test-results/m1a-memory-runtime/junit-reference-integration.xml
+
+      - name: Replay and tamper integration
+        run: |
+          uv run pytest \
+            tests/integration/test_memory_contract_proof.py \
+            --junitxml=test-results/m1a-memory-runtime/junit-proof-replay.xml
+
+      - name: Run deterministic M1A contract proof
+        run: |
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-memory-runtime/proof \
+            --code-sha "${GITHUB_SHA}"
+
+      - name: Independent replay
+        run: |
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-memory-runtime/proof
+
+      - name: Upload M1A runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1a-memory-runtime-contract-results
+          path: test-results/m1a-memory-runtime
+          if-no-files-found: error
+          retention-days: 30
+
+  cleanup-implementation-branch:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: runtime-contract-proof
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged M1A runtime implementation branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          IMPLEMENTATION_BRANCH: agent/m1a-memory-runtime-contracts
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "Harden M1A runtime contract enforcement"
-          git push origin HEAD:agent/m1a-memory-runtime-contracts
+          if gh api "repos/${GH_REPO}/git/ref/heads/${IMPLEMENTATION_BRANCH}" \
+            >/dev/null 2>&1; then
+            gh api --method DELETE \
+              "repos/${GH_REPO}/git/refs/heads/${IMPLEMENTATION_BRANCH}"
+            echo "deleted ${IMPLEMENTATION_BRANCH}"
+          else
+            echo "already absent ${IMPLEMENTATION_BRANCH}"
+          fi
