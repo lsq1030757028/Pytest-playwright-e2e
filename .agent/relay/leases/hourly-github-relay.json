@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "control_id": "HOURLY-GITHUB-RELAY",
+  "status": "IDLE",
+  "campaign_id": null,
+  "run_token": null,
+  "owner_surface": "UNKNOWN",
+  "model": "UNKNOWN",
+  "reasoning_mode": "UNKNOWN",
+  "target_issue": null,
+  "target_pr": null,
+  "target_branch": null,
+  "target_head_sha": null,
+  "started_at": null,
+  "heartbeat_at": null,
+  "expires_at": null,
+  "last_run_token": null,
+  "last_final_status": null,
+  "last_ended_at": null,
+  "last_summary": null
+}
