@@ -84,8 +84,12 @@ class TargetMutationSandbox:
             "mutation target_path",
         )
         self.repository_path = _repository_path(self.checkout, self.target_path)
-        self.expected_mutable_blob_sha1 = expected_mutable_blob_sha1
-        self.required_unmodified_files = required_unmodified_files
+        self.expected_mutable_blob_sha1 = (
+            expected_mutable_blob_sha1 or mutation.mutable_git_blob_sha1
+        )
+        self.required_unmodified_files = (
+            required_unmodified_files or mutation.required_unmodified_files
+        )
         self._applied: AppliedPatch | None = None
 
     def verify_clean_preimage(self) -> None:
