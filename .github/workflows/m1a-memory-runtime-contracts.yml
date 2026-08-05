@@ -112,7 +112,8 @@ jobs:
           set -euo pipefail
           for implementation_branch in \
             agent/m1a-memory-runtime-contracts \
-            agent/m1a-runtime-contract-remediation
+            agent/m1a-runtime-contract-remediation \
+            agent/m1a-runtime-contract-security-repair
           do
             if gh api "repos/${GH_REPO}/git/ref/heads/${implementation_branch}" \
               >/dev/null 2>&1; then
