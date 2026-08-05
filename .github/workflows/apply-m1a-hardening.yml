@@ -1,9 +1,9 @@
 name: Apply M1A hardening patch
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/m1a-memory-runtime-contracts
+      - main
     paths:
       - ".github/workflows/apply-m1a-hardening.yml"
 
@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: agent/m1a-memory-runtime-contracts
           fetch-depth: 0
 
       - name: Apply governed hardening patch
         shell: bash
         run: |
           set -euo pipefail
-          # Chunks are a transport-only bridge; the resulting commit removes them.
           cat tools/m1a-hardening/chunk-*.b64 | base64 --decode > /tmp/m1a-hardening.patch
           git apply --check /tmp/m1a-hardening.patch
           git apply /tmp/m1a-hardening.patch
