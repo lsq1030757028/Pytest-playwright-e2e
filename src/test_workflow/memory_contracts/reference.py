@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from functools import wraps
+from threading import RLock
 from typing import Iterable
 from uuid import uuid4
 
@@ -9,7 +11,9 @@ from pydantic import ValidationError
 from .canonical import canonical_sha256
 from .models import (
     AccessOperation,
+    AclEffect,
     AclEntry,
+    AclSubjectType,
     AppendRevisionResult,
     AuditEvent,
     ConflictArtifact,
@@ -35,6 +39,14 @@ from .policy import (
 )
 
 
+def _synchronized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapped
+
 class DeterministicMemoryReference:
     """In-memory reference adapter proving M1A contracts, not a production store."""
 
@@ -46,6 +58,7 @@ class DeterministicMemoryReference:
         resolved_benchmarks: Iterable[str] = (),
         initial_acl: Iterable[AclEntry] = (),
     ) -> None:
+        self._lock = RLock()
         self._revisions: dict[str, list[MemoryRevision]] = {}
         self._states: dict[str, list[StateEvent]] = {}
         self._acl: dict[str, list[AclEntry]] = {}
@@ -59,6 +72,7 @@ class DeterministicMemoryReference:
         for entry in initial_acl:
             self._acl.setdefault(entry.namespace.canonical, []).append(entry)
 
+    @_synchronized
     def append_revision(
         self,
         *,
@@ -76,7 +90,7 @@ class DeterministicMemoryReference:
                     ErrorCode.DUPLICATE_IDEMPOTENCY_KEY,
                     "idempotency key was reused with a different payload",
                 )
-            return result.model_copy(update={"decision": Decision.IDEMPOTENT_REPLAY})
+            return result
         try:
             revision = MemoryRevision.model_validate(revision.model_dump(mode="python"))
         except ValidationError:
@@ -98,7 +112,7 @@ class DeterministicMemoryReference:
         if provenance_error is not None:
             result = AppendRevisionResult(
                 decision=Decision.REJECTED,
-                error_code=ErrorCode.PROVENANCE_MISSING,
+                error_code=provenance_error,
             )
             self._idempotency[revision.idempotency_key] = (fingerprint, result)
             return result
@@ -163,6 +177,7 @@ class DeterministicMemoryReference:
         self._idempotency[revision.idempotency_key] = (fingerprint, result)
         return result
 
+    @_synchronized
     def compare_and_append_revision(
         self,
         *,
@@ -216,6 +231,7 @@ class DeterministicMemoryReference:
         self._require_permission(actor, history[-1].namespace, AccessOperation.READ_METADATA)
         return history
 
+    @_synchronized
     def append_state_event(
         self, *, actor: PrincipalContext, event: StateEvent, correlation_id: str
     ) -> MutationResult:
@@ -284,6 +300,7 @@ class DeterministicMemoryReference:
             audit_event_ref=audit_ref,
         )
 
+    @_synchronized
     def promote(
         self,
         *,
@@ -349,6 +366,7 @@ class DeterministicMemoryReference:
             acl_entries=tuple(self._acl.get(namespace.canonical, [])),
         )
 
+    @_synchronized
     def append_acl_event(
         self,
         *,
@@ -362,14 +380,34 @@ class DeterministicMemoryReference:
             operation=AccessOperation.MANAGE_ACL,
         )
         if not permission.allowed:
-            return MutationResult(decision=Decision.REJECTED, error_code=permission.error_code)
+            return MutationResult(
+                decision=Decision.REJECTED,
+                error_code=permission.error_code,
+            )
+        subject_matches_actor = (
+            entry.subject_type is AclSubjectType.PRINCIPAL
+            and entry.subject_id == actor.principal_id
+        ) or (
+            entry.subject_type is AclSubjectType.GROUP
+            and entry.subject_id in actor.group_ids
+        ) or (
+            entry.subject_type is AclSubjectType.ROLE
+            and entry.subject_id in actor.role_ids
+        )
+        if entry.effect is AclEffect.ALLOW and subject_matches_actor:
+            return MutationResult(
+                decision=Decision.REJECTED,
+                error_code=ErrorCode.ACL_DENIED,
+            )
         self._acl.setdefault(entry.namespace.canonical, []).append(entry)
+        audit_ref = self._record_acl_audit(
+            actor=actor,
+            entry=entry,
+            correlation_id=correlation_id,
+        )
         return MutationResult(
             decision=Decision.ACCEPTED,
-            audit_event_ref=(
-                "acl:"
-                + canonical_sha256({"entry": entry, "correlation": correlation_id})
-            ),
+            audit_event_ref=audit_ref,
         )
 
     def list_effective_acl(self, *, namespace: MemoryNamespace) -> tuple[AclEntry, ...]:
@@ -450,6 +488,7 @@ class DeterministicMemoryReference:
         next_cursor = page[-1].ref if start + limit < len(ordered) and page else None
         return page, next_cursor
 
+    @_synchronized
     def append_audit_event(self, event: AuditEvent) -> str:
         expected_previous = self._audits[-1].event_hash if self._audits else None
         if event.previous_event_hash != expected_previous:
@@ -472,6 +511,7 @@ class DeterministicMemoryReference:
             previous = event.event_hash
         return True
 
+    @_synchronized
     def expire_due_memories(
         self, *, actor: PrincipalContext, now: datetime, correlation_id: str
     ) -> tuple[str, ...]:
@@ -505,6 +545,7 @@ class DeterministicMemoryReference:
                 expired.append(memory_id)
         return tuple(expired)
 
+    @_synchronized
     def revoke_memory(
         self,
         *,
@@ -530,6 +571,7 @@ class DeterministicMemoryReference:
             self._invalidated.add(memory_id)
         return result
 
+    @_synchronized
     def forget_memory(
         self,
         *,
@@ -603,8 +645,10 @@ class DeterministicMemoryReference:
 
     def _validate_provenance(self, revision: MemoryRevision) -> ErrorCode | None:
         for source_ref, expected_hash in revision.provenance.source_content_hashes.items():
-            if self._resolved_sources.get(source_ref) != expected_hash:
+            if source_ref not in self._resolved_sources:
                 return ErrorCode.PROVENANCE_MISSING
+            if self._resolved_sources[source_ref] != expected_hash:
+                return ErrorCode.INTEGRITY_FAILED
         if not set(revision.provenance.evidence_refs) <= self._resolved_evidence:
             return ErrorCode.PROVENANCE_MISSING
         return None
@@ -654,6 +698,40 @@ class DeterministicMemoryReference:
             conflict=conflict,
             error_code=ErrorCode.REVISION_CONFLICT,
         )
+
+    def _record_acl_audit(
+        self,
+        *,
+        actor: PrincipalContext,
+        entry: AclEntry,
+        correlation_id: str,
+    ) -> str:
+        occurred_at = datetime.now(UTC)
+        previous = self._audits[-1].event_hash if self._audits else None
+        seed = {
+            "type": "ACL_CHANGED",
+            "namespace": entry.namespace.canonical,
+            "rule_id": entry.rule_id,
+            "actor": actor.principal_id,
+            "occurred_at": occurred_at,
+            "correlation_id": correlation_id,
+        }
+        event_id = f"audit_{canonical_sha256(seed)}"
+        payload = {
+            "event_id": event_id,
+            "event_type": "ACL_CHANGED",
+            "memory_id": f"namespace:{entry.namespace.namespace_hash}",
+            "revision_id": f"acl:{entry.rule_id}",
+            "namespace": entry.namespace,
+            "actor_principal_ref": actor.principal_id,
+            "occurred_at": occurred_at,
+            "reason_code": "ACL_RULE_APPENDED",
+            "policy_decision_ref": "policy/m1a/acl",
+            "previous_event_hash": previous,
+        }
+        event = AuditEvent(**payload, event_hash=canonical_sha256(payload))
+        self._audits.append(event)
+        return event.event_id
 
     def _record_audit(
         self,

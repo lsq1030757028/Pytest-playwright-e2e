@@ -1,4 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 
 import pytest
 
@@ -50,7 +52,8 @@ def test_append_idempotency_cas_and_audit_chain() -> None:
     )
 
     assert created.decision is Decision.ACCEPTED
-    assert replayed.decision is Decision.IDEMPOTENT_REPLAY
+    assert replayed == created
+    assert replayed.decision is Decision.ACCEPTED
     assert store.verify_event_chain() is True
     with pytest.raises(MemoryContractError) as exc:
         store.append_revision(
@@ -306,3 +309,112 @@ def test_state_event_actor_mismatch_is_rejected_without_mutation() -> None:
     assert result.decision is Decision.REJECTED
     assert result.error_code is ErrorCode.ACL_DENIED
     assert store.get_effective_state(memory_id=revision.memory_id) is LifecycleState.CANDIDATE
+
+def test_source_hash_mismatch_is_integrity_failure() -> None:
+    revision = make_semantic_revision()
+    owner = make_owner()
+    store = DeterministicMemoryReference(
+        resolved_sources={"requirement/REQ-1@3": "0" * 64},
+        resolved_evidence=("evidence/EV-1",),
+        initial_acl=make_owner_acl(),
+    )
+    result = store.append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=None,
+        correlation_id="source-hash-mismatch",
+    )
+    assert result.decision is Decision.REJECTED
+    assert result.error_code is ErrorCode.INTEGRITY_FAILED
+    assert store.list_audit_events() == ()
+
+
+def test_acl_self_grant_is_rejected_and_other_grant_is_audited() -> None:
+    owner = make_owner()
+    namespace = make_namespace()
+    store = make_store()
+    self_grant = AclEntry(
+        rule_id="self-grant-read",
+        effect=AclEffect.ALLOW,
+        subject_type=AclSubjectType.PRINCIPAL,
+        subject_id=owner.principal_id,
+        operations=(AccessOperation.READ_CONTENT,),
+        namespace=namespace,
+    )
+    other_grant = self_grant.model_copy(
+        update={"rule_id": "grant-reader", "subject_id": "agent-reader"}
+    )
+    denied = store.append_acl_event(
+        actor=owner,
+        entry=self_grant,
+        correlation_id="self-grant",
+    )
+    accepted = store.append_acl_event(
+        actor=owner,
+        entry=other_grant,
+        correlation_id="grant-reader",
+    )
+    assert denied.decision is Decision.REJECTED
+    assert denied.error_code is ErrorCode.ACL_DENIED
+    assert self_grant not in store.list_effective_acl(namespace=namespace)
+    assert accepted.decision is Decision.ACCEPTED
+    assert accepted.audit_event_ref is not None
+    assert store.list_audit_events()[-1].event_type == "ACL_CHANGED"
+    assert store.verify_event_chain()
+
+
+def test_concurrent_compare_and_append_has_one_winner_and_one_conflict() -> None:
+    initial = make_semantic_revision()
+    owner = make_owner()
+    store = make_store()
+    store.append_revision(
+        actor=owner,
+        revision=initial,
+        expected_head_revision_id=None,
+        correlation_id="concurrent-base",
+    )
+
+    def candidate(nonce: str, key: str, value: str) -> MemoryRevision:
+        return MemoryRevision.create(
+            memory_id=initial.memory_id,
+            revision_nonce=nonce,
+            revision_number=2,
+            parent_revision_refs=(initial.ref,),
+            memory_kind=initial.memory_kind,
+            namespace=initial.namespace,
+            content={"fact_candidate": value},
+            provenance=initial.provenance,
+            retention_policy=initial.retention_policy,
+            formation_event_ref=f"formation/{nonce}",
+            created_by=owner.principal_id,
+            idempotency_key=key,
+            created_at=initial.created_at + timedelta(minutes=1),
+        )
+
+    revisions = (
+        candidate("concurrent-a", "idem-concurrent-a", "candidate A"),
+        candidate("concurrent-b", "idem-concurrent-b", "candidate B"),
+    )
+    barrier = Barrier(2)
+
+    def append(revision: MemoryRevision):
+        barrier.wait()
+        return store.compare_and_append_revision(
+            actor=owner,
+            revision=revision,
+            expected_head_revision_id=initial.revision_id,
+            correlation_id=revision.idempotency_key,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(append, revisions))
+    assert sorted(result.decision.value for result in results) == [
+        Decision.ACCEPTED.value,
+        Decision.CONFLICT.value,
+    ]
+    assert len(
+        store.list_revision_history(
+            actor=owner,
+            memory_id=initial.memory_id,
+        )
+    ) == 2
