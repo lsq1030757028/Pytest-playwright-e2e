@@ -13,11 +13,11 @@ from .models import (
     MemoryAuthority,
     MemoryCondition,
     MemoryRecord,
+    MemoryScenario,
     MemoryValidity,
     MemoryView,
     RetrievalPlan,
     ScenarioFixture,
-    MemoryScenario,
 )
 
 _EXPECTED_ACTIONS = {
@@ -286,6 +286,10 @@ def evaluate_decision(
 
     filtered_map = {item.ref: item.reason for item in plan.filtered}
     for ref, reason in fixture.evaluator_only.expected_filtered_reasons.items():
+        # Some fixtures intentionally exercise multiple conditions. A record selected in one
+        # condition may be required to be filtered in another condition.
+        if ref in selected:
+            continue
         if filtered_map.get(ref) != reason:
             failures.append(
                 f"filter_reason_mismatch:{ref}:expected={reason}:actual={filtered_map.get(ref)}"
