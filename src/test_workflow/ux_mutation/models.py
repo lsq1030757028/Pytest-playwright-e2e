@@ -68,15 +68,18 @@ class TargetMutableFile(FrozenModel):
 
     @model_validator(mode="after")
     def validate_path(self) -> TargetMutableFile:
-        path = Path(self.path)
-        if path.is_absolute() or ".." in path.parts:
-            raise ValueError("mutable target path must be relative without traversal")
+        _validate_relative_path(self.path, "mutable target path")
         return self
 
 
 class RequiredUnmodifiedFile(FrozenModel):
     path: str
     git_blob_sha1: str = Field(pattern=r"^[0-9a-f]{40}$")
+
+    @model_validator(mode="after")
+    def validate_path(self) -> RequiredUnmodifiedFile:
+        _validate_relative_path(self.path, "required unmodified path")
+        return self
 
 
 class MutationTarget(FrozenModel):
@@ -86,6 +89,11 @@ class MutationTarget(FrozenModel):
     target_manifest_path: str
     mutable_file: TargetMutableFile
     required_unmodified_files: tuple[RequiredUnmodifiedFile, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_paths(self) -> MutationTarget:
+        _validate_relative_path(self.target_manifest_path, "target_manifest_path")
+        return self
 
 
 class MutationCatalogContract(FrozenModel):
@@ -121,12 +129,15 @@ class UXMutation(FrozenModel):
     expected_failure_classification: str = Field(min_length=1)
     minimum_evidence_level: Literal["E3", "E4"]
     disallowed_kill_basis: Literal["AI_CANDIDATE_ONLY"]
+    mutable_git_blob_sha1: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{40}$",
+    )
+    required_unmodified_files: tuple[RequiredUnmodifiedFile, ...] = ()
 
     @model_validator(mode="after")
     def validate_mutation(self) -> UXMutation:
-        path = Path(self.target_path)
-        if path.is_absolute() or ".." in path.parts:
-            raise ValueError("mutation target_path must remain inside target checkout")
+        _validate_relative_path(self.target_path, "mutation target_path")
         if self.search_text == self.replacement_text:
             raise ValueError("mutation replacement must change target content")
         return self
@@ -157,7 +168,21 @@ class UXMutationCatalog(FrozenModel):
             for mutation in self.mutations
         ):
             raise ValueError("all UX1 mutations must target the declared mutable file")
-        return self
+        if any(
+            mutation.preimage_sha256 != self.target.mutable_file.preimage_sha256
+            for mutation in self.mutations
+        ):
+            raise ValueError("mutation preimage must match the target source inventory")
+        enriched = tuple(
+            mutation.model_copy(
+                update={
+                    "mutable_git_blob_sha1": self.target.mutable_file.git_blob_sha1,
+                    "required_unmodified_files": self.target.required_unmodified_files,
+                }
+            )
+            for mutation in self.mutations
+        )
+        return self.model_copy(update={"mutations": enriched})
 
 
 class UXMutationProofPlan(FrozenModel):
@@ -292,3 +317,9 @@ class UXMutationReplayManifest(FrozenModel):
     semantic_digest: str
     artifact_manifest_digest: str
     input_files: dict[str, str]
+
+
+def _validate_relative_path(value: str, label: str) -> None:
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"{label} must be relative without traversal")
