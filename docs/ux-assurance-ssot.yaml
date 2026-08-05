@@ -1,0 +1,100 @@
+name: ux-assurance-ssot
+version: 1.0
+status: CANDIDATE
+spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+goal_issue: 29
+applies_to:
+  - user_facing_requirement
+  - ui_or_interaction_change
+  - copy_or_feedback_change
+  - browser_or_device_journey
+  - critical_business_journey
+  - release_uat_readiness
+
+principles:
+  - human_uat_is_not_replaced
+  - real_interaction_not_hypothetical_narration
+  - deterministic_evidence_before_ai_opinion
+  - experience_oracle_before_verdict
+  - behavioral_profiles_not_sensitive_demographics
+  - affected_journeys_not_full_matrix_by_default
+  - shadow_before_blocking
+  - false_positive_and_false_negative_benchmarks_before_policy_promotion
+
+required_triage:
+  fields:
+    - user_facing_effect
+    - affected_journey_refs
+    - ux_assurance_level
+    - primary_persona_ref
+    - experience_environment_ref
+    - accessibility_impact
+    - recovery_impact
+    - human_uat_required
+  default_when_unknown: UX2
+
+ux_levels:
+  UX0:
+    user_facing_effect: false
+    synthetic_journey_required: false
+  UX1:
+    normal_user_facing_change: true
+    minimum_journeys: 1
+    minimum_personas: 1
+  UX2:
+    important_workflow_or_rule: true
+    minimum_personas: 2
+    minimum_input_modes: 2
+    minimum_recovery_paths: 1
+  UX3:
+    critical_signals:
+      - money
+      - auth
+      - privacy
+      - destructive
+      - irreversible
+      - data_loss
+      - release_critical
+    minimum_personas: 3
+    minimum_repetitions: 3
+    adversarial_environment_required: true
+
+pr_gate:
+  mode: SHADOW_UNTIL_PROMOTED
+  required_for_user_facing_change:
+    - affected_journey_selection
+    - deterministic_journey_evidence
+    - evidence_bundle
+    - candidate_finding_report
+  ai_finding_can_block: false
+
+blocking_promotion:
+  required:
+    - versioned_policy_event
+    - false_positive_benchmark_pass
+    - false_negative_mutation_proof_pass
+    - independent_replay_pass
+    - rollback_verified
+    - critical_false_green_zero
+  rollback_action: disable_gate_preserve_evidence
+
+required_invariants:
+  ai_only_blocker: 0
+  blocker_without_experience_oracle: 0
+  blocker_below_e3: 0
+  evaluator_leakage: 0
+  production_personal_data_use: 0
+  sensitive_demographic_inference: 0
+  human_uat_replaced: 0
+  critical_false_green: 0
+
+artifacts:
+  profiles: tests/assets/ux/profiles
+  journeys: tests/assets/ux/journeys
+  environments: tests/assets/ux/environments
+  benchmarks: benchmarks/ux
+  traces: github_actions_artifacts
+  screenshots: github_actions_artifacts
+  reports: github_actions_artifacts
+  replay: experiments/ux
+  mutation: proofs/ux
