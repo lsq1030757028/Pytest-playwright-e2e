@@ -30,6 +30,7 @@ jobs:
             "agent/todomvc-target-adapter"
             "docs/final-delivery-ledger"
             "docs/agent-os-evolution-roadmap"
+            "docs/github-development-ssot"
             "chore/final-branch-cleanup"
           )
 
