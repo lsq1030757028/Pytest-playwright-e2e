@@ -47,6 +47,7 @@ def _synchronized(method):
 
     return wrapped
 
+
 class DeterministicMemoryReference:
     """In-memory reference adapter proving M1A contracts, not a production store."""
 
