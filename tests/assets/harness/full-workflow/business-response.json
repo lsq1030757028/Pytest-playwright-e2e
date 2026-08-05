@@ -1,0 +1,51 @@
+{
+  "model": {
+    "model_id": "free-time-business-model",
+    "assets": [
+      {
+        "asset_id": "billing-result",
+        "name": "Billing result",
+        "asset_type": "money",
+        "priority": "P0",
+        "recoverability": "difficult"
+      }
+    ],
+    "roles": [],
+    "transitions": [],
+    "facts": [
+      {
+        "fact_id": "FACT-BOUNDARY",
+        "statement": "120 seconds is inside two free minutes",
+        "source_ref": "REQ-FREE@v1",
+        "confidence": 1.0
+      }
+    ],
+    "assumptions": [],
+    "unknowns": [],
+    "invariants": [
+      {
+        "invariant_id": "INV-BILLING-BOUNDARY",
+        "statement": "The exact configured free-time boundary is applied",
+        "category": "money",
+        "priority": "P0",
+        "asset_refs": ["billing-result"],
+        "source_ref": "REQ-FREE@v1",
+        "testable_expression": "close_seconds <= free_minutes * 60"
+      }
+    ]
+  },
+  "loss_scenarios": [
+    {
+      "scenario_id": "LOSS-BILLING-BOUNDARY",
+      "asset_ref": "billing-result",
+      "trigger": "close at exact free-time boundary",
+      "failure_mode": "boundary is rejected",
+      "loss": "incorrect customer charge",
+      "priority": "P0",
+      "affected_scope": "all exact-boundary closes",
+      "recoverability": "requires reconciliation",
+      "test_obligations": ["120 seconds is free for a two-minute configuration"]
+    }
+  ],
+  "source_conflicts": []
+}

@@ -1,0 +1,13 @@
+facts:
+  - id: F-001
+    statement: 用户可以新增待办事项
+    source: REQ-ROUGH-001
+    confidence: confirmed
+  - id: F-002
+    statement: 用户可以切换待办事项的完成状态
+    source: REQ-ROUGH-001
+    confidence: confirmed
+  - id: F-003
+    statement: 刷新后数据不应丢失
+    source: REQ-ROUGH-001
+    confidence: confirmed

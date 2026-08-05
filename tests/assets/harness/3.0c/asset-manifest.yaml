@@ -1,0 +1,9 @@
+id: harness-policy-budget-3.0c
+version: 1
+purpose: Deterministic policy, permission and budget golden case.
+assets:
+  - path: policy-case.yaml
+    artifact_type: PolicyGoldenCase
+    schema_version: 1
+retention: regression
+owner: harness-foundation

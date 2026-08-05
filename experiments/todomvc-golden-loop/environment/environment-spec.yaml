@@ -1,0 +1,14 @@
+schema_version: "1.0"
+profile: isolated-todomvc
+base_url: http://todomvc.local
+clock:
+  frozen_at: "2026-08-04T20:00:00+08:00"
+  timezone: Asia/Shanghai
+random_seed: 20260804
+real_services:
+  - todo_application
+virtual_services:
+  - telemetry_service
+data_seed_path: environment/data-seed.yaml
+mock_plan_path: environment/mock-plan.yaml
+network_isolation: true

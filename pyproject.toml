@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.116.0",
   "httpx>=0.28.0",
+  "jsonschema>=4.23.0",
   "pydantic>=2.11.0",
   "pydantic-settings>=2.10.0",
   "pyyaml>=6.0.2",
@@ -23,6 +24,7 @@ test = [
 
 [project.scripts]
 test-workflow = "test_workflow.cli:app"
+test-harness-ledger = "test_workflow.ledger_cli:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -44,6 +46,9 @@ markers = [
   "regression: complete regression suite",
   "critical: release-blocking tests",
   "integration: live browser-to-service integration tests",
+  "target_integration: pinned open-source target integration tests",
+  "target_regression: deterministic business regression tests for pinned targets",
+  "harness_integration: staged integration tests for the harness foundation",
   "destructive: tests that modify or delete data",
   "serial: tests that cannot run in parallel",
 ]
@@ -54,3 +59,16 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/demo_app/main.py" = ["E501"]
+"src/test_workflow/cli.py" = ["B008"]
+"src/test_workflow/harness/governance.py" = ["E501", "F401"]
+"src/test_workflow/harness/intelligence.py" = ["E501"]
+"src/test_workflow/harness/__init__.py" = ["I001"]
+"src/test_workflow/ledger_cli.py" = ["B008"]
+"src/test_workflow/proof.py" = ["I001"]
+"tests/integration/test_todomvc_target.py" = ["I001"]
+"tests/unit/test_bundle.py" = ["I001"]
+"tests/unit/test_harness_intelligence.py" = ["E501"]
+"tests/unit/test_specs.py" = ["I001"]

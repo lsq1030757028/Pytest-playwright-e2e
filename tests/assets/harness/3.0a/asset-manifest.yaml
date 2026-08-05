@@ -1,0 +1,15 @@
+id: harness-contracts-3.0a
+version: 1
+purpose: Golden serialization assets for Capability contracts.
+assets:
+  - path: descriptor.json
+    artifact_type: CapabilityDescriptor
+    schema_version: 1
+  - path: request.json
+    artifact_type: CapabilityRequest
+    schema_version: 1
+  - path: result.json
+    artifact_type: CapabilityResult
+    schema_version: 1
+retention: regression
+owner: harness-foundation

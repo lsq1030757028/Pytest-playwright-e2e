@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["accepted", "event_id"],
+  "properties": {
+    "accepted": {"type": "boolean", "const": true},
+    "event_id": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

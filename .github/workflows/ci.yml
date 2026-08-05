@@ -29,10 +29,93 @@ jobs:
         run: uv run ruff check .
 
       - name: Collect tests
-        run: uv run pytest --collect-only
+        shell: bash
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          uv run pytest --collect-only 2>&1 | tee test-results/collect.log
 
       - name: Unit and API tests
         run: uv run pytest tests/unit tests/api --junitxml=test-results/junit-core.xml
+
+      - name: Harness 3.0A contracts integration
+        run: >-
+          uv run pytest tests/integration/test_harness_contracts_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0a.xml
+
+      - name: Harness 3.0B registry and store integration
+        run: >-
+          uv run pytest tests/integration/test_harness_registry_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0b.xml
+
+      - name: Harness 3.0C policy integration
+        run: >-
+          uv run pytest tests/integration/test_harness_policy_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0c.xml
+
+      - name: Harness 3.0D orchestrator integration
+        run: >-
+          uv run pytest tests/integration/test_harness_orchestrator_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0d.xml
+
+      - name: Harness 3.0E existing adapters integration
+        run: >-
+          uv run pytest tests/integration/test_harness_existing_adapters_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-harness-3.0e.xml
+
+      - name: Stage 3 governance integration
+        run: >-
+          uv run pytest tests/integration/test_harness_governance_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-3-governance.xml
+
+      - name: Stage 4 intelligence integration
+        run: >-
+          uv run pytest tests/integration/test_harness_intelligence_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-4-intelligence.xml
+
+      - name: Stage 5 generation proof integration
+        run: >-
+          uv run pytest tests/integration/test_harness_generation_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-5-generation.xml
+
+      - name: Stage 6 diagnosis and repair integration
+        run: >-
+          uv run pytest tests/integration/test_harness_diagnosis_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-6-diagnosis.xml
+
+      - name: Stage 7 regression benchmark integration
+        run: >-
+          uv run pytest tests/integration/test_harness_regression_integration.py
+          -m harness_integration
+          --junitxml=test-results/junit-stage-7-regression.xml
+
+      - name: Complete requirement-to-verdict workflow
+        run: >-
+          uv run pytest tests/integration/test_full_agent_workflow.py
+          -m harness_integration
+          --junitxml=test-results/junit-full-agent-workflow.xml
+
+      - name: Ledger and release asset integration
+        run: |
+          uv run test-harness-ledger validate docs/implementation-ledger.yaml
+          uv run pytest tests/integration/test_harness_ledger_release_integration.py -m harness_integration --junitxml=test-results/junit-ledger-release.xml
+          uv build
+
+      - name: Validate deterministic Replay Bundle
+        run: |
+          uv run test-workflow spec validate experiments/todomvc-golden-loop/spec/test-spec.yaml
+          uv run test-workflow mock verify experiments/todomvc-golden-loop
+          uv run test-workflow bundle validate experiments/todomvc-golden-loop
+          uv run test-workflow replay experiments/todomvc-golden-loop
 
       - name: Browser smoke tests
         run: >-
@@ -58,11 +141,32 @@ jobs:
           --output test-results
           --junitxml=test-results/junit-live-e2e.xml
 
+      - name: Pinned TodoMVC target integration
+        env:
+          RUN_TARGET_INTEGRATION: "1"
+        run: >-
+          uv run pytest tests/integration/test_todomvc_target.py
+          -m target_integration
+          --browser chromium
+          --tracing retain-on-failure
+          --screenshot only-on-failure
+          --video retain-on-failure
+          --output test-results
+          --junitxml=test-results/junit-target-integration.xml
+
+      - name: TodoMVC mutation proof
+        run: >-
+          uv run test-workflow proof run proofs/todomvc/plan.yaml
+          --workspace .target-work/todomvc-proof
+          --output test-results/todomvc-proof
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results
+          path: |
+            test-results
+            dist
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 30

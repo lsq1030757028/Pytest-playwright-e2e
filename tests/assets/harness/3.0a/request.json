@@ -1,0 +1,45 @@
+{
+  "request_id": "request-contract-golden",
+  "capability": {"name": "spec.validate", "version": "1.0.0"},
+  "input_artifacts": [
+    {
+      "artifact_id": "spec/TODO-001/v1",
+      "artifact_type": "TestSpec",
+      "schema_version": 1,
+      "content_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_revisions": {"requirement": "REQ-TODO-001@v1"},
+      "created_by": {"name": "source.register", "version": "1.0.0"},
+      "validity": "valid"
+    }
+  ],
+  "context_request": {
+    "level": "focused",
+    "selectors": [{"namespace": "test.spec", "keys": ["current"]}],
+    "max_items": 10,
+    "max_bytes": 100000,
+    "allow_secrets": false
+  },
+  "budget": {
+    "model_calls": 0,
+    "token_limit": 0,
+    "browser_sessions": 0,
+    "api_calls": 0,
+    "subprocesses": 0,
+    "wall_time_seconds": 30,
+    "artifact_bytes": 100000,
+    "retries": 0
+  },
+  "permissions": {
+    "read": ["artifacts/spec/*"],
+    "write": ["artifacts/validation/*"],
+    "execute": [],
+    "network_domains": [],
+    "allow_model": false,
+    "allow_browser": false,
+    "allow_subprocess": false,
+    "allow_secrets": false
+  },
+  "campaign_id": "CAMPAIGN-TODO-001",
+  "correlation_id": "CORR-TODO-001",
+  "parameters": {}
+}

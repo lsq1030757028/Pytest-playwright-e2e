@@ -1,0 +1,12 @@
+schema_version: "1.0"
+fixtures: []
+browser_storage:
+  - origin: http://todomvc.local
+    local_storage:
+      todos-vanilla-es6:
+        - id: 1001
+          title: Existing active todo
+          completed: false
+        - id: 1002
+          title: Existing completed todo
+          completed: true

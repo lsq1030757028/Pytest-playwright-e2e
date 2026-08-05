@@ -1,0 +1,16 @@
+id: todomvc-regression-benchmark
+cases:
+  - id: cleanup
+    changed_refs: [todo.cleanup]
+    expected_critical_tests: [clear]
+    expected_all_tests: [clear, smoke]
+  - id: persistence
+    changed_refs: [todo.persistence]
+    expected_critical_tests: [persist]
+    expected_all_tests: [persist, smoke]
+thresholds:
+  critical_recall: 1.0
+  overall_recall: 1.0
+  false_green: 0
+  minimum_average_reduction: 0.70
+retention: regression

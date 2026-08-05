@@ -1,0 +1,9 @@
+id: harness-orchestrator-3.0d
+version: 1
+purpose: Golden dynamic DAG and pause-resume execution plan.
+assets:
+  - path: execution-plan.yaml
+    artifact_type: ExecutionPlanFixture
+    schema_version: 1
+retention: regression
+owner: harness-foundation

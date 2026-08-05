@@ -1,0 +1,21 @@
+id: policy-golden
+capability: target.materialize@1.0.0
+context_level: metadata
+required_permissions:
+  read:
+    - targets/manifests/*
+  write:
+    - workspaces/targets/*
+  execute:
+    - git
+  network_domains:
+    - github.com
+budget:
+  api_calls: 1
+  subprocesses: 1
+  wall_time_seconds: 30
+expected:
+  outcome: allow
+  remaining:
+    subprocesses: 0
+    artifact_bytes: 880

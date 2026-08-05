@@ -65,6 +65,21 @@ Before generating code, inspect:
 
 Prefer extending existing abstractions over creating duplicates.
 
+## 3.5 Plan the test environment
+
+Before implementation, produce `EnvironmentSpec`, `DataSeedSpec`, and `MockPlan`.
+
+Rules:
+
+- define a truth boundary with `must_be_real` and `may_be_mocked`
+- never virtualize the behavior under test
+- use controlled data, identity, time, events, devices, or external services to remove unrelated nondeterminism
+- every virtual service must have a pinned contract and explicit behavior
+- keep a minimal real contract/smoke path for high-risk integrations
+- record all environment inputs in the Replay Bundle
+
+Run `test-workflow mock verify` before generating a Replay Manifest.
+
 ## 4. Implement
 
 Rules:
