@@ -1,5 +1,5 @@
 name: Goal / Change
-description: Define an approved goal, scope, acceptance criteria, risks, and release constraints
+description: Define an approved goal, scope, acceptance criteria, risks, mandate, and release constraints
 title: "[Goal] "
 labels: []
 assignees: []
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form for nontrivial development goals. The final implementation and evidence follow `docs/github-development-ssot.md`.
+        Use this form for nontrivial development goals. The final SPEC, implementation, evidence, and release follow `docs/github-development-ssot.md`.
 
   - type: textarea
     id: outcome
@@ -47,8 +47,34 @@ body:
     id: authority
     attributes:
       label: Requirement and decision authority
-      description: Identify who or what can approve requirement, Oracle, Policy, or scope changes.
+      description: Identify who or what can approve Requirement, Oracle, Policy, scope, or Mandate changes.
       placeholder: Product owner, approved requirement, ADR, production invariant, security policy...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: autonomy_mandate
+    attributes:
+      label: Autonomous execution mandate
+      description: Select whether the Goal is covered by the active M1-M3 standing mandate.
+      options:
+        - MANDATE-AUTONOMY-M1-M3 covers this Goal
+        - Not covered; separate authority is required
+        - Requires scope or authority investigation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Roadmap milestone
+      description: Mandate coverage is limited to approved M1-M3 work.
+      options:
+        - M1 Memory and Controlled Evolution
+        - M2 Cross-model Generalization
+        - M3 Project and Architecture Generalization
+        - Outside M1-M3
+        - Not applicable
     validations:
       required: true
 
@@ -83,7 +109,7 @@ body:
     id: current_evidence
     attributes:
       label: Existing evidence and assets
-      description: Link related tests, incidents, Replay Bundles, benchmarks, ADRs, requirements, or prior PRs.
+      description: Link related tests, incidents, Replay Bundles, benchmarks, ADRs, requirements, SPECs, or prior PRs.
       placeholder: Existing evidence, asset paths, or GitHub references...
 
   - type: textarea
@@ -97,11 +123,11 @@ body:
     id: auto_merge
     attributes:
       label: Agent auto-merge authority within this Goal
-      description: DEV3 and other protected changes still require explicit human approval under the SSOT.
+      description: In-mandate DEV0-DEV3 may auto-merge only after all SSOT gates pass. DEV-E production and out-of-mandate actions are excluded.
       options:
-        - Allowed when SSOT gates pass
-        - Not allowed; human merge approval required
-        - Undecided
+        - Allowed under active mandate when SSOT gates pass
+        - Not allowed; separate authority required
+        - Undecided or requires investigation
     validations:
       required: true
 
@@ -110,7 +136,9 @@ body:
     attributes:
       label: Governance acknowledgement
       options:
-        - label: I understand that requirement changes must be versioned and re-assessed rather than silently overwriting prior evidence.
+        - label: I understand that requirement or mandate changes must be versioned and re-assessed rather than silently overwriting prior evidence.
           required: true
-        - label: I understand that test evidence is selected by risk and change boundaries, not by a fixed test-count checklist.
+        - label: I understand that test evidence is selected by risk and real boundaries, not by a fixed test-count checklist.
+          required: true
+        - label: I understand that production data, secrets, destructive external writes, material irreversible cost, and DEV-E production actions are not covered by routine autonomy.
           required: true
