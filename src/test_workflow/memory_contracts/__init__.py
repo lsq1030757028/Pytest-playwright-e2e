@@ -1,3 +1,4 @@
+from . import reference as _reference_module
 from .canonical import CanonicalizationError, canonical_json_bytes, canonical_sha256
 from .models import (
     AccessOperation,
@@ -53,7 +54,6 @@ from .ports import (
     MemoryRevisionPort,
     MemoryStatePort,
 )
-from . import reference as _reference_module
 from .reference_hardened import DeterministicMemoryReference
 
 # Keep the historical module import path safe as well as the package export. Python
