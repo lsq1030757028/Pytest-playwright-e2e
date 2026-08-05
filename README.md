@@ -1,5 +1,8 @@
 # Pytest + Skill + Playwright Test Workflow
 
+> **Project status:** `FOUNDATION_BASELINE`  
+> The v0.1 Harness microkernel and trustworthy execution baseline are merged and released. The project is **not yet a stage-deliverable Test Agent Runtime**. The next roadmap is Memory & Controlled Self-Evolution → Cross-model Generalization → Project / Architecture Generalization. See `docs/agent-os-evolution-roadmap.md` and `docs/implementation-status.md`.
+
 A production-oriented test workflow that separates responsibilities clearly:
 
 - **Skill** controls test decisions, guardrails, evidence requirements, and failure handling.
@@ -25,6 +28,17 @@ Trace / screenshot / console / failed network requests
 Failure classification → Repair or defect report
       ↓
 Quality gate and Markdown/JUnit reports
+```
+
+The internal architecture is evolving toward a domain-specific Agent OS microkernel:
+
+```text
+Capability Atoms
++ Versioned Artifacts
++ Harness Orchestrator
++ Dynamic Execution DAG
++ Progressive Context / Memory
++ Policy / Budget / Permission
 ```
 
 ## Quick start
@@ -76,6 +90,8 @@ config/                           Environment configuration
 - Every failure is classified with evidence.
 - Browser E2E tests cover critical workflows; combinatorial rules stay at unit/API level.
 - Fixed sleeps and brittle layout selectors are rejected by policy.
+- Models propose candidates; deterministic policies control Oracle, permissions, promotion, and release gates.
+- Future memory and self-evolution assets must be versioned, benchmarked, reversible, and isolated from confirmed truth.
 
 ## Deployment
 
