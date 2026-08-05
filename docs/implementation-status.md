@@ -9,8 +9,8 @@
 > 当前主模块阶段：`SPEC_DRAFT_NEXT`  
 > 并行跨切面：`UX Assurance Plane`  
 > 已关闭 UX 模块：`UX0 SYNTHETIC_USER_SHADOW_RUNTIME`  
-> 当前 UX 模块：`UX1 TODOMVC_UX_MUTATION_PROOF`  
-> 当前 UX 阶段：`SPEC_DRAFT`  
+> 当前 UX 模块：`UX1 TODOMVC_UX_MUTATION_PROOF_RUNNER`  
+> 当前 UX 阶段：`VERIFIED_MERGE_PENDING`  
 > UX Gate：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`  
 > 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
@@ -25,19 +25,27 @@ M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT
 UX0 Synthetic User SPEC：MERGED / CLOSED
 UX0 Synthetic User Runtime：MERGED / CLOSED
-TodoMVC UX Mutation Proof：SPEC_DRAFT
-UX Mutation Proof Runner：NOT_IMPLEMENTED
+TodoMVC UX Mutation Proof：SPEC MERGED / CLOSED
+UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
+Five-mutation Campaign：5 / 5 KILLED
 UX Gate Mode：SHADOW / NONBLOCKING
 Human UAT：REQUIRED
 M1 Memory Gate：0 / 1
 Stage Delivery：NOT_READY
 ```
 
+历史 SPEC 阶段记录（非当前状态）：
+
+```text
+TodoMVC UX Mutation Proof：SPEC_DRAFT
+UX Mutation Proof Runner：NOT_IMPLEMENTED
+```
+
 M1.0 已证明 Memory Benchmark、威胁场景、证据和独立 Replay 基线；它不实现生产 Memory Store，也不关闭完整 M1 Memory Gate。
 
 UX0 Synthetic User Shadow Runtime 已完成规范、实现、四条真实 Playwright Journey、独立 Replay、主干合并、Python/GHCR 发布、台账和分支清理。它能够在 UAT 前生成体验证据，但仍是非阻断 SHADOW，不替代 Human UAT。
 
-UX1 当前只进入 Mutation Proof SPEC，定义如何证明 Synthetic User 能杀死真实体验退化。Mutation Runner 尚未实现，也没有修改任何目标源码。
+UX1 TodoMVC Mutation Proof SPEC 已合并，Runner 已在 PR #37 完成 DEV3/UX3 实现并通过真实五 Mutation、精确恢复、独立 Replay 与 Tamper 拒绝证据。当前状态是 `VERIFIED / MERGE_PENDING`，尚未宣称主干、发布或分支清理完成。
 
 ---
 
@@ -56,9 +64,9 @@ flowchart LR
 
     B --> U1[✅ UX0 SPEC]
     U1 --> U2[✅ Shadow Runtime<br/>MERGED / CLOSED]
-    U2 --> U3[🟡 UX1 TodoMVC Mutation Proof<br/>SPEC DRAFT]
-    U3 --> U4[⬜ Mutation Proof Runner]
-    U4 --> U5[⬜ False-positive / False-negative Benchmark]
+    U2 --> U3[✅ UX1 Mutation SPEC<br/>MERGED / CLOSED]
+    U3 --> U4[✅ Mutation Proof Runner<br/>VERIFIED / MERGE_PENDING]
+    U4 --> U5[🟡 False-positive / False-negative Benchmark<br/>NEXT / SPEC]
     U5 --> U6[⬜ Advisory Gate Candidate]
     U6 --> U7[⬜ Blocking Policy Candidate]
 ```
@@ -71,16 +79,7 @@ Memory 仍是项目主里程碑；UX Assurance 是跨 M1—M3 的并行质量面
 
 ### M0 Harness Baseline
 
-已具备：
-
-- Capability Contract；
-- Registry 与不可变 Artifact Store；
-- Policy、Permission 和 Budget；
-- Dynamic Workflow Compiler / Orchestrator；
-- Requirement Revision、Impact、Campaign 和 Valid Progress；
-- Generation、Diagnosis、Regression 和 Verdict；
-- Replay、Mutation Proof、Browser 和 Pinned Target；
-- Python Package 与 GHCR 发布。
+已具备：Capability Contract、Registry、不可变 Artifact Store、Policy、Permission、Budget、Workflow Compiler、Orchestrator、Requirement Revision、Impact、Campaign、Generation、Diagnosis、Regression、Verdict、Replay、功能 Mutation Proof、Browser、Pinned Target、Python Package 与 GHCR 发布。
 
 ### M1.0 Memory Benchmark Harness
 
@@ -113,8 +112,6 @@ Semantic Digest：sha256:001fd1b17d903983a0dae4fd6b7b3c9f492fa663a45d0073c6d1c3b
 
 ## 4. UX0 Synthetic User Shadow Runtime
 
-### 4.1 执行模型
-
 ```text
 Experience Oracle
 → Synthetic User Profile
@@ -127,22 +124,7 @@ Experience Oracle
 → UAT Report / Artifact Manifest / Replay
 ```
 
-### 4.2 已交付
-
-- 强类型 Profile、Environment、Oracle、Journey、Event、Metric、Finding 和 Report；
-- Profile 只描述行为能力，不推断敏感人口属性；
-- Synthetic Fixture Only 和生产账号拒绝；
-- Actor Input 与 evaluator-only 字段隔离；
-- `test-workflow ux validate | run | replay`；
-- 四条真实 Journey：Novice、Returning、Keyboard、Interrupted；
-- 每条 Journey 独立 Browser Context；
-- Semantic State Hash、Screenshot、Trace 和 Semantic Accessibility Snapshot；
-- Rule-first Deterministic Evaluator；
-- AI Finding 固定为非阻断 Candidate；
-- JSON / Markdown 报告、Artifact Manifest 和 Replay Manifest；
-- Artifact Tamper 和 Replay Drift 拒绝。
-
-### 4.3 最终证据
+最终证据：
 
 ```text
 Runtime Merge：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
@@ -163,23 +145,11 @@ Critical False Green：0
 
 ## 5. 当前主模块：M1A Memory Contracts & Namespaces
 
-M1A 独立 SPEC 分支已形成候选，下一步进入 SPEC PR。范围包括：
-
-- Working、Semantic、Episodic、Procedural、Skill Memory；
-- Memory ID、Immutable Revision、Canonical Hash 和 Provenance；
-- Organization、Project、Campaign、Agent、Shared Namespace；
-- Principal、Role、ACL、Default Deny 和 Deny Override；
-- Candidate、Verified、Promoted、Conflicting、Quarantined、Superseded、Revoked、Expired、Forgotten；
-- Compare-and-swap、Conflict Artifact 和 Idempotency；
-- M1B 的厂商无关 Store / Query Ports。
-
-M1A SPEC 不选择数据库、向量库、Embedding Model 或 Ranking Algorithm。
+M1A 仍是主执行指针，目标是定义厂商无关的 Memory 身份、Revision、Hash、Provenance、Namespace、ACL、Lifecycle、CAS、Conflict、Retention、Forget、Store / Query Port。M1A 不选择数据库、向量库、Embedding Model 或 Ranking Algorithm。
 
 ---
 
-## 6. 当前 UX 模块：TodoMVC UX Mutation Proof SPEC
-
-UX1 要证明 Synthetic User 不只会让健康页面通过，还能可靠发现体验退化。
+## 6. 当前 UX 模块：TodoMVC UX Mutation Proof Runner
 
 ```text
 Pinned Baseline PASS
@@ -212,24 +182,49 @@ AI-only Kill：FORBIDDEN
 Exact Restore：REQUIRED
 ```
 
-当前已落：
+已实现：
 
-- 人类可读 SPEC；
-- 机器可读 SPEC；
-- 五 Mutation Catalog；
-- Canonical Target Preimage；
-- Negative / Adversarial 资产；
-- DEV3 测试设计；
-- 离线确定性 SPEC Policy Test。
-
-尚未实现：
-
-- Mutation Domain Models；
-- Disposable Target Sandbox；
-- Exact Patch Runtime；
+- Frozen Domain Models、Catalog Loader 和 source inventory binding；
+- Disposable Target Sandbox、path traversal / symlink / undeclared-file 拒绝；
+- Exact Patch、preimage / postimage / replacement-count 验证；
 - Baseline / Mutated / Restored Runner；
-- Mutation Campaign 和 Replay；
-- False-positive / False-negative Benchmark。
+- Hidden Mutation / Evaluator metadata boundary；
+- 失败恢复和 byte-for-byte restore；
+- JSON / Markdown Report、Artifact Manifest、Replay Manifest；
+- `test-workflow ux-mutation validate | run | replay`；
+- Unit / Contract、真实五 Mutation Playwright Campaign、独立 Replay 与 Tamper 拒绝；
+- 专用 GitHub Action、运行时文档和 branch cleanup registration。
+
+权威 PR 证据：
+
+```text
+Goal：Issue #36
+Implementation PR：#37
+Focused UX1 Gate：Run #10 / 31001744148 — SUCCESS
+Historical UX0 Gate：Run #53 / 31001743622 — SUCCESS
+Focused Unit / Contract：7 / 7 PASS
+Real Mutation Campaign：5 / 5 KILLED
+Baseline False Positive：0
+Critical False Green：0
+Exact Restore：100%
+Independent Replay：100%
+Oracle / Journey Coverage：100% / 100%
+Hidden Metadata Leakage：0
+Undeclared Changed Files：0
+AI-only Kills：0
+Artifact：8928601100
+Artifact Digest：sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
+Semantic Digest：sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
+Manifest Digest：sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
+```
+
+尚未完成：
+
+- Implementation PR 最终全量 CI / Review / Merge；
+- main CI、package/GHCR Release 和 implementation branch cleanup；
+- UX1 closure ledger；
+- False-positive / False-negative Benchmark SPEC 与实现；
+- Advisory 或 Blocking promotion。
 
 ---
 
@@ -237,36 +232,20 @@ Exact Restore：REQUIRED
 
 `MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 范围内的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
 
-仍不覆盖：
+仍不覆盖：真实生产数据、个人数据和 Secret；破坏性生产迁移；不可逆外部写或费用；危险设备动作；更高权威、Oracle、Experience Oracle、Policy 或 Permission 冲突；DEV-E；绕过失败的 CI、Evidence、Review 或 Release Gate。
 
-- M1—M3 外范围扩张；
-- 真实生产数据、个人数据和 Secret；
-- 破坏性生产迁移和不可逆外部写；
-- 实质性不可逆费用；
-- 无受控 Device SPEC 的危险设备动作；
-- 更高权威、Oracle、Experience Oracle、Policy 或 Permission 冲突；
-- DEV-E 生产动作；
-- 绕过失败的 CI、Evidence、Review 或 Release Gate。
-
-Synthetic User / UX Mutation 额外禁止：
-
-- 真实客户账号；
-- 敏感属性和生物识别推断；
-- 无限制网页探索；
-- AI-only Blocker 或 Kill；
-- 修改当前仓库、远程服务或生产目标；
-- 自动替代 Human UAT。
+Synthetic User / UX Mutation 额外禁止：真实客户账号、敏感属性和生物识别推断、无限制网页探索、AI-only Blocker 或 Kill、修改当前仓库/远程服务/生产目标、替代 Human UAT。
 
 ---
 
 ## 8. 近期执行顺序
 
 ```text
-1. UX1 TodoMVC UX Mutation Proof SPEC Review / Merge
-2. M1A Memory Contracts SPEC PR / Merge
-3. UX1 Mutation Proof Runner Implementation
-4. M1A Domain Contracts Implementation
-5. UX False-positive / False-negative Benchmark
+1. UX1 Runner Final CI / Review / Merge
+2. UX1 Main / Release / Cleanup Verification
+3. UX1 Closure Ledger
+4. M1A Memory Contracts SPEC PR / Merge
+5. UX False-positive / False-negative Benchmark SPEC
 6. M1B Store & Progressive Retrieval
 ```
 
