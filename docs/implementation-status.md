@@ -8,9 +8,9 @@
 > 当前主模块：`M1A MEMORY_CONTRACTS_AND_NAMESPACES`  
 > 当前主模块阶段：`SPEC_DRAFT_NEXT`  
 > 并行跨切面：`UX Assurance Plane`  
-> 已关闭 UX 模块：`UX0 SYNTHETIC_USER_SHADOW_RUNTIME`  
-> 当前 UX 模块：`UX1 TODOMVC_UX_MUTATION_PROOF_RUNNER`  
-> 当前 UX 阶段：`VERIFIED_MERGE_PENDING`  
+> 已关闭 UX 模块：`UX0 SYNTHETIC_USER_SHADOW_RUNTIME`、`UX1 TODOMVC_UX_MUTATION_PROOF_RUNNER`  
+> 下一 UX 模块：`UX2 FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK_SPEC`  
+> 当前 UX 阶段：`UX1_MERGED_CLOSED / UX2_SPEC_NEXT`  
 > UX Gate：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`  
 > 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
@@ -25,27 +25,29 @@ M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT
 UX0 Synthetic User SPEC：MERGED / CLOSED
 UX0 Synthetic User Runtime：MERGED / CLOSED
-TodoMVC UX Mutation Proof：SPEC MERGED / CLOSED
-UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
+TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
+UX Mutation Proof Runner：MERGED / CLOSED
 Five-mutation Campaign：5 / 5 KILLED
+UX False-positive / False-negative Benchmark：NEXT / SPEC
 UX Gate Mode：SHADOW / NONBLOCKING
 Human UAT：REQUIRED
 M1 Memory Gate：0 / 1
 Stage Delivery：NOT_READY
 ```
 
-历史 SPEC 阶段记录（非当前状态）：
+历史阶段记录（非当前状态）：
 
 ```text
 TodoMVC UX Mutation Proof：SPEC_DRAFT
 UX Mutation Proof Runner：NOT_IMPLEMENTED
+UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
 ```
 
 M1.0 已证明 Memory Benchmark、威胁场景、证据和独立 Replay 基线；它不实现生产 Memory Store，也不关闭完整 M1 Memory Gate。
 
 UX0 Synthetic User Shadow Runtime 已完成规范、实现、四条真实 Playwright Journey、独立 Replay、主干合并、Python/GHCR 发布、台账和分支清理。它能够在 UAT 前生成体验证据，但仍是非阻断 SHADOW，不替代 Human UAT。
 
-UX1 TodoMVC Mutation Proof SPEC 已合并，Runner 已在 PR #37 完成 DEV3/UX3 实现并通过真实五 Mutation、精确恢复、独立 Replay 与 Tamper 拒绝证据。当前状态是 `VERIFIED / MERGE_PENDING`，尚未宣称主干、发布或分支清理完成。
+UX1 TodoMVC Mutation Proof SPEC 与 Runner 均已合并。Runner 已完成五类真实 Mutation 的 Baseline / Mutated / Restored Playwright 证明、精确恢复、独立 Replay、Tamper 拒绝、主干验证、Python/GHCR 发布和实现分支清理。下一 UX 节点是 False-positive / False-negative Benchmark SPEC；Advisory / Blocking 仍禁用。
 
 ---
 
@@ -65,7 +67,7 @@ flowchart LR
     B --> U1[✅ UX0 SPEC]
     U1 --> U2[✅ Shadow Runtime<br/>MERGED / CLOSED]
     U2 --> U3[✅ UX1 Mutation SPEC<br/>MERGED / CLOSED]
-    U3 --> U4[✅ Mutation Proof Runner<br/>VERIFIED / MERGE_PENDING]
+    U3 --> U4[✅ Mutation Proof Runner<br/>MERGED / CLOSED]
     U4 --> U5[🟡 False-positive / False-negative Benchmark<br/>NEXT / SPEC]
     U5 --> U6[⬜ Advisory Gate Candidate]
     U6 --> U7[⬜ Blocking Policy Candidate]
@@ -149,7 +151,7 @@ M1A 仍是主执行指针，目标是定义厂商无关的 Memory 身份、Revis
 
 ---
 
-## 6. 当前 UX 模块：TodoMVC UX Mutation Proof Runner
+## 6. 已关闭 UX1 模块：TodoMVC UX Mutation Proof Runner
 
 ```text
 Pinned Baseline PASS
@@ -182,7 +184,7 @@ AI-only Kill：FORBIDDEN
 Exact Restore：REQUIRED
 ```
 
-已实现：
+已交付：
 
 - Frozen Domain Models、Catalog Loader 和 source inventory binding；
 - Disposable Target Sandbox、path traversal / symlink / undeclared-file 拒绝；
@@ -193,16 +195,22 @@ Exact Restore：REQUIRED
 - JSON / Markdown Report、Artifact Manifest、Replay Manifest；
 - `test-workflow ux-mutation validate | run | replay`；
 - Unit / Contract、真实五 Mutation Playwright Campaign、独立 Replay 与 Tamper 拒绝；
-- 专用 GitHub Action、运行时文档和 branch cleanup registration。
+- 专用 GitHub Action、运行时文档、状态台账和 branch cleanup。
 
-权威 PR 证据：
+最终交付事实：
 
 ```text
-Goal：Issue #36
-Implementation PR：#37
-Focused UX1 Gate：Run #10 / 31001744148 — SUCCESS
-Historical UX0 Gate：Run #53 / 31001743622 — SUCCESS
-Focused Unit / Contract：7 / 7 PASS
+Goal：Issue #36 — CLOSED
+Implementation PR：#37 — MERGED
+Implementation Merge：2b5bc958e5c302cef8649e28ff13d8ebafa3afcc
+Final PR UX1 Gate：Run #16 / 31002474167 — SUCCESS
+Final PR Full Quality：Run #173 / 31002474184 — SUCCESS
+Main UX1 Gate：Run #17 / 31002717005 — SUCCESS
+Main Full Quality：Run #174 / 31002716954 — SUCCESS
+Release：Run #14 / 31002716980 — SUCCESS
+Cleanup：Run #12 / 31002717017 — SUCCESS
+Implementation Branch：DELETED
+Focused Unit / Contract / Delivery：10 / 10 PASS
 Real Mutation Campaign：5 / 5 KILLED
 Baseline False Positive：0
 Critical False Green：0
@@ -212,19 +220,23 @@ Oracle / Journey Coverage：100% / 100%
 Hidden Metadata Leakage：0
 Undeclared Changed Files：0
 AI-only Kills：0
-Artifact：8928601100
-Artifact Digest：sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
-Semantic Digest：sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
-Manifest Digest：sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
+Main UX Artifact：8929019254
+Main UX Artifact Digest：sha256:c7e5f7e9ce4e2190c7e043765b3176fcc459782439f58c472954de417396c1fa
+Main Semantic Digest：sha256:0ec56a6ca9f0b5f2c9b4564b5bc173df7f0621e32a15d1d84fa8711dad1c6322
+Main Manifest Digest：sha256:34c8915bccb010a814b7783f43db25bcaf320c8a4634497e3eb70a4417622fed
+Python Distribution：8928961328
+Python Digest：sha256:bd18044e8fa442c54afb0e1d4e90d25e0caec81fc07b7b1be6b7152a2880d086
+Docker Build Record：8928992374
+Docker Digest：sha256:5e857db4bfe699961cb3d6934926e8587728763d5422c3f5c93ccb3dfb0f4761
+Image Digest：sha256:e119014c9810d745ff989bf5b46f5aa19f71acf094e854130c968a26d2aa10ac
+Image Config：sha256:7f6d6488d9562074a53ac0acd0de8768d93764b2c2bf1757a400ea0d2023287e
 ```
 
-尚未完成：
+尚未完成、且不属于 UX1 Runtime closure：
 
-- Implementation PR 最终全量 CI / Review / Merge；
-- main CI、package/GHCR Release 和 implementation branch cleanup；
-- UX1 closure ledger；
 - False-positive / False-negative Benchmark SPEC 与实现；
-- Advisory 或 Blocking promotion。
+- Advisory 或 Blocking promotion；
+- 替代 Human UAT。
 
 ---
 
@@ -241,12 +253,10 @@ Synthetic User / UX Mutation 额外禁止：真实客户账号、敏感属性和
 ## 8. 近期执行顺序
 
 ```text
-1. UX1 Runner Final CI / Review / Merge
-2. UX1 Main / Release / Cleanup Verification
-3. UX1 Closure Ledger
-4. M1A Memory Contracts SPEC PR / Merge
-5. UX False-positive / False-negative Benchmark SPEC
-6. M1B Store & Progressive Retrieval
+1. UX1 Closure Ledger PR / Merge
+2. M1A Memory Contracts SPEC PR / Merge
+3. UX False-positive / False-negative Benchmark SPEC
+4. M1B Store & Progressive Retrieval
 ```
 
 UX 与 Memory 可交错推进，但不能通过并行降低各自的 Evidence Gate。
