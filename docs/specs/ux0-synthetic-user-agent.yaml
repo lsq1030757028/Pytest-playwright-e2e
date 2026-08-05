@@ -1,0 +1,450 @@
+spec_id: SPEC-UX0-SYNTHETIC-USER
+version: 1.0.0
+status: CANDIDATE
+goal_issue: 29
+scope_kind: CROSS_CUTTING_M1_M3
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+assurance:
+  spec_phase: DEV3
+  implementation_phase: DEV3
+  initial_runtime_mode: SHADOW
+  blocking_promotion_requires_versioned_policy_event: true
+
+purpose: >-
+  Add a versioned ExperienceEnvironment and a governed SyntheticUserAgent that
+  executes real Playwright journeys, collects deterministic user-experience
+  evidence, proposes AI-assisted findings, and produces replayable UAT-readiness
+  reports before human UAT.
+
+non_goals:
+  - replace_human_uat
+  - infer_sensitive_demographics
+  - emotion_or_biometric_inference
+  - ai_only_release_blocking
+  - unrestricted_web_exploration
+  - automatic_requirement_or_design_change
+  - production_personal_data_or_real_customer_accounts
+  - subjective_visual_taste_as_oracle
+
+core_invariants:
+  - experience_environment_is_versioned_campaign_input
+  - synthetic_user_agent_is_governed_controller_not_free_form_persona
+  - real_browser_interaction_required
+  - experience_oracle_is_external_to_acting_model
+  - evaluator_only_fields_never_reach_actor
+  - ai_findings_are_candidate_only
+  - blocker_requires_oracle_clause_and_e3_or_e4_evidence
+  - relevance_or_model_confidence_cannot_override_permission_or_oracle
+  - human_uat_remains_distinct
+  - initial_rollout_is_shadow_only
+
+experience_environment:
+  identity_fields:
+    - environment_id
+    - revision
+    - schema_version
+    - content_hash
+  required_pins:
+    - persona_revision
+    - journey_revision
+    - requirement_revision
+    - design_system_revision
+    - code_sha
+    - fixture_revision
+    - browser_revision
+    - playwright_revision
+    - evaluator_revision
+    - capability_versions
+    - random_seed
+  context_fields:
+    device_profile:
+      - viewport_width
+      - viewport_height
+      - device_scale_factor
+      - browser_engine
+      - input_modes
+      - prefers_reduced_motion
+      - zoom_percent
+    locale_timezone:
+      - locale
+      - timezone
+      - date_number_currency_format
+    network_profile:
+      - latency_ms
+      - download_kbps
+      - upload_kbps
+      - offline_schedule
+      - failure_injections
+    accessibility_context:
+      - keyboard_only
+      - screen_reader_semantics
+      - focus_visibility_required
+      - contrast_profile
+      - motion_constraints
+    prior_knowledge:
+      allowed_values: [NOVICE, RETURNING, EXPERT, INTERRUPTED]
+    account_and_data_state:
+      synthetic_fixture_only: true
+      production_account_forbidden: true
+    budgets:
+      - max_steps
+      - max_backtracks
+      - max_retries
+      - time_budget_seconds
+      - context_budget_units
+  sensitive_profile_rules:
+    protected_trait_inference_forbidden: true
+    demographic_stereotyping_forbidden: true
+    biometric_input_forbidden: true
+  canonical_hash:
+    algorithm: sha256
+    deterministic_serialization: true
+    physical_runner_metadata_excluded: true
+
+synthetic_user_profile:
+  required_fields:
+    - profile_id
+    - revision
+    - goal_comprehension_level
+    - prior_knowledge
+    - exploration_tendency
+    - error_recovery_behavior
+    - input_preferences
+    - accessibility_constraints
+    - attention_and_interruption_model
+    - action_selection_policy_ref
+  forbidden_fields:
+    - inferred_race
+    - inferred_health_condition
+    - inferred_religion
+    - inferred_sexual_orientation
+    - biometric_emotion
+  profile_is_behavioral_not_demographic: true
+
+experience_oracle:
+  required_fields:
+    - oracle_id
+    - revision
+    - journey_goal
+    - business_value
+    - start_state
+    - required_checkpoints
+    - success_outcomes
+    - forbidden_outcomes
+    - required_feedback
+    - recovery_expectations
+    - accessibility_obligations
+    - authoritative_friction_budgets
+    - evidence_requirements
+    - severity_floor
+    - authority_refs
+  subjective_preference_without_authority_is_oracle: false
+  hidden_from_actor:
+    - hidden_expected_action
+    - evaluator_scoring_key
+    - mutation_location
+    - disallowed_shortcut
+
+journey_contract:
+  required_fields:
+    - journey_id
+    - revision
+    - experience_oracle_ref
+    - persona_refs
+    - environment_refs
+    - start_fixture_ref
+    - allowed_capabilities
+    - required_observations
+    - cleanup_and_recovery
+  actor_receives:
+    - user_goal
+    - visible_ui
+    - allowed_interaction_capabilities
+    - behavioral_profile
+  actor_never_receives:
+    - evaluator_only
+    - hidden_answer_key
+    - preferred_locator_sequence
+    - mutation_identity
+
+agent_contract:
+  agent_name: SyntheticUserAgent
+  execution_model: governed_controller_over_capability_atoms
+  capabilities:
+    - ux.profile.resolve
+    - ux.journey.compile
+    - ux.environment.materialize
+    - ux.execute.playwright
+    - ux.observe.interaction
+    - ux.observe.accessibility
+    - ux.observe.feedback_and_recovery
+    - ux.evaluate.deterministic
+    - ux.evaluate.ai_proposal
+    - ux.adjudicate.evidence_gate
+    - ux.report
+    - ux.replay
+  permission_rules:
+    production_personal_data: DENY
+    secret_access: DENY
+    unrestricted_navigation: DENY
+    destructive_action_without_fixture_and_recovery: DENY
+    oracle_change: DENY
+    requirement_change: DENY
+    release_verdict_direct_write: DENY
+  side_effects:
+    allowed:
+      - synthetic_fixture_write
+      - browser_session_state
+      - screenshots
+      - traces
+      - videos
+      - accessibility_snapshots
+      - reports
+    forbidden:
+      - production_write
+      - irreversible_external_action
+      - uncontrolled_account_creation
+  budgets_required: true
+  capability_results_are_artifacts_not_campaign_mutation: true
+
+observability:
+  interaction_events:
+    - NAVIGATE
+    - VIEW_PRESENTED
+    - ACTION_ATTEMPTED
+    - ACTION_SUCCEEDED
+    - ACTION_FAILED
+    - FEEDBACK_OBSERVED
+    - FOCUS_CHANGED
+    - VALIDATION_ERROR
+    - BACKTRACK
+    - REPEAT_ACTION
+    - DEAD_END
+    - RECOVERY_ATTEMPTED
+    - RECOVERY_SUCCEEDED
+    - JOURNEY_COMPLETED
+    - JOURNEY_ABANDONED
+  required_event_fields:
+    - event_id
+    - sequence
+    - action_kind
+    - semantic_target_ref
+    - before_state_hash
+    - after_state_hash
+    - observable_result
+    - evidence_refs
+  derived_metrics:
+    - task_completion
+    - checkpoint_completion
+    - step_count
+    - backtrack_count
+    - repeated_action_count
+    - dead_end_count
+    - recovery_success
+    - required_feedback_latency
+    - focus_order_violations
+    - keyboard_completion
+    - viewport_overflow
+    - semantic_accessibility_failures
+    - unexpected_state_loss
+  forbidden_metric_claims:
+    - inferred_emotion
+    - inferred_satisfaction_without_evidence
+
+ai_finding_contract:
+  status: CANDIDATE_ONLY
+  required_fields:
+    - finding_id
+    - category
+    - observation_refs
+    - evidence_refs
+    - affected_oracle_clause_refs
+    - proposed_severity
+    - uncertainty
+    - alternative_explanations
+    - suggested_followup
+  ai_may:
+    - propose_confusing_copy
+    - propose_discoverability_issue
+    - propose_inconsistent_feedback
+    - propose_recovery_friction
+    - summarize_journey
+  ai_may_not:
+    - mark_blocker
+    - change_oracle
+    - change_requirement
+    - lower_evidence_threshold
+    - change_release_state
+  unsupported_finding_action: KEEP_NONBLOCKING_CANDIDATE
+
+experience_evidence_levels:
+  E0: model_impression
+  E1: single_weak_observation
+  E2: reproducible_telemetry_or_accessibility_signal
+  E3: deterministic_journey_reproduction_with_trace_state_and_screenshot
+  E4: independent_replay_mutation_or_human_confirmed_benchmark
+
+finding_lifecycle:
+  states: [OBSERVED, SUPPORTED, REPRODUCED, PROVEN, CONTROLLED, DISMISSED]
+  promotion_rules:
+    OBSERVED_to_SUPPORTED: evidence_level_at_least_E2
+    SUPPORTED_to_REPRODUCED: evidence_level_at_least_E3
+    REPRODUCED_to_PROVEN: evidence_level_at_least_E4
+    PROVEN_to_CONTROLLED: regression_asset_and_gate_present
+  ai_self_promotion_forbidden: true
+
+ux_assurance_levels:
+  UX0:
+    applies_to: no_user_facing_effect
+    journey_required: false
+  UX1:
+    applies_to: normal_user_facing_change
+    minimum_matrix:
+      personas: 1
+      journeys: 1
+      recovery_paths: 0
+  UX2:
+    applies_to: important_workflow_or_rule_change
+    minimum_matrix:
+      personas: 2
+      input_modes: 2
+      recovery_paths: 1
+      ai_critique: advisory
+  UX3:
+    applies_to:
+      - money
+      - authorization
+      - privacy
+      - destructive_action
+      - irreversible_action
+      - data_loss
+      - release_critical_journey
+    minimum_matrix:
+      personas: 3
+      input_modes: 2
+      recovery_paths: 2
+      repeated_replay: 3
+      adversarial_environment: true
+  escalation_only_without_explicit_evidence: true
+
+verdict_contract:
+  modes: [SHADOW, ADVISORY, BLOCKING]
+  initial_mode: SHADOW
+  verdicts: [PASS, WARN, FAIL, INCONCLUSIVE, BLOCKED, INVALID]
+  precedence:
+    - INVALID_EVIDENCE
+    - FORBIDDEN_OUTCOME
+    - CRITICAL_TASK_FAILURE
+    - ACCESSIBILITY_TASK_BLOCK
+    - RECOVERY_FAILURE
+    - AUTHORITATIVE_FRICTION_BUDGET_FAILURE
+    - NONBLOCKING_CANDIDATE_FINDINGS
+  blocking_rules:
+    forbidden_or_irreversible_outcome:
+      minimum_evidence: E3
+      verdict: FAIL
+    critical_journey_not_completed:
+      minimum_evidence: E3
+      verdict: FAIL
+    accessibility_prevents_required_task:
+      minimum_evidence: E3
+      verdict: FAIL
+    authorization_payment_privacy_or_data_loss_ambiguity:
+      E2: INCONCLUSIVE
+      E3_or_E4: FAIL
+    subjective_copy_or_visual_preference:
+      minimum_evidence: E0
+      verdict: WARN
+      blocking: false
+  ai_opinion_alone_blocks: false
+  missing_oracle_action: BLOCKED
+  tampered_evidence_action: INVALID
+
+ci_rhythms:
+  PR_FAST_GATE:
+    select: affected_journeys
+    primary_profile_required: true
+    deterministic_checks_required: true
+  STAGE_GATE:
+    persona_device_locale_input_matrix: true
+    recovery_scenarios_required: true
+  NIGHTLY_RELEASE_GATE:
+    critical_journey_replay: true
+    adversarial_environment: true
+    stability_and_baseline_comparison: true
+  HUMAN_UAT:
+    remains_required_when_product_policy_requires: true
+    receives_evidence_bundle: true
+
+rollout_policy:
+  phase_1: SPEC_ONLY
+  phase_2: SHADOW_CONTRACTS_AND_RUNNER
+  phase_3: TODOMVC_UX_MUTATION_PROOF
+  phase_4: ADVISORY_PR_GATE
+  phase_5: BLOCKING_GATE_CANDIDATE
+  blocking_promotion_prerequisites:
+    - false_positive_benchmark_pass
+    - false_negative_mutation_proof_pass
+    - independent_replay_pass
+    - critical_false_green_zero
+    - versioned_policy_event
+    - rollback_verified
+  rollback: disable_gate_preserve_historical_evidence
+
+initial_vertical_slice:
+  target: pinned_todomvc
+  journeys:
+    - novice_adds_task_and_observes_persistence_feedback
+    - returning_user_completes_filters_and_preserves_state
+    - keyboard_only_primary_journey
+    - interrupted_user_refreshes_and_resumes
+  mutations:
+    - missing_save_or_persistence_feedback
+    - broken_focus_order
+    - state_loss_after_refresh
+    - misleading_filter_count
+  expected_proof: NORMAL_PASS_MUTATION_FAIL_RESTORED_PASS
+
+integration_points:
+  TestSpec:
+    adds:
+      - experience_oracle_ref
+      - journey_refs
+      - ux_assurance_level
+  Harness:
+    adds:
+      - ux_capability_descriptors
+      - experience_environment_pin
+      - evidence_and_budget_events
+  Campaign:
+    adds:
+      - experience_environment_revision
+      - ux_mode
+      - persona_and_journey_matrix
+  Memory:
+    allowed:
+      - store_verified_ux_findings_as_candidate_or_evidence_bearing_memory
+    forbidden:
+      - ai_finding_to_oracle
+      - ai_finding_to_policy
+      - ai_finding_to_permission
+  Regression:
+    admission_requires:
+      - proven_finding
+      - stable_reproduction
+      - explicit_oracle
+      - acceptable_maintenance_cost
+
+acceptance_gates:
+  experience_environment_typed_versioned_hashable: true
+  real_playwright_interaction_required: true
+  evaluator_leakage: 0
+  ai_only_blockers: 0
+  blockers_without_oracle_clause: 0
+  blockers_below_E3: 0
+  sensitive_profile_inference: 0
+  production_personal_data_access: 0
+  replayable_critical_journeys_percent: 100
+  initial_mode: SHADOW
+  human_uat_replaced: false
+  critical_false_green: 0
