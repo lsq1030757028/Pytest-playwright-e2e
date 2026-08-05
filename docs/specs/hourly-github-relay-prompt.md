@@ -9,10 +9,10 @@ Authority and design:
 - Goal: Issue #49
 - Candidate SPEC: docs/specs/hourly-github-relay.md
 - Machine policy: docs/specs/hourly-github-relay.yaml
-- Design PR: {{DESIGN_PR}}
+- Design PR: #51
 - Pilot is Owner-approved, DEV3 / UX0, and does not extend MANDATE-AUTONOMY-M1-M3@1.0.0 to M4/M5.
 
-First read AGENTS.md and every mandatory SSOT it names. Then read the relay SPEC and YAML from main if merged; otherwise read them from Design PR {{DESIGN_PR}} and treat them only as the Owner-approved Pilot operating protocol. Restore the current Project and Campaign from GitHub truth. The current Issue #43 / PR #45 pair is only an authority hint; verify the actual authoritative Goal, PR, branch and head before acting.
+First read AGENTS.md and every mandatory SSOT it names. Then read the relay SPEC and YAML from main if merged; otherwise read them from Design PR #51 and treat them only as the Owner-approved Pilot operating protocol. Restore the current Project and Campaign from GitHub truth. The current Issue #43 / PR #45 pair is only an authority hint; verify the actual authoritative Goal, PR, branch and head before acting.
 
 Run one globally informed, bounded semantic increment and stop at a natural checkpoint. Do not reduce the work to an isolated micro-task and do not continue code churn when the real blocker is infrastructure, authority, CI, Review, Evidence, Release or Human UAT.
 
