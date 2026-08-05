@@ -21,6 +21,7 @@ from .runner import run_tests
 from .serialization import load_model
 from .specs import EnvironmentSpec, MockPlan, TestSpec
 from .targets import TargetManager
+from .ux import UXShadowRunner, UXVerdict
 from .virtual_service import create_virtual_service, load_behavior
 
 app = typer.Typer(no_args_is_help=True, help="Pytest + Skill + Playwright workflow CLI")
@@ -34,6 +35,10 @@ memory_app = typer.Typer(
     no_args_is_help=True,
     help="Validate, execute, and replay governed Memory benchmarks",
 )
+ux_app = typer.Typer(
+    no_args_is_help=True,
+    help="Validate, execute, and replay Synthetic User SHADOW campaigns",
+)
 app.add_typer(spec_app, name="spec")
 app.add_typer(bundle_app, name="bundle")
 app.add_typer(env_app, name="env")
@@ -41,6 +46,7 @@ app.add_typer(mock_app, name="mock")
 app.add_typer(proof_app, name="proof")
 app.add_typer(target_app, name="target")
 app.add_typer(memory_app, name="memory")
+app.add_typer(ux_app, name="ux")
 
 
 @app.command()
@@ -153,9 +159,9 @@ def serve_mock(
     )
     if selected is None or not selected.behavior_path:
         raise typer.BadParameter(f"no behavior configured for dependency {dependency!r}")
-    report = validate_mock_configuration(root)
-    if not report.valid:
-        typer.echo(report.model_dump_json(indent=2))
+    result = validate_mock_configuration(root)
+    if not result.valid:
+        typer.echo(result.model_dump_json(indent=2))
         raise typer.Exit(code=2)
     behavior = load_behavior(root / selected.behavior_path)
     uvicorn.run(create_virtual_service(behavior), host=host, port=port)
@@ -289,6 +295,77 @@ def replay_memory_benchmark(
         )
     )
     if report.verdict != BenchmarkVerdict.PASS:
+        raise typer.Exit(code=2)
+
+
+@ux_app.command("validate")
+def validate_ux_campaign(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+) -> None:
+    """Validate a Synthetic User SHADOW campaign and its revision pins."""
+    loaded = UXShadowRunner().validate(plan_file)
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": loaded.plan.campaign_id,
+                "mode": loaded.plan.mode.value,
+                "spec_ref": loaded.plan.spec_ref,
+                "approval_ref": loaded.plan.approval_ref,
+                "journeys": len(loaded.catalog.journeys),
+                "profiles": len(loaded.catalog.profiles),
+                "environments": len(loaded.catalog.environments),
+                "human_uat_required": loaded.plan.human_uat_required,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
+
+@ux_app.command("run")
+def run_ux_campaign(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+    workspace: Path = typer.Option(Path(".target-work/ux-shadow")),
+    output: Path = typer.Option(Path("test-results/ux-shadow")),
+) -> None:
+    """Execute real Synthetic User journeys in nonblocking SHADOW mode."""
+    report = UXShadowRunner().run(
+        plan_file,
+        workspace=workspace,
+        output_dir=output,
+    )
+    typer.echo(report.model_dump_json(indent=2))
+    if report.verdict in {UXVerdict.INVALID, UXVerdict.BLOCKED}:
+        raise typer.Exit(code=2)
+
+
+@ux_app.command("replay")
+def replay_ux_campaign(
+    bundle_dir: Path = typer.Argument(..., exists=True, file_okay=False),
+    workspace: Path = typer.Option(Path(".target-work/ux-shadow-replay")),
+) -> None:
+    """Verify UX evidence hashes and independently replay the pinned campaign."""
+    try:
+        report = UXShadowRunner().replay(bundle_dir, workspace=workspace)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=2) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": report.campaign_id,
+                "mode": report.mode.value,
+                "verdict": report.verdict.value,
+                "release_effect": report.release_effect,
+                "human_uat_required": report.human_uat_required,
+                "semantic_digest": report.semantic_digest,
+            },
+            indent=2,
+        )
+    )
+    if report.verdict in {UXVerdict.INVALID, UXVerdict.BLOCKED}:
         raise typer.Exit(code=2)
 
 

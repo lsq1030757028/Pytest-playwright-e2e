@@ -1,0 +1,248 @@
+catalog_id: UX0-TODOMVC-SHADOW-CATALOG
+version: 1.0.0
+spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+profiles:
+  - &novice
+    profile_id: novice-todo-user
+    revision: 1.0.0
+    prior_knowledge: NOVICE
+    goal_comprehension_level: BASIC
+    exploration_tendency: MODERATE
+    error_recovery_behavior: READ_VISIBLE_FEEDBACK_THEN_RETRY_ONCE
+    input_preferences: [POINTER, KEYBOARD]
+    accessibility_constraints: []
+    attention_and_interruption_model: CONTINUOUS
+    action_selection_policy_ref: deterministic-visible-affordance-v1
+  - &returning
+    profile_id: returning-todo-user
+    revision: 1.0.0
+    prior_knowledge: RETURNING
+    goal_comprehension_level: NORMAL
+    exploration_tendency: LOW
+    error_recovery_behavior: USE_FILTER_AND_VISIBLE_STATE
+    input_preferences: [POINTER, KEYBOARD]
+    accessibility_constraints: []
+    attention_and_interruption_model: CONTINUOUS
+    action_selection_policy_ref: deterministic-returning-v1
+  - &keyboard
+    profile_id: keyboard-todo-user
+    revision: 1.0.0
+    prior_knowledge: RETURNING
+    goal_comprehension_level: NORMAL
+    exploration_tendency: LOW
+    error_recovery_behavior: USE_VISIBLE_FOCUS_AND_SEMANTIC_NAME
+    input_preferences: [KEYBOARD]
+    accessibility_constraints: [FOCUS_VISIBLE, SEMANTIC_NAME_REQUIRED]
+    attention_and_interruption_model: CONTINUOUS
+    action_selection_policy_ref: deterministic-keyboard-v1
+  - &interrupted
+    profile_id: interrupted-todo-user
+    revision: 1.0.0
+    prior_knowledge: INTERRUPTED
+    goal_comprehension_level: NORMAL
+    exploration_tendency: LOW
+    error_recovery_behavior: REFRESH_AND_RESUME_FROM_VISIBLE_STATE
+    input_preferences: [POINTER]
+    accessibility_constraints: []
+    attention_and_interruption_model: REFRESH_AFTER_PRIMARY_ACTION
+    action_selection_policy_ref: deterministic-resume-v1
+
+environments:
+  - &env_novice
+    environment_id: todomvc-desktop-novice
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: novice-todo-user@1.0.0
+    journey_revision: novice-add-task@1.0.0
+    requirement_revision: REQ-TODOMVC-ADD@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-EMPTY@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: deterministic-ux-evaluator-v1
+    capability_versions: {ux.execute.playwright: 1.0.0, ux.evaluate.deterministic: 1.0.0}
+    random_seed: 1030757028
+    device_profile: {viewport_width: 1280, viewport_height: 720, device_scale_factor: 1, browser_engine: chromium, input_modes: [POINTER, KEYBOARD], prefers_reduced_motion: false, zoom_percent: 100}
+    locale_timezone: {locale: en-US, timezone: UTC, date_number_currency_format: en-US}
+    network_profile: {latency_ms: 0, download_kbps: 100000, upload_kbps: 100000, offline_schedule: [], failure_injections: []}
+    accessibility_context: {keyboard_only: false, screen_reader_semantics: true, focus_visibility_required: true, contrast_profile: DEFAULT, motion_constraints: NONE}
+    prior_knowledge: NOVICE
+    account_and_data_state: {fixture_ref: UX-TODOMVC-EMPTY@1.0.0, synthetic_fixture_only: true, production_account: false}
+    budgets: {max_steps: 8, max_backtracks: 1, max_retries: 1, time_budget_seconds: 30, context_budget_units: 1000}
+  - &env_returning
+    environment_id: todomvc-desktop-returning
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: returning-todo-user@1.0.0
+    journey_revision: returning-filter-persistence@1.0.0
+    requirement_revision: REQ-TODOMVC-FILTER-PERSIST@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-EMPTY@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: deterministic-ux-evaluator-v1
+    capability_versions: {ux.execute.playwright: 1.0.0, ux.observe.feedback_and_recovery: 1.0.0}
+    random_seed: 1030757028
+    device_profile: {viewport_width: 1280, viewport_height: 720, device_scale_factor: 1, browser_engine: chromium, input_modes: [POINTER, KEYBOARD], prefers_reduced_motion: false, zoom_percent: 100}
+    locale_timezone: {locale: en-US, timezone: UTC, date_number_currency_format: en-US}
+    network_profile: {latency_ms: 0, download_kbps: 100000, upload_kbps: 100000, offline_schedule: [], failure_injections: []}
+    accessibility_context: {keyboard_only: false, screen_reader_semantics: true, focus_visibility_required: true, contrast_profile: DEFAULT, motion_constraints: NONE}
+    prior_knowledge: RETURNING
+    account_and_data_state: {fixture_ref: UX-TODOMVC-EMPTY@1.0.0, synthetic_fixture_only: true, production_account: false}
+    budgets: {max_steps: 12, max_backtracks: 2, max_retries: 1, time_budget_seconds: 45, context_budget_units: 1000}
+  - &env_keyboard
+    environment_id: todomvc-keyboard
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: keyboard-todo-user@1.0.0
+    journey_revision: keyboard-primary@1.0.0
+    requirement_revision: REQ-TODOMVC-KEYBOARD@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-EMPTY@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: deterministic-ux-evaluator-v1
+    capability_versions: {ux.execute.playwright: 1.0.0, ux.observe.accessibility: 1.0.0}
+    random_seed: 1030757028
+    device_profile: {viewport_width: 1280, viewport_height: 720, device_scale_factor: 1, browser_engine: chromium, input_modes: [KEYBOARD], prefers_reduced_motion: true, zoom_percent: 200}
+    locale_timezone: {locale: en-US, timezone: UTC, date_number_currency_format: en-US}
+    network_profile: {latency_ms: 0, download_kbps: 100000, upload_kbps: 100000, offline_schedule: [], failure_injections: []}
+    accessibility_context: {keyboard_only: true, screen_reader_semantics: true, focus_visibility_required: true, contrast_profile: HIGH, motion_constraints: REDUCED}
+    prior_knowledge: RETURNING
+    account_and_data_state: {fixture_ref: UX-TODOMVC-EMPTY@1.0.0, synthetic_fixture_only: true, production_account: false}
+    budgets: {max_steps: 8, max_backtracks: 1, max_retries: 1, time_budget_seconds: 45, context_budget_units: 1000}
+  - &env_interrupted
+    environment_id: todomvc-interrupted
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: interrupted-todo-user@1.0.0
+    journey_revision: interrupted-resume@1.0.0
+    requirement_revision: REQ-TODOMVC-PERSIST@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-EMPTY@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: deterministic-ux-evaluator-v1
+    capability_versions: {ux.execute.playwright: 1.0.0, ux.observe.feedback_and_recovery: 1.0.0}
+    random_seed: 1030757028
+    device_profile: {viewport_width: 1280, viewport_height: 720, device_scale_factor: 1, browser_engine: chromium, input_modes: [POINTER], prefers_reduced_motion: false, zoom_percent: 100}
+    locale_timezone: {locale: en-US, timezone: UTC, date_number_currency_format: en-US}
+    network_profile: {latency_ms: 0, download_kbps: 100000, upload_kbps: 100000, offline_schedule: [], failure_injections: []}
+    accessibility_context: {keyboard_only: false, screen_reader_semantics: true, focus_visibility_required: true, contrast_profile: DEFAULT, motion_constraints: NONE}
+    prior_knowledge: INTERRUPTED
+    account_and_data_state: {fixture_ref: UX-TODOMVC-EMPTY@1.0.0, synthetic_fixture_only: true, production_account: false}
+    budgets: {max_steps: 8, max_backtracks: 1, max_retries: 1, time_budget_seconds: 45, context_budget_units: 1000}
+
+journeys:
+  - journey_id: novice-add-task
+    revision: 1.0.0
+    executor: TODO_ADD
+    oracle:
+      oracle_id: UX-ORACLE-ADD-TASK
+      revision: 1.0.0
+      journey_goal: Add one task and understand that it remains present.
+      business_value: Capture a task without uncertainty or data loss.
+      start_state: Empty TodoMVC list.
+      required_checkpoints: [entry_field_is_discoverable, task_is_visible_after_submit, remaining_count_is_consistent]
+      success_outcomes: [one_visible_active_task_with_exact_text, active_count_equals_one]
+      forbidden_outcomes: [task_disappears_without_user_action, duplicate_task_created_by_single_submit, destructive_action_triggered]
+      required_feedback: [submitted_task_appears_in_list, remaining_count_updates]
+      recovery_expectations: [blank_input_does_not_create_task]
+      accessibility_obligations: [input_has_semantic_name, primary_action_is_keyboard_operable]
+      max_steps: 8
+      max_backtracks: 1
+      evidence_requirements: [TRACE, SCREENSHOT, STATE_HASH, ACCESSIBILITY_SNAPSHOT]
+      severity_floor: P2
+      authority_refs: [REQ-TODOMVC-ADD@v1]
+    persona_refs: [novice-todo-user@1.0.0]
+    environment_refs: [todomvc-desktop-novice@1.0.0]
+    start_fixture_ref: UX-TODOMVC-EMPTY@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.accessibility]
+    required_observations: [task_completion, step_count, required_feedback_latency]
+    cleanup_and_recovery: reset_local_storage
+    evaluator_only: {hidden_expected_actions: [fill_new_todo_and_press_enter], scoring_key: add-task-v1, disallowed_shortcuts: [direct_local_storage_write], mutation_identity: null}
+  - journey_id: returning-filter-persistence
+    revision: 1.0.0
+    executor: TODO_RETURNING_FILTER_PERSISTENCE
+    oracle:
+      oracle_id: UX-ORACLE-FILTER-PERSIST
+      revision: 1.0.0
+      journey_goal: Complete and filter tasks, then resume after reload.
+      business_value: Returning users can trust filters and persisted state.
+      start_state: Empty TodoMVC list.
+      required_checkpoints: [task_can_be_completed, completed_filter_is_consistent, state_persists_after_reload, filter_route_persists_after_reload]
+      success_outcomes: [completed_filter_shows_only_completed_task, reload_preserves_items_and_route]
+      forbidden_outcomes: [active_task_lost, completed_state_reversed]
+      required_feedback: [completed_filter_updates_visible_list]
+      recovery_expectations: [reload_restores_state]
+      accessibility_obligations: [filter_links_have_semantic_names]
+      max_steps: 12
+      max_backtracks: 2
+      evidence_requirements: [TRACE, SCREENSHOT, STATE_HASH]
+      severity_floor: P2
+      authority_refs: [REQ-TODOMVC-FILTER-PERSIST@v1]
+    persona_refs: [returning-todo-user@1.0.0]
+    environment_refs: [todomvc-desktop-returning@1.0.0]
+    start_fixture_ref: UX-TODOMVC-EMPTY@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.feedback_and_recovery]
+    required_observations: [task_completion, recovery_success, unexpected_state_loss]
+    cleanup_and_recovery: reset_local_storage
+    evaluator_only: {hidden_expected_actions: [add_two_complete_first_filter_completed_reload], scoring_key: filter-persist-v1, disallowed_shortcuts: [direct_local_storage_write], mutation_identity: null}
+  - journey_id: keyboard-primary
+    revision: 1.0.0
+    executor: TODO_KEYBOARD_PRIMARY
+    oracle:
+      oracle_id: UX-ORACLE-KEYBOARD
+      revision: 1.0.0
+      journey_goal: Add a task with keyboard-only input.
+      business_value: Keyboard users can complete the primary task-entry workflow.
+      start_state: Empty TodoMVC list.
+      required_checkpoints: [focus_reaches_input, task_can_be_submitted, semantic_name_is_present, keyboard_primary_action_completes]
+      success_outcomes: [task_visible_after_keyboard_submit]
+      forbidden_outcomes: [focus_trap, pointer_required_for_primary_action]
+      required_feedback: [submitted_task_appears_in_list]
+      recovery_expectations: []
+      accessibility_obligations: [semantic_name_present, focus_reaches_input, keyboard_completion]
+      max_steps: 8
+      max_backtracks: 1
+      evidence_requirements: [TRACE, SCREENSHOT, FOCUS_EVENT_LOG, ACCESSIBILITY_SNAPSHOT]
+      severity_floor: P1
+      authority_refs: [REQ-TODOMVC-KEYBOARD@v1]
+    persona_refs: [keyboard-todo-user@1.0.0]
+    environment_refs: [todomvc-keyboard@1.0.0]
+    start_fixture_ref: UX-TODOMVC-EMPTY@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.accessibility]
+    required_observations: [keyboard_completion, focus_order_violations, semantic_accessibility_failures]
+    cleanup_and_recovery: reset_local_storage
+    evaluator_only: {hidden_expected_actions: [focus_type_enter], scoring_key: keyboard-v1, disallowed_shortcuts: [mouse_click, direct_local_storage_write], mutation_identity: null}
+  - journey_id: interrupted-resume
+    revision: 1.0.0
+    executor: TODO_INTERRUPTED_RESUME
+    oracle:
+      oracle_id: UX-ORACLE-INTERRUPTED
+      revision: 1.0.0
+      journey_goal: Resume a task after a page refresh interruption.
+      business_value: Interruption does not cause unexpected task loss.
+      start_state: Empty TodoMVC list.
+      required_checkpoints: [task_exists_before_interruption, task_persists_after_reload, visible_state_matches_storage]
+      success_outcomes: [task_visible_and_stored_after_reload]
+      forbidden_outcomes: [unexpected_state_loss]
+      required_feedback: [persisted_task_is_visible_after_reload]
+      recovery_expectations: [reload_restores_state]
+      accessibility_obligations: []
+      max_steps: 8
+      max_backtracks: 1
+      evidence_requirements: [TRACE, SCREENSHOT, STATE_HASH]
+      severity_floor: P1
+      authority_refs: [REQ-TODOMVC-PERSIST@v1]
+    persona_refs: [interrupted-todo-user@1.0.0]
+    environment_refs: [todomvc-interrupted@1.0.0]
+    start_fixture_ref: UX-TODOMVC-EMPTY@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.feedback_and_recovery]
+    required_observations: [recovery_success, unexpected_state_loss]
+    cleanup_and_recovery: reset_local_storage
+    evaluator_only: {hidden_expected_actions: [add_reload_verify], scoring_key: interrupted-v1, disallowed_shortcuts: [direct_local_storage_write], mutation_identity: null}
