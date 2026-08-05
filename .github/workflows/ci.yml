@@ -34,6 +34,11 @@ jobs:
           uv run pytest tests/unit/test_github_development_ssot.py \
             --junitxml=test-results/junit-development-ssot.xml
 
+      - name: M1.0 Memory SPEC validation
+        run: >-
+          uv run pytest tests/unit/test_m1_0_memory_spec.py
+          --junitxml=test-results/junit-m1.0-memory-spec.xml
+
       - name: Collect tests
         shell: bash
         run: |

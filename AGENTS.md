@@ -10,7 +10,7 @@ Before planning or editing, read:
 2. `docs/github-development-ssot.yaml` — machine-readable policy invariants.
 3. `docs/implementation-status.md` — current project state and next milestone.
 4. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
-5. The relevant architecture, test-design, and implementation documents for the touched area.
+5. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
 
 A chat instruction may define the current Goal, but it does not replace repository state, approved requirements, Oracle, Policy, Permission, or this SSOT.
 
@@ -21,10 +21,10 @@ The repository is developed cloud-first through GitHub:
 ```text
 Goal / Issue
 → risk and impact triage
-→ branch
-→ change-specific evidence plan
-→ implementation
-→ Pull Request
+→ SPEC branch / PR
+→ SPEC review and merge
+→ implementation branch / PR
+→ change-specific evidence
 → GitHub Actions and evidence artifacts
 → review
 → merge to main
@@ -36,7 +36,41 @@ Goal / Issue
 
 Never push directly to `main`.
 
-## 3. Do not use mechanical test rules
+## 3. SPEC-first module rule
+
+Every nontrivial module or independently deliverable behavior change starts with an explicit SPEC before runtime implementation begins.
+
+A module SPEC must define, at the depth appropriate to its risk:
+
+- Goal, approved scope and exclusions;
+- authoritative requirements, Oracle and decision authority;
+- affected architecture, data, state, interfaces and dependencies;
+- safety, privacy, permission and production boundaries;
+- falsifiable acceptance criteria and failure modes;
+- test obligations, evidence plan and managed assets;
+- migration, deployment, rollback and recovery expectations;
+- unresolved decisions and implementation boundaries.
+
+Normal path:
+
+```text
+Goal
+→ SPEC Candidate
+→ SPEC Review / CI
+→ SPEC merged to main
+→ Implementation begins
+```
+
+Rules:
+
+- Runtime implementation must not begin before the relevant SPEC is approved and merged.
+- The SPEC and implementation must use separate PR phases unless the change is a small `DEV0` or narrowly scoped `DEV1` change whose complete inline SPEC remains independently reviewable.
+- A `DEV0` change may use a lightweight inline SPEC in the Goal or PR when there is no runtime or governance effect.
+- `DEV-E` may use an emergency SPEC containing the minimum safe scope, risk, evidence, rollout and rollback plan; full SPEC and evidence backfill remain mandatory with a deadline.
+- Requirement changes after SPEC merge create a versioned Change Event and impact assessment. Do not silently edit the meaning of an approved SPEC.
+- SPEC completion does not mean module implementation or milestone completion.
+
+## 4. Do not use mechanical test rules
 
 Do not automatically require the same unit and integration test commands for every change.
 
@@ -57,9 +91,9 @@ Examples:
 
 The repository-wide CI regression suite may still run on every PR. That is a release-protection baseline, not a substitute for change-specific test design.
 
-## 4. Required engineering behavior
+## 5. Required engineering behavior
 
-Every nontrivial change must make the following explicit in its Issue or PR:
+Every nontrivial change must make the following explicit in its Issue, SPEC, or PR:
 
 - Goal and approved scope;
 - change and dependency map;
@@ -73,7 +107,7 @@ Every nontrivial change must make the following explicit in its Issue or PR:
 
 Prefer a small vertical slice that can be independently reviewed and rolled back. Do not create large speculative frameworks without an executable acceptance path.
 
-## 5. Truth and safety boundaries
+## 6. Truth and safety boundaries
 
 An agent may propose candidates, but it must not silently:
 
@@ -88,27 +122,27 @@ An agent may propose candidates, but it must not silently:
 
 Any such change requires explicit authority, dedicated evidence, and the approval rules in the SSOT.
 
-## 6. Requirement and scope changes
+## 7. Requirement and scope changes
 
-When a requirement changes during implementation:
+When a requirement changes during or after SPEC implementation:
 
 ```text
 Change Event
 → authority check
 → semantic and risk classification
 → impact graph
-→ invalidate only affected plans, assets, and evidence
+→ invalidate only affected SPEC sections, plans, assets, and evidence
 → recalculate valid progress
 → recompile remaining work
 ```
 
-Do not overwrite prior requirements or evidence. Preserve history and mark it `SUPERSEDED`, `REQUIRES_REVIEW`, or `REQUIRES_RERUN` as appropriate.
+Do not overwrite prior requirements, SPECs, or evidence. Preserve history and mark it `SUPERSEDED`, `REQUIRES_REVIEW`, or `REQUIRES_RERUN` as appropriate.
 
-## 7. Pull Request and merge behavior
+## 8. Pull Request and merge behavior
 
 A PR is ready only when:
 
-- the approved Goal is still represented accurately;
+- the approved Goal and SPEC are still represented accurately;
 - required checks are green;
 - change-specific evidence is sufficient for the selected assurance profile;
 - no unresolved review thread or blocker remains;
@@ -118,11 +152,11 @@ A PR is ready only when:
 
 Within an already approved Goal, an agent may auto-merge an eligible `DEV0`, `DEV1`, or `DEV2` PR after all SSOT gates pass. `DEV3`, emergency production actions, Oracle/Policy/Permission changes, secrets, real-device fleet changes, destructive migrations, and release-control changes require explicit human approval.
 
-## 8. Completion report
+## 9. Completion report
 
 Report completion using evidence, not confidence language:
 
-- branch, PR, and merge commit;
+- Goal, SPEC, branch, PR, and merge commit;
 - assurance profile;
 - tests and evidence actually executed;
 - CI and release run IDs;
