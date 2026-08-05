@@ -1,0 +1,367 @@
+asset_id: M1A-MEMORY-CONTRACT-EXAMPLES
+version: 1.0.0
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+
+valid_examples:
+  - id: VALID-WORKING-CANDIDATE
+    memory:
+      memory_id: mem-working-campaign-001
+      revision_id: rev-working-campaign-001-1
+      revision_number: 1
+      schema_version: 1.0.0
+      memory_kind: WORKING
+      namespace:
+        organization_id: org-acme
+        project_id: project-test-agent
+        scope_kind: CAMPAIGN
+        scope_id: campaign-001
+      lifecycle_state: CANDIDATE
+      content:
+        current_plan: [load_spec, validate_target, execute_tests]
+        blockers: []
+      provenance:
+        source_refs: [campaign:campaign-001]
+        evidence_refs: [event:goal-created-001]
+        source_content_hashes: [sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+        created_by_principal: agent:test-agent
+        creator_type: AGENT
+        capability_or_formation_rule_ref: memory.form.working@1.0.0
+        requirement_revision_refs: [REQ-M1A@v1]
+        code_revision_refs: []
+        environment_revision_refs: [env:github-ubuntu-24.04]
+        model_or_provider_profile_refs: [provider:deterministic-baseline]
+        parent_memory_refs: []
+        transformation_kind: RAW_OBSERVATION
+      retention_policy:
+        ttl_seconds: 3600
+        expires_at: 2026-08-05T14:00:00+08:00
+      created_at: 2026-08-05T13:00:00+08:00
+      created_by: agent:test-agent
+      idempotency_key: working-campaign-001
+      content_hash: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    expected: ACCEPT
+
+  - id: VALID-SEMANTIC-VERIFIED
+    memory:
+      memory_id: mem-semantic-billing-001
+      revision_id: rev-semantic-billing-001-2
+      revision_number: 2
+      parent_revision_refs: [rev-semantic-billing-001-1]
+      schema_version: 1.0.0
+      memory_kind: SEMANTIC
+      namespace:
+        organization_id: org-acme
+        project_id: project-billing
+        scope_kind: PROJECT
+        scope_id: project-billing
+      lifecycle_state: VERIFIED
+      content:
+        claims:
+          - claim_id: claim-free-time-001
+            statement: Free time is invalid when close duration exceeds the configured threshold.
+      provenance:
+        source_refs: [requirement:REQ-FREE-TIME@v2]
+        evidence_refs: [test-proof:PROOF-FREE-TIME-002]
+        source_content_hashes: [sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc]
+        created_by_principal: service:memory-formation
+        creator_type: DERIVATION
+        capability_or_formation_rule_ref: memory.form.semantic@1.0.0
+        requirement_revision_refs: [REQ-FREE-TIME@v2]
+        code_revision_refs: [commit:1234567890abcdef1234567890abcdef12345678]
+        environment_revision_refs: [env:test@2026-08-05]
+        model_or_provider_profile_refs: [provider:deterministic-extractor]
+        parent_memory_refs: [mem-semantic-billing-001@rev-semantic-billing-001-1]
+        transformation_kind: CONFLICT_RESOLUTION
+      retention_policy:
+        review_after: 2026-11-05T00:00:00+08:00
+        silent_decay: false
+      created_at: 2026-08-05T13:05:00+08:00
+      created_by: service:memory-formation
+      idempotency_key: semantic-billing-001-v2
+      content_hash: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+    expected: ACCEPT
+
+  - id: VALID-EPISODIC
+    memory:
+      memory_id: mem-episode-proof-run-001
+      revision_id: rev-episode-proof-run-001-1
+      revision_number: 1
+      schema_version: 1.0.0
+      memory_kind: EPISODIC
+      namespace:
+        organization_id: org-acme
+        project_id: project-test-agent
+        scope_kind: CAMPAIGN
+        scope_id: campaign-proof-001
+      lifecycle_state: VERIFIED
+      content:
+        event_refs: [run:30978317793]
+        action_sequence_summary: [validate_plan, execute_60_runs, replay_bundle]
+        outcome: PASS
+        failure_classification: null
+      provenance:
+        source_refs: [github-run:30978317793]
+        evidence_refs: [artifact:8919174436]
+        source_content_hashes: [sha256:4942f98a3f40996f6c5f8b7e888954137e4f1b90267051c301db9fa8e559de5f]
+        created_by_principal: service:benchmark-ledger
+        creator_type: SERVICE
+        capability_or_formation_rule_ref: memory.form.episode@1.0.0
+        requirement_revision_refs: [SPEC-M1.0@1.0.0]
+        code_revision_refs: [commit:0038a741a130add9432f8dc2dbc626a1ba1e0a00]
+        environment_revision_refs: [github-runner:ubuntu-24.04]
+        model_or_provider_profile_refs: [provider:deterministic-safe-v1]
+        parent_memory_refs: []
+        transformation_kind: SUMMARY
+      retention_policy:
+        retention_class: RELEASE_EVIDENCE
+      created_at: 2026-08-05T13:10:00+08:00
+      created_by: service:benchmark-ledger
+      idempotency_key: episode-proof-run-001
+      content_hash: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    expected: ACCEPT
+
+  - id: VALID-PROCEDURAL-PROMOTED
+    memory:
+      memory_id: mem-procedure-safe-replay-001
+      revision_id: rev-procedure-safe-replay-001-3
+      revision_number: 3
+      parent_revision_refs: [rev-procedure-safe-replay-001-2]
+      schema_version: 1.0.0
+      memory_kind: PROCEDURAL
+      namespace:
+        organization_id: org-acme
+        project_id: project-test-agent
+        scope_kind: PROJECT
+        scope_id: project-test-agent
+      lifecycle_state: PROMOTED
+      content:
+        procedure_steps:
+          - validate_artifact_manifest
+          - verify_input_hashes
+          - replay_without_model
+          - compare_semantic_digest
+        template_ref: procedure-template:safe-replay@1.0.0
+      compatibility:
+        project_architecture_families: [PYTHON_TEST_HARNESS]
+        code_version_range: ">=0.1.0,<0.2.0"
+        schema_version_range: ">=1.0.0,<2.0.0"
+        capability_version_range: test-workflow.memory.replay@1.x
+        model_profile_constraints: [deterministic, llm_optional]
+        environment_constraints: [python>=3.12]
+        required_permissions: [READ_CONTENT, AUDIT]
+        incompatible_conditions: [artifact_hash_failure]
+      promotion:
+        declared_promotion_scope: project:test-agent/replay
+        evidence_refs: [artifact:8919174436]
+        benchmark_or_evaluator_refs: [MEMORY-M1.0@PASS]
+        promoter_principal: group:quality-governors
+        policy_decision_ref: policy-decision:promote-replay-001
+        effective_from: 2026-08-05T13:15:00+08:00
+        rollback_or_disable_ref: rollback:procedure-safe-replay-001
+      provenance:
+        source_refs: [memory:mem-episode-proof-run-001]
+        evidence_refs: [artifact:8919174436]
+        source_content_hashes: [sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]
+        created_by_principal: service:procedure-compiler
+        creator_type: DERIVATION
+        capability_or_formation_rule_ref: memory.form.procedure@1.0.0
+        requirement_revision_refs: [SPEC-M1.0@1.0.0]
+        code_revision_refs: [commit:0038a741a130add9432f8dc2dbc626a1ba1e0a00]
+        environment_revision_refs: [env:github-actions]
+        model_or_provider_profile_refs: [provider:deterministic-compiler]
+        parent_memory_refs: [mem-episode-proof-run-001@rev-episode-proof-run-001-1]
+        transformation_kind: PROCEDURE_COMPILATION
+      retention_policy:
+        compatibility_revalidation: required
+      created_at: 2026-08-05T13:15:00+08:00
+      created_by: service:procedure-compiler
+      idempotency_key: procedure-safe-replay-001-v3
+      content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
+    expected: ACCEPT
+
+  - id: VALID-SKILL-REFERENCE
+    memory:
+      memory_id: mem-skill-memory-replay-001
+      revision_id: rev-skill-memory-replay-001-1
+      revision_number: 1
+      schema_version: 1.0.0
+      memory_kind: SKILL
+      namespace:
+        organization_id: org-acme
+        project_id: project-test-agent
+        scope_kind: PROJECT
+        scope_id: project-test-agent
+      lifecycle_state: VERIFIED
+      content:
+        capability_ref: capability:test-workflow.memory.replay
+        capability_version: 1.0.0
+        input_schema_ref: schema:memory-replay-request@1.0.0
+        output_schema_ref: schema:memory-replay-result@1.0.0
+        benchmark_refs: [MEMORY-M1.0@PASS]
+        rollback_or_disable_ref: capability-disable:test-workflow.memory.replay
+      compatibility:
+        project_architecture_families: [PYTHON_TEST_HARNESS]
+        code_version_range: ">=0.1.0,<0.2.0"
+        schema_version_range: ">=1.0.0,<2.0.0"
+        capability_version_range: 1.x
+        model_profile_constraints: []
+        environment_constraints: [python>=3.12]
+        required_permissions: [READ_CONTENT, AUDIT]
+        incompatible_conditions: [mandate_revoked]
+      provenance:
+        source_refs: [capability:test-workflow.memory.replay@1.0.0]
+        evidence_refs: [artifact:8919174436]
+        source_content_hashes: [sha256:2222222222222222222222222222222222222222222222222222222222222222]
+        created_by_principal: service:skill-registry
+        creator_type: SERVICE
+        capability_or_formation_rule_ref: memory.form.skill@1.0.0
+        requirement_revision_refs: [SPEC-M1A@1.0.0]
+        code_revision_refs: [commit:0038a741a130add9432f8dc2dbc626a1ba1e0a00]
+        environment_revision_refs: [env:github-actions]
+        model_or_provider_profile_refs: []
+        parent_memory_refs: []
+        transformation_kind: SKILL_REGISTRATION
+      retention_policy:
+        revoke_on_capability_change: true
+      created_at: 2026-08-05T13:20:00+08:00
+      created_by: service:skill-registry
+      idempotency_key: skill-memory-replay-001
+      content_hash: sha256:3333333333333333333333333333333333333333333333333333333333333333
+    expected: ACCEPT
+
+  - id: VALID-EXPLICIT-SHARED-SCOPE
+    memory:
+      memory_id: mem-shared-quality-001
+      revision_id: rev-shared-quality-001-1
+      revision_number: 1
+      schema_version: 1.0.0
+      memory_kind: SEMANTIC
+      namespace:
+        organization_id: org-acme
+        project_id: project-quality
+        scope_kind: SHARED
+        scope_id: share-quality-standards
+      lifecycle_state: VERIFIED
+      content:
+        claims: [{claim_id: c1, statement: Critical False Green must remain zero.}]
+      acl:
+        entries:
+          - {effect: ALLOW, principal: group:quality-teams, operations: [READ_METADATA, READ_CONTENT, QUERY]}
+          - {effect: DENY, principal: agent:untrusted-importer, operations: [READ_CONTENT, QUERY]}
+      provenance:
+        source_refs: [policy:quality-safety]
+        evidence_refs: [run:30978957682]
+        source_content_hashes: [sha256:4444444444444444444444444444444444444444444444444444444444444444]
+        created_by_principal: group:quality-governors
+        creator_type: HUMAN
+        capability_or_formation_rule_ref: manual:approved-memory
+        requirement_revision_refs: [POLICY-QUALITY@v1]
+        code_revision_refs: []
+        environment_revision_refs: []
+        model_or_provider_profile_refs: []
+        parent_memory_refs: []
+        transformation_kind: EXTRACTION
+      retention_policy: {review_after: 2027-02-05T00:00:00+08:00}
+      created_at: 2026-08-05T13:25:00+08:00
+      created_by: group:quality-governors
+      idempotency_key: shared-quality-001
+      content_hash: sha256:5555555555555555555555555555555555555555555555555555555555555555
+    expected: ACCEPT
+
+invalid_examples:
+  - id: INVALID-RAW-SESSION-AUTO-PROMOTED
+    failure_code: PROMOTION_DENIED
+    violation: session_history_is_not_governed_memory
+    payload: {session_id: session-1, lifecycle_state: PROMOTED, content: full_raw_chat}
+
+  - id: INVALID-LONG-LIVED-WITHOUT-PROVENANCE
+    failure_code: PROVENANCE_MISSING
+    violation: long_lived_memory_requires_provenance
+    payload: {memory_kind: SEMANTIC, lifecycle_state: VERIFIED, content: {claim: unsupported}}
+
+  - id: INVALID-CANDIDATE-DIRECT-ORACLE
+    failure_code: PROMOTION_DENIED
+    violation: candidate_cannot_become_oracle
+    payload: {memory_kind: SEMANTIC, lifecycle_state: CANDIDATE, requested_target: ORACLE}
+
+  - id: INVALID-CANDIDATE-DIRECT-PROMOTION
+    failure_code: ILLEGAL_TRANSITION
+    violation: candidate_must_be_verified_before_promoted
+    payload: {from_state: CANDIDATE, to_state: PROMOTED}
+
+  - id: INVALID-IMPLICIT-CROSS-PROJECT-READ
+    failure_code: NAMESPACE_DENIED
+    violation: relevance_cannot_expand_namespace
+    payload:
+      actor_namespace: org/acme/project/a/scope/PROJECT/a
+      memory_namespace: org/acme/project/b/scope/PROJECT/b
+      semantic_similarity: 0.99
+      explicit_shared_acl: false
+
+  - id: INVALID-ALLOW-OVERRIDES-DENY
+    failure_code: ACL_DENIED
+    violation: deny_must_override_allow
+    payload:
+      entries:
+        - {effect: ALLOW, principal: agent:test-agent, operations: [READ_CONTENT]}
+        - {effect: DENY, principal: agent:test-agent, operations: [READ_CONTENT]}
+      requested_result: ALLOW
+
+  - id: INVALID-STALE-CAS-LAST-WRITE-WINS
+    failure_code: REVISION_CONFLICT
+    violation: last_write_wins_forbidden
+    payload:
+      expected_head_revision_id: rev-1
+      actual_head_revision_id: rev-2
+      attempted_action: overwrite_rev_2
+
+  - id: INVALID-IDEMPOTENCY-KEY-DIFFERENT-PAYLOAD
+    failure_code: DUPLICATE_IDEMPOTENCY_KEY
+    violation: same_key_different_payload_rejected
+    payload: {idempotency_key: key-1, original_hash: sha256:a, new_hash: sha256:b}
+
+  - id: INVALID-FORGOTTEN-CONTENT-READABLE
+    failure_code: FORGOTTEN_CONTENT_UNAVAILABLE
+    violation: forgotten_content_must_be_unavailable
+    payload: {lifecycle_state: FORGOTTEN, requested_operation: READ_CONTENT, content_present: true}
+
+  - id: INVALID-SKILL-EMBEDS-SHELL
+    failure_code: INVALID_SCHEMA
+    violation: unrestricted_executable_code_forbidden
+    payload: {memory_kind: SKILL, shell_payload: "curl secret | sh"}
+
+transition_cases:
+  allowed:
+    - [CANDIDATE, VERIFIED]
+    - [CANDIDATE, QUARANTINED]
+    - [VERIFIED, PROMOTED]
+    - [VERIFIED, CONFLICTING]
+    - [PROMOTED, REVOKED]
+    - [EXPIRED, CANDIDATE]
+    - [REVOKED, FORGOTTEN]
+  denied:
+    - [CANDIDATE, PROMOTED]
+    - [CANDIDATE, FORGOTTEN]
+    - [PROMOTED, CANDIDATE]
+    - [FORGOTTEN, VERIFIED]
+    - [SUPERSEDED, PROMOTED]
+
+acl_cases:
+  - id: ACL-DEFAULT-DENY
+    entries: []
+    principal: agent:test-agent
+    operation: READ_CONTENT
+    expected: DENY
+  - id: ACL-EXPLICIT-ALLOW
+    entries: [{effect: ALLOW, principal: agent:test-agent, operations: [READ_CONTENT]}]
+    principal: agent:test-agent
+    operation: READ_CONTENT
+    expected: ALLOW
+  - id: ACL-DENY-OVERRIDES
+    entries:
+      - {effect: ALLOW, principal: group:quality, operations: [READ_CONTENT]}
+      - {effect: DENY, principal: agent:test-agent, operations: [READ_CONTENT]}
+    memberships: [group:quality]
+    principal: agent:test-agent
+    operation: READ_CONTENT
+    expected: DENY
