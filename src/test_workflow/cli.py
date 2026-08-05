@@ -11,6 +11,7 @@ from .bundle import create_replay_manifest, replay_bundle, validate_replay_bundl
 from .classifier import classify_failure
 from .config import load_settings
 from .control_plane import build_runtime
+from .memory_benchmark import BenchmarkVerdict, MemoryBenchmarkRunner
 from .mocking import validate_mock_configuration
 from .models import FailureEvidence, QualityGate
 from .preflight import run_preflight
@@ -29,12 +30,17 @@ env_app = typer.Typer(no_args_is_help=True, help="Compile deterministic test env
 mock_app = typer.Typer(no_args_is_help=True, help="Validate and run contract-backed mocks")
 proof_app = typer.Typer(no_args_is_help=True, help="Validate and execute mutation test proofs")
 target_app = typer.Typer(no_args_is_help=True, help="Manage pinned open-source test targets")
+memory_app = typer.Typer(
+    no_args_is_help=True,
+    help="Validate, execute, and replay governed Memory benchmarks",
+)
 app.add_typer(spec_app, name="spec")
 app.add_typer(bundle_app, name="bundle")
 app.add_typer(env_app, name="env")
 app.add_typer(mock_app, name="mock")
 app.add_typer(proof_app, name="proof")
 app.add_typer(target_app, name="target")
+app.add_typer(memory_app, name="memory")
 
 
 @app.command()
@@ -223,6 +229,66 @@ def run_proof(
     )
     typer.echo(report.model_dump_json(indent=2))
     if report.status != "passed":
+        raise typer.Exit(code=2)
+
+
+@memory_app.command("validate")
+def validate_memory_benchmark(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+) -> None:
+    """Validate a governed M1.0 Memory benchmark plan and its catalogs."""
+    loaded = MemoryBenchmarkRunner().validate(plan_file)
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": loaded.plan.campaign_id,
+                "spec_ref": loaded.plan.spec_ref,
+                "mandate_ref": loaded.plan.mandate_ref,
+                "scenarios": len(loaded.catalog.scenarios),
+                "fixtures": len(loaded.fixtures.fixtures),
+                "provider_profile": loaded.plan.provider_profile,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
+
+@memory_app.command("run")
+def run_memory_benchmark(
+    plan_file: Path = typer.Argument(..., exists=True, readable=True),
+    output: Path = typer.Option(Path("test-results/memory-benchmark")),
+) -> None:
+    """Execute a deterministic Memory benchmark and emit governed evidence."""
+    report = MemoryBenchmarkRunner().run(plan_file, output_dir=output)
+    typer.echo(report.model_dump_json(indent=2))
+    if report.verdict != BenchmarkVerdict.PASS:
+        raise typer.Exit(code=2)
+
+
+@memory_app.command("replay")
+def replay_memory_benchmark(
+    bundle_dir: Path = typer.Argument(..., exists=True, file_okay=False),
+) -> None:
+    """Independently verify hashes and replay a Memory benchmark without an LLM."""
+    try:
+        report = MemoryBenchmarkRunner().replay(bundle_dir)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=2) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "valid": True,
+                "campaign_id": report.campaign_id,
+                "verdict": report.verdict.value,
+                "semantic_digest": report.semantic_digest,
+            },
+            indent=2,
+        )
+    )
+    if report.verdict != BenchmarkVerdict.PASS:
         raise typer.Exit(code=2)
 
 
