@@ -6,6 +6,15 @@
 - Out of scope:
 - Requirement revision / authority:
 
+## SPEC reference and phase
+
+- Phase: `SPEC` / `IMPLEMENTATION` / `SPEC_ADDENDUM` / `EMERGENCY`
+- Approved SPEC ID / version:
+- SPEC path and merge commit:
+- Does this PR change SPEC semantics: yes / no
+- SPEC Change Event / impact assessment when applicable:
+- Implementation is blocked until required SPEC is merged: yes / no / not applicable
+
 ## Development assurance
 
 - Profile: `DEV0` / `DEV1` / `DEV2` / `DEV3` / `DEV-E`
@@ -46,6 +55,7 @@ Describe every relevant layer that was not executed and why another form of evid
 
 ## Test and engineering assets
 
+- SPEC / Addendum:
 - Added:
 - Changed:
 - Invalidated / requires rerun:
@@ -54,11 +64,11 @@ Describe every relevant layer that was not executed and why another form of evid
 
 ## Requirement, Oracle, Policy, Permission
 
-- Requirement changed during implementation: yes / no
+- Requirement changed during SPEC or implementation: yes / no
 - Oracle changed: yes / no
 - Policy / Permission / Assurance Floor changed: yes / no
 - Change authority and approval:
-- Historical evidence impact:
+- Historical SPEC / evidence impact:
 
 ## Deployment, recovery, and rollback
 
@@ -78,6 +88,8 @@ Describe every relevant layer that was not executed and why another form of evid
 ## Merge eligibility
 
 - [ ] Goal and scope remain approved.
+- [ ] Required SPEC is present, versioned and consistent with this PR.
+- [ ] Implementation did not start before the required SPEC was merged.
 - [ ] Assurance profile is justified and has not been silently downgraded.
 - [ ] Change-specific evidence is sufficient.
 - [ ] Required GitHub checks are green.
