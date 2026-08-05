@@ -53,10 +53,6 @@ jobs:
             src/test_workflow/memory_contracts/policy.py
           git rm -r tools/m1a-hardening
           git rm -f --ignore-unmatch tools/m1a-bootstrap/part-00.b64
-          git rm .github/workflows/apply-m1a-hardening.yml
-          cp .github/m1a-memory-runtime-contracts.base.yml \
-            .github/workflows/m1a-memory-runtime-contracts.yml
-          rm .github/m1a-memory-runtime-contracts.base.yml
           git diff --check
 
       - name: Verify hardened M1A contracts
@@ -89,9 +85,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f uv.lock
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add docs src tests tools
           git diff --cached --check
           git commit -m "Harden M1A runtime contract enforcement"
           git push origin HEAD:agent/m1a-memory-runtime-contracts
