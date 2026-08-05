@@ -1,7 +1,7 @@
 # Autonomous Execution Mandate SPEC
 
 > SPEC ID: `SPEC-AUTONOMY-M1-M3@1.0.0`  
-> Status: `CANDIDATE`  
+> Status: `ACTIVE_WHEN_MERGED_TO_MAIN`  
 > Authority: Goal Issue #23 and repository-owner instruction dated 2026-08-05  
 > Assurance: `DEV3`  
 > Scope: approved M1–M3 roadmap work
@@ -27,7 +27,9 @@ The repository owner explicitly authorized autonomous execution:
 
 > 进入自治吧，按规范运行，不需要人类批准。
 
-This authorization is recorded by Issue #23. The mandate is subordinate to:
+This authorization is recorded by Issue #23. The mandate becomes active only after this SPEC and machine-readable mandate are merged to `main`.
+
+The mandate is subordinate to:
 
 1. law, privacy, security, and organization-level policy;
 2. confirmed production invariants and Oracle;
@@ -64,7 +66,7 @@ Covered M1.0 implementation:
 
 An in-scope DEV3 change may proceed and merge without repeated human approval only when all are true:
 
-1. the mandate status is `ACTIVE`;
+1. the mandate status is `ACTIVE` on `main`;
 2. the Goal is within M1–M3;
 3. the required Module SPEC is approved and merged to `main`;
 4. the PR references mandate ID and SPEC version;
@@ -122,7 +124,7 @@ Revocation requires a versioned Change Event. Revocation prevents new autonomous
 
 ## 8. Acceptance criteria
 
-- A machine-readable active mandate exists.
+- A machine-readable active mandate exists on `main`.
 - `AGENTS.md` and GitHub Development SSOT reference it.
 - DEV3 supports standing-mandate authorization instead of repeated approval.
 - In-mandate DEV3 can auto-merge only after full gates.
