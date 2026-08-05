@@ -1,6 +1,6 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T17:30:00+08:00
+updated_at: 2026-08-05T19:40:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
@@ -261,3 +261,50 @@ modules:
       - image config sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
       - implementation branch deleted
       - TodoMVC UX Mutation Proof and Advisory/Blocking promotion remain open
+
+  - module_id: ux1-todomvc-mutation-proof-runner
+    title: Deterministic TodoMVC UX mutation proof runner and replay gate
+    status: VERIFIED
+    code_paths:
+      - src/test_workflow/ux_mutation/models.py
+      - src/test_workflow/ux_mutation/catalog.py
+      - src/test_workflow/ux_mutation/sandbox.py
+      - src/test_workflow/ux_mutation/runner.py
+      - src/test_workflow/ux/execution.py
+      - src/test_workflow/cli.py
+      - .github/workflows/ux1-todomvc-mutation-proof.yml
+    document_paths:
+      - docs/specs/ux1-todomvc-mutation-proof-spec.md
+      - docs/ux1-todomvc-mutation-proof-runtime.md
+      - docs/ux-assurance-status.md
+      - docs/implementation-status.md
+    test_evidence:
+      unit_command: uv run pytest tests/unit/test_ux_mutation_runtime.py
+      unit_result: 7 focused Unit/Contract/Sandbox/State-machine PASS
+      integration_command: RUN_UX_MUTATION_INTEGRATION=1 uv run pytest tests/integration/test_ux_mutation_proof_integration.py -m ux_integration
+      integration_result: 5/5 real TodoMVC mutations KILLED; Baseline and Restored PASS; exact restore 100%; independent replay 100%; tamper rejection PASS; Critical False Green 0
+      asset_paths:
+        - benchmarks/ux/ux1
+        - tests/assets/ux/ux1
+        - tests/unit/test_ux_mutation_runtime.py
+        - tests/integration/test_ux_mutation_proof_integration.py
+        - github-actions-artifact:8928601100
+    branch: agent/ux1-todomvc-mutation-proof-runner
+    pull_request: 37
+    ci_run: 31001744148
+    notes:
+      - "Goal Issue #36"
+      - SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0
+      - UX0-SYNTHETIC-USER-SHADOW@1.0.0
+      - MANDATE-AUTONOMY-M1-M3@1.0.0
+      - "Focused UX1 Gate Run #10 / 31001744148 SUCCESS"
+      - "Historical UX0 Gate Run #53 / 31001743622 SUCCESS"
+      - Runtime mode SHADOW; release effect NONBLOCKING_SHADOW; Human UAT REQUIRED
+      - Critical mutation kill rate 100%; baseline false positives 0; Critical False Green 0
+      - exact restore 100%; independent replay 100%; Oracle and Journey coverage 100%
+      - hidden mutation metadata leakage 0; undeclared changed files 0; AI-only kills 0
+      - artifact digest sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
+      - semantic digest sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
+      - artifact manifest digest sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
+      - Main, release and implementation-branch cleanup remain pending until merge
+      - Advisory and Blocking remain disabled
