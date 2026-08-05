@@ -15,6 +15,8 @@ def test_current_state_is_foundation_not_stage_delivery() -> None:
     assert roadmap["current_state"] == "FOUNDATION_BASELINE"
     assert roadmap["stage_delivery_status"] == "NOT_READY"
     assert roadmap["next_milestone"] == "M1"
+    assert roadmap["active_module"] == "M1A"
+    assert roadmap["active_phase"] == "SPEC_DRAFT"
 
 
 def test_first_stage_delivery_requires_memory_model_and_project_gates() -> None:
@@ -35,6 +37,7 @@ def test_first_stage_delivery_requires_memory_model_and_project_gates() -> None:
         ]
         == 100
     )
+    assert delivery_gate["safety_requirements"]["out_of_mandate_actions"] == 0
 
 
 def test_milestone_order_and_statuses_are_unambiguous() -> None:
@@ -47,13 +50,31 @@ def test_milestone_order_and_statuses_are_unambiguous() -> None:
     assert len(ids) == len(set(ids))
     assert statuses == {
         "M0": "MERGED",
-        "M1": "NEXT",
+        "M1": "IN_PROGRESS",
         "M2": "PLANNED",
         "M3": "PLANNED",
         "M4": "PLANNED_AFTER_STAGE_GATE",
         "M5": "FUTURE",
         "M6": "FUTURE",
     }
+
+
+def test_m1_tracks_completed_baseline_and_current_spec_truthfully() -> None:
+    roadmap = load_roadmap()
+    m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
+
+    assert m1["active_module"] == "M1A"
+    assert m1["module_status"]["M1.0"] == "MERGED"
+    assert m1["module_status"]["M1A"] == "SPEC_DRAFT"
+    assert m1["current_spec"] == {
+        "id": "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES",
+        "version": "1.0.0",
+        "status": "CANDIDATE",
+        "goal_issue": 28,
+        "implementation_blocked_until_spec_merged": True,
+    }
+    assert roadmap["next_execution_sequence"][0] == "M1A"
+    assert m1["gates"]["status"] == "OPEN"
 
 
 def test_project_generalization_matrix_is_not_web_only() -> None:
