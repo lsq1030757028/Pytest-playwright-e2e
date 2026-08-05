@@ -237,12 +237,12 @@ modules:
     commit: c55448e99f850fdc1e4b7e3182072f6fe60bffdd
     ci_run: 30991412463
     notes:
-      - Goal Issue #31
+      - "Goal Issue #31"
       - SPEC-UX0-SYNTHETIC-USER@1.0.0
       - APPROVAL-UX0-SYNTHETIC-USER-SPEC@1.0.0
       - MANDATE-AUTONOMY-M1-M3@1.0.0
-      - Focused Runtime Gate Run #16 / 30991412463 SUCCESS
-      - Full Repository CI Run #125 / 30991412405 SUCCESS
+      - "Focused Runtime Gate Run #16 / 30991412463 SUCCESS"
+      - "Full Repository CI Run #125 / 30991412405 SUCCESS"
       - Runtime mode SHADOW; release effect NONBLOCKING_SHADOW; Human UAT REQUIRED
       - AI Candidate Findings cannot block or change Experience Oracle or Release Verdict
       - artifact ZIP digest sha256:349f51fa11cca5c5f83bee863c69b289b19eebc63bfabe6c5623399b8254a3fc
