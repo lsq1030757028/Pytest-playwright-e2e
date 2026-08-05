@@ -15,6 +15,8 @@ from .models import (
     AclEffect,
     AclEntry,
     AclSubjectType,
+    CompatibilityContext,
+    CompatibilityDescriptor,
     CreatorType,
     Decision,
     ErrorCode,
@@ -33,7 +35,12 @@ from .models import (
     StateEvent,
     TransformationKind,
 )
-from .policy import evaluate_permission, validate_promotion, validate_transition
+from .policy import (
+    evaluate_effective_read,
+    evaluate_permission,
+    validate_promotion,
+    validate_transition,
+)
 from .reference import DeterministicMemoryReference
 
 SPEC_REF = "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0"
@@ -108,8 +115,17 @@ def run_contract_proof(output_dir: Path, *, code_sha: str = "local") -> Contract
         critical_false_green=sum(
             (not result.passed and result.observed == result.expected) for result in results
         ),
-        unauthorized_namespace_actions=0 if results[1].passed and results[2].passed else 1,
-        unauthorized_promotion_actions=0 if results[4].passed else 1,
+        unauthorized_namespace_actions=(
+            0
+            if results[1].passed
+            and results[2].passed
+            and results[11].passed
+            and results[12].passed
+            else 1
+        ),
+        unauthorized_promotion_actions=(
+            0 if results[4].passed and results[14].passed else 1
+        ),
         stale_write_overwrites=0 if results[6].passed else 1,
         forgotten_content_reads=0 if results[8].passed else 1,
     )
@@ -183,8 +199,17 @@ def replay_contract_proof(output_dir: Path) -> ReplayResult:
             critical_false_green=sum(
                 (not result.passed and result.observed == result.expected) for result in rerun
             ),
-            unauthorized_namespace_actions=0 if rerun[1].passed and rerun[2].passed else 1,
-            unauthorized_promotion_actions=0 if rerun[4].passed else 1,
+            unauthorized_namespace_actions=(
+                0
+                if rerun[1].passed
+                and rerun[2].passed
+                and rerun[11].passed
+                and rerun[12].passed
+                else 1
+            ),
+            unauthorized_promotion_actions=(
+                0 if rerun[4].passed and rerun[14].passed else 1
+            ),
             stale_write_overwrites=0 if rerun[6].passed else 1,
             forgotten_content_reads=0 if rerun[8].passed else 1,
         )
@@ -238,6 +263,11 @@ def _execute_scenarios() -> tuple[ScenarioResult, ...]:
         _idempotency_payload_mismatch,
         _forgotten_content_unavailable,
         _embedded_code_rejected,
+        _deep_immutability_enforced,
+        _campaign_scope_denied,
+        _expired_delegation_denied,
+        _version_incompatibility_filtered,
+        _promoter_spoof_denied,
     )
     return tuple(scenario() for scenario in scenarios)
 
@@ -333,10 +363,13 @@ def _candidate_promotion_denied() -> ScenarioResult:
     )
     request = _promotion_request(owner, revision)
     decision = validate_promotion(
+        actor=owner,
         revision=revision,
         state=LifecycleState.CANDIDATE,
         request=request,
         permission=permission,
+        resolved_evidence=frozenset({"evidence/EV-1"}),
+        resolved_benchmarks=frozenset({"benchmark/M1.0"}),
     )
     transition = validate_transition(LifecycleState.CANDIDATE, LifecycleState.PROMOTED)
     passed = (
@@ -535,6 +568,157 @@ def _embedded_code_rejected() -> ScenarioResult:
     return _result(10, "Embedded executable rejection", passed, observed, "INVALID_SCHEMA")
 
 
+
+def _deep_immutability_enforced() -> ScenarioResult:
+    _, _, revision, _ = _fixture()
+    observed = "MUTATION_ACCEPTED"
+    try:
+        revision.content["candidate"] = "tampered"
+    except TypeError:
+        observed = "IMMUTABLE"
+    passed = observed == "IMMUTABLE" and revision.content_hash == canonical_sha256(
+        revision.hash_payload()
+    )
+    return _result(
+        11,
+        "Governed revision deep immutability",
+        passed,
+        observed,
+        "IMMUTABLE",
+    )
+
+
+def _campaign_scope_denied() -> ScenarioResult:
+    _, owner, _, _ = _fixture()
+    namespace = MemoryNamespace(
+        organization_id="org-1",
+        project_id="project-1",
+        scope_kind=NamespaceScopeKind.CAMPAIGN,
+        scope_id="campaign-red",
+    )
+    wrong_campaign = owner.model_copy(update={"campaign_id": "campaign-blue"})
+    decision = evaluate_permission(
+        actor=wrong_campaign,
+        namespace=namespace,
+        operation=AccessOperation.QUERY,
+    )
+    passed = decision.error_code is ErrorCode.NAMESPACE_DENIED
+    return _result(
+        12,
+        "Exact campaign namespace isolation",
+        passed,
+        decision.error_code.value if decision.error_code else decision.decision.value,
+        ErrorCode.NAMESPACE_DENIED.value,
+        error_code=decision.error_code,
+    )
+
+
+def _expired_delegation_denied() -> ScenarioResult:
+    namespace, owner, _, _ = _fixture()
+    delegated = owner.model_copy(
+        update={
+            "delegator_ref": "user/owner",
+            "delegation_scope": (namespace.canonical,),
+            "delegation_expires_at": FIXED_NOW - timedelta(seconds=1),
+            "audit_event_ref": "audit/delegation-proof",
+        }
+    )
+    decision = evaluate_permission(
+        actor=delegated,
+        namespace=namespace,
+        operation=AccessOperation.QUERY,
+        now=FIXED_NOW,
+    )
+    passed = decision.error_code is ErrorCode.NAMESPACE_DENIED
+    return _result(
+        13,
+        "Expired delegation denial",
+        passed,
+        decision.error_code.value if decision.error_code else decision.decision.value,
+        ErrorCode.NAMESPACE_DENIED.value,
+        error_code=decision.error_code,
+    )
+
+
+def _version_incompatibility_filtered() -> ScenarioResult:
+    namespace, owner, revision, _ = _fixture()
+    compatibility = CompatibilityDescriptor(
+        project_architecture_families=("python-web",),
+        code_version_range=">=1,<2",
+        schema_version_range="1.x",
+        capability_version_range="1.2.x",
+        required_permissions=("browser.read",),
+        executable_ref="capability://browser-check@1.2.0",
+    )
+    skill = MemoryRevision.create(
+        memory_id="mem_33333333333333333333333333333333",
+        revision_nonce="proof-skill-version",
+        memory_kind=MemoryKind.SKILL,
+        namespace=namespace,
+        content={"capability_ref": "browser-check"},
+        provenance=revision.provenance.model_copy(
+            update={"transformation_kind": TransformationKind.SKILL_REGISTRATION}
+        ),
+        compatibility=compatibility,
+        retention_policy=RetentionPolicy(policy_ref="retention/skill"),
+        formation_event_ref="formation/proof-skill",
+        created_by=owner.principal_id,
+        idempotency_key="idem-proof-skill",
+        created_at=FIXED_NOW,
+    )
+    decision = evaluate_effective_read(
+        revision=skill,
+        state=LifecycleState.PROMOTED,
+        read_mode=ReadMode.PRODUCTION_RETRIEVAL,
+        compatibility_context=CompatibilityContext(
+            project_architecture_family="python-web",
+            code_version="2.0.0",
+            schema_version="1.0.0",
+            capability_version="1.2.4",
+            model_profile="deterministic",
+            environment="test",
+            permissions=("browser.read",),
+        ),
+        now=FIXED_NOW,
+    )
+    passed = decision.error_code is ErrorCode.COMPATIBILITY_FAILED
+    return _result(
+        14,
+        "Compatibility version filtering",
+        passed,
+        decision.error_code.value if decision.error_code else decision.decision.value,
+        ErrorCode.COMPATIBILITY_FAILED.value,
+        error_code=decision.error_code,
+    )
+
+
+def _promoter_spoof_denied() -> ScenarioResult:
+    namespace, owner, revision, _ = _fixture()
+    permission = evaluate_permission(
+        actor=owner, namespace=namespace, operation=AccessOperation.PROMOTE
+    )
+    request = _promotion_request(owner, revision).model_copy(
+        update={"promoter_principal_ref": "agent-spoof"}
+    )
+    decision = validate_promotion(
+        actor=owner,
+        revision=revision,
+        state=LifecycleState.VERIFIED,
+        request=request,
+        permission=permission,
+        resolved_evidence=frozenset({"evidence/EV-1"}),
+        resolved_benchmarks=frozenset({"benchmark/M1.0"}),
+    )
+    passed = decision.error_code is ErrorCode.PROMOTION_DENIED
+    return _result(
+        15,
+        "Promoter identity spoof rejection",
+        passed,
+        decision.error_code.value if decision.error_code else decision.decision.value,
+        ErrorCode.PROMOTION_DENIED.value,
+        error_code=decision.error_code,
+    )
+
 def _fixture():
     namespace = MemoryNamespace(
         organization_id="org-1",
@@ -596,6 +780,7 @@ def _store(acl: tuple[AclEntry, ...]) -> DeterministicMemoryReference:
             "requirement/REQ-1@3": canonical_sha256({"source": "approved requirement"})
         },
         resolved_evidence=("evidence/EV-1",),
+        resolved_benchmarks=("benchmark/M1.0",),
         initial_acl=acl,
     )
 

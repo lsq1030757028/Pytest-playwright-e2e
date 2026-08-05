@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from typing import Iterable
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from .canonical import canonical_sha256
 from .models import (
     AccessOperation,
@@ -41,6 +43,7 @@ class DeterministicMemoryReference:
         *,
         resolved_sources: dict[str, str] | None = None,
         resolved_evidence: Iterable[str] = (),
+        resolved_benchmarks: Iterable[str] = (),
         initial_acl: Iterable[AclEntry] = (),
     ) -> None:
         self._revisions: dict[str, list[MemoryRevision]] = {}
@@ -52,6 +55,7 @@ class DeterministicMemoryReference:
         self._invalidated: set[str] = set()
         self._resolved_sources = dict(resolved_sources or {})
         self._resolved_evidence = set(resolved_evidence)
+        self._resolved_benchmarks = set(resolved_benchmarks)
         for entry in initial_acl:
             self._acl.setdefault(entry.namespace.canonical, []).append(entry)
 
@@ -63,16 +67,6 @@ class DeterministicMemoryReference:
         expected_head_revision_id: str | None,
         correlation_id: str,
     ) -> AppendRevisionResult:
-        permission = self.evaluate_permission(
-            actor=actor,
-            namespace=revision.namespace,
-            operation=AccessOperation.APPEND_REVISION,
-        )
-        if not permission.allowed:
-            return AppendRevisionResult(
-                decision=Decision.REJECTED,
-                error_code=permission.error_code,
-            )
         fingerprint = canonical_sha256(revision.model_dump(mode="json"))
         existing = self._idempotency.get(revision.idempotency_key)
         if existing is not None:
@@ -83,6 +77,23 @@ class DeterministicMemoryReference:
                     "idempotency key was reused with a different payload",
                 )
             return result.model_copy(update={"decision": Decision.IDEMPOTENT_REPLAY})
+        try:
+            revision = MemoryRevision.model_validate(revision.model_dump(mode="python"))
+        except ValidationError:
+            return AppendRevisionResult(
+                decision=Decision.REJECTED,
+                error_code=ErrorCode.INVALID_SCHEMA,
+            )
+        permission = self.evaluate_permission(
+            actor=actor,
+            namespace=revision.namespace,
+            operation=AccessOperation.APPEND_REVISION,
+        )
+        if not permission.allowed:
+            return AppendRevisionResult(
+                decision=Decision.REJECTED,
+                error_code=permission.error_code,
+            )
         provenance_error = self._validate_provenance(revision)
         if provenance_error is not None:
             result = AppendRevisionResult(
@@ -208,7 +219,19 @@ class DeterministicMemoryReference:
     def append_state_event(
         self, *, actor: PrincipalContext, event: StateEvent, correlation_id: str
     ) -> MutationResult:
+        try:
+            event = StateEvent.model_validate(event.model_dump(mode="python"))
+        except ValidationError:
+            return MutationResult(
+                decision=Decision.REJECTED,
+                error_code=ErrorCode.INVALID_SCHEMA,
+            )
         revision = self._head_without_permission(event.memory_id)
+        if event.actor_principal_ref != actor.principal_id:
+            return MutationResult(
+                decision=Decision.REJECTED,
+                error_code=ErrorCode.ACL_DENIED,
+            )
         if revision.revision_id != event.revision_id:
             return MutationResult(
                 decision=Decision.REJECTED,
@@ -276,10 +299,13 @@ class DeterministicMemoryReference:
             operation=AccessOperation.PROMOTE,
         )
         decision = validate_promotion(
+            actor=actor,
             revision=revision,
             state=state,
             request=request,
             permission=permission,
+            resolved_evidence=frozenset(self._resolved_evidence),
+            resolved_benchmarks=frozenset(self._resolved_benchmarks),
         )
         if decision.decision is not Decision.ACCEPTED:
             return MutationResult(

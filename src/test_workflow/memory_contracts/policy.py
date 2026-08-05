@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 
 from .models import (
@@ -146,18 +147,33 @@ PROMOTABLE_KINDS = frozenset(
 )
 
 
-def namespace_authorized(actor: PrincipalContext, namespace: MemoryNamespace) -> bool:
+def namespace_authorized(
+    actor: PrincipalContext,
+    namespace: MemoryNamespace,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    resolved_now = now or datetime.now(UTC)
     if actor.organization_id != namespace.organization_id:
         return False
+    if actor.delegator_ref is not None:
+        if actor.delegation_expires_at is None or resolved_now >= actor.delegation_expires_at:
+            return False
+        if namespace.canonical not in actor.delegation_scope:
+            return False
     if namespace.scope_kind is NamespaceScopeKind.ORGANIZATION:
         return actor.organization_id == namespace.scope_id
     if namespace.scope_kind is NamespaceScopeKind.SHARED:
         return namespace.scope_id in actor.shared_scope_ids
     if actor.project_id != namespace.project_id:
         return False
+    if namespace.scope_kind is NamespaceScopeKind.PROJECT:
+        return namespace.scope_id == actor.project_id
+    if namespace.scope_kind is NamespaceScopeKind.CAMPAIGN:
+        return actor.campaign_id == namespace.scope_id
     if namespace.scope_kind is NamespaceScopeKind.AGENT:
         return actor.agent_id == namespace.scope_id
-    return True
+    return False
 
 
 def evaluate_permission(
@@ -168,9 +184,10 @@ def evaluate_permission(
     acl_entries: tuple[AclEntry, ...] = (),
     namespace_policy_denies: tuple[AccessOperation, ...] = (),
     relevance_score: float | None = None,
+    now: datetime | None = None,
 ) -> PermissionDecision:
     del relevance_score
-    if not namespace_authorized(actor, namespace):
+    if not namespace_authorized(actor, namespace, now=now):
         return PermissionDecision(
             decision=Decision.DENY,
             operation=operation,
@@ -254,11 +271,38 @@ def validate_transition(
 
 def validate_promotion(
     *,
+    actor: PrincipalContext,
     revision: MemoryRevision,
     state: LifecycleState,
     request: PromotionRequest,
     permission: PermissionDecision,
+    resolved_evidence: frozenset[str] = frozenset(),
+    resolved_benchmarks: frozenset[str] = frozenset(),
 ) -> PromotionDecision:
+    if request.promoter_principal_ref != actor.principal_id:
+        return PromotionDecision(
+            decision=Decision.REJECTED,
+            error_code=ErrorCode.PROMOTION_DENIED,
+            reason="promotion actor does not match the declared promoter",
+        )
+    if not set(request.evidence_refs) <= resolved_evidence:
+        return PromotionDecision(
+            decision=Decision.REJECTED,
+            error_code=ErrorCode.PROMOTION_DENIED,
+            reason="promotion evidence is unresolved",
+        )
+    if not set(request.benchmark_or_evaluator_refs) <= resolved_benchmarks:
+        return PromotionDecision(
+            decision=Decision.REJECTED,
+            error_code=ErrorCode.PROMOTION_DENIED,
+            reason="promotion benchmark or evaluator evidence is unresolved",
+        )
+    if not set(request.evidence_refs) <= set(revision.provenance.evidence_refs):
+        return PromotionDecision(
+            decision=Decision.REJECTED,
+            error_code=ErrorCode.PROMOTION_DENIED,
+            reason="promotion evidence is not bound to the governed revision",
+        )
     if revision.memory_kind not in PROMOTABLE_KINDS:
         return PromotionDecision(
             decision=Decision.REJECTED,
@@ -380,6 +424,14 @@ def compatibility_matches(
         and context.environment not in descriptor.environment_constraints
     ):
         return False
+    if not _version_matches(context.code_version, descriptor.code_version_range):
+        return False
+    if not _version_matches(context.schema_version, descriptor.schema_version_range):
+        return False
+    if not _version_matches(
+        context.capability_version, descriptor.capability_version_range
+    ):
+        return False
     if not set(descriptor.required_permissions) <= set(context.permissions):
         return False
     if set(descriptor.incompatible_conditions) & set(context.active_conditions):
@@ -404,3 +456,50 @@ def _subject_matches(actor: PrincipalContext, entry: AclEntry) -> bool:
     if entry.subject_type is AclSubjectType.GROUP:
         return entry.subject_id in actor.group_ids
     return entry.subject_id in actor.role_ids
+
+
+def _version_matches(version: str, constraint: str) -> bool:
+    parsed = _parse_version(version)
+    if parsed is None:
+        return False
+    normalized = constraint.strip()
+    if normalized == "*":
+        return True
+    wildcard = re.fullmatch(r"(\d+)(?:\.(\d+))?\.[xX*]", normalized)
+    if wildcard:
+        major = int(wildcard.group(1))
+        minor = wildcard.group(2)
+        return parsed[0] == major and (minor is None or parsed[1] == int(minor))
+    exact = _parse_version(normalized)
+    if exact is not None:
+        return parsed == exact
+    clauses = [clause.strip() for clause in normalized.split(",") if clause.strip()]
+    if not clauses:
+        return False
+    for clause in clauses:
+        match = re.fullmatch(r"(>=|<=|>|<|==)\s*(\d+(?:\.\d+){0,2})", clause)
+        if match is None:
+            return False
+        expected = _parse_version(match.group(2))
+        if expected is None:
+            return False
+        operator = match.group(1)
+        if operator == ">=" and not parsed >= expected:
+            return False
+        if operator == "<=" and not parsed <= expected:
+            return False
+        if operator == ">" and not parsed > expected:
+            return False
+        if operator == "<" and not parsed < expected:
+            return False
+        if operator == "==" and parsed != expected:
+            return False
+    return True
+
+
+def _parse_version(value: str) -> tuple[int, int, int] | None:
+    if re.fullmatch(r"\d+(?:\.\d+){0,2}", value.strip()) is None:
+        return None
+    parts = [int(part) for part in value.strip().split(".")]
+    padded = (parts + [0, 0])[:3]
+    return padded[0], padded[1], padded[2]

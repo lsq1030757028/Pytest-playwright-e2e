@@ -84,7 +84,7 @@ def test_later_revision_requires_parent_and_immutable_new_id() -> None:
 
 
 def test_working_memory_requires_bounded_lifetime() -> None:
-    with pytest.raises(ValidationError, match="bounded lifetime"):
+    with pytest.raises(ValidationError, match="ttl_seconds"):
         MemoryRevision.create(
             memory_kind=MemoryKind.WORKING,
             namespace=make_namespace(),
@@ -129,5 +129,46 @@ def test_skill_requires_compatibility_and_rejects_embedded_code() -> None:
             formation_event_ref="formation/skill-1",
             created_by="agent-owner",
             idempotency_key="idem-skill-1",
+            created_at=FIXED_NOW,
+        )
+
+
+def test_revision_and_provenance_json_are_deeply_immutable() -> None:
+    revision = MemoryRevision.create(
+        memory_id="mem_22222222222222222222222222222222",
+        revision_nonce="immutable-nested",
+        memory_kind=MemoryKind.SEMANTIC,
+        namespace=make_namespace(),
+        content={"nested": {"items": ["one", "two"]}},
+        provenance=make_provenance(),
+        retention_policy=RetentionPolicy(policy_ref="retention/semantic"),
+        formation_event_ref="formation/immutable",
+        created_by="agent-owner",
+        idempotency_key="idem-immutable",
+        created_at=FIXED_NOW,
+    )
+
+    with pytest.raises(TypeError, match="immutable"):
+        revision.content["nested"] = {"items": ["changed"]}
+    with pytest.raises(TypeError):
+        revision.content["nested"]["items"][0] = "changed"
+    with pytest.raises(TypeError, match="immutable"):
+        revision.provenance.source_content_hashes["requirement/REQ-1@3"] = "0" * 64
+
+
+def test_working_memory_requires_ttl_even_with_campaign_close() -> None:
+    with pytest.raises(ValidationError, match="ttl_seconds"):
+        MemoryRevision.create(
+            memory_kind=MemoryKind.WORKING,
+            namespace=make_namespace(),
+            content={"turn_state": "temporary"},
+            provenance=make_provenance(),
+            retention_policy=RetentionPolicy(
+                policy_ref="retention/working",
+                campaign_close_at=FIXED_NOW + timedelta(hours=1),
+            ),
+            formation_event_ref="formation/working-campaign",
+            created_by="agent-owner",
+            idempotency_key="idem-working-campaign",
             created_at=FIXED_NOW,
         )

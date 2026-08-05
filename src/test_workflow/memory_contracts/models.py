@@ -19,6 +19,23 @@ class FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+class FrozenDict(dict[str, Any]):
+    """Recursively immutable JSON object used by governed revisions."""
+
+    @staticmethod
+    def _reject_mutation(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise TypeError("governed JSON values are immutable")
+
+    __setitem__ = _reject_mutation
+    __delitem__ = _reject_mutation
+    clear = _reject_mutation
+    pop = _reject_mutation
+    popitem = _reject_mutation
+    setdefault = _reject_mutation
+    update = _reject_mutation
+
+
 class MemoryKind(StrEnum):
     WORKING = "WORKING"
     SEMANTIC = "SEMANTIC"
@@ -170,6 +187,7 @@ class PrincipalContext(FrozenModel):
     authenticated: bool = True
     organization_id: str = Field(pattern=OPAQUE_ID_PATTERN)
     project_id: str | None = Field(default=None, pattern=OPAQUE_ID_PATTERN)
+    campaign_id: str | None = Field(default=None, pattern=OPAQUE_ID_PATTERN)
     agent_id: str | None = Field(default=None, pattern=OPAQUE_ID_PATTERN)
     group_ids: tuple[str, ...] = ()
     role_ids: tuple[str, ...] = ()
@@ -226,6 +244,11 @@ class Provenance(FrozenModel):
         for digest in self.source_content_hashes.values():
             if re.fullmatch(SHA256_PATTERN, digest) is None:
                 raise ValueError("source content hashes must be lowercase sha256")
+        object.__setattr__(
+            self,
+            "source_content_hashes",
+            _deep_freeze(self.source_content_hashes),
+        )
         return self
 
 
@@ -323,11 +346,8 @@ class MemoryRevision(FrozenModel):
         ):
             raise ValueError("multiple parents require explicit conflict resolution provenance")
         if self.memory_kind is MemoryKind.WORKING:
-            if (
-                self.retention_policy.ttl_seconds is None
-                and self.retention_policy.campaign_close_at is None
-            ):
-                raise ValueError("working memory requires bounded lifetime")
+            if self.retention_policy.ttl_seconds is None:
+                raise ValueError("working memory requires ttl_seconds")
         if self.memory_kind in {MemoryKind.PROCEDURAL, MemoryKind.SKILL}:
             if self.compatibility is None:
                 raise ValueError("procedural and skill memory require compatibility metadata")
@@ -340,6 +360,7 @@ class MemoryRevision(FrozenModel):
             raise ValueError("compatibility metadata is reserved for procedural and skill memory")
         if self.content_hash != canonical_sha256(self.hash_payload()):
             raise ValueError("content_hash does not match canonical governed payload")
+        object.__setattr__(self, "content", _deep_freeze(self.content))
         return self
 
     def hash_payload(self) -> dict[str, Any]:
@@ -618,6 +639,14 @@ class MemoryContractError(RuntimeError):
 def _require_aware(value: datetime, field: str) -> None:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{field} must be timezone-aware")
+
+
+def _deep_freeze(value: Any) -> Any:
+    if isinstance(value, dict):
+        return FrozenDict({key: _deep_freeze(nested) for key, nested in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_deep_freeze(nested) for nested in value)
+    return value
 
 
 def _find_forbidden_keys(value: Any, forbidden: frozenset[str]) -> set[str]:

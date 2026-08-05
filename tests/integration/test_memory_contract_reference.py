@@ -218,6 +218,7 @@ def test_acl_deny_and_cross_project_query_fail_closed() -> None:
     store = DeterministicMemoryReference(
         resolved_sources={"requirement/REQ-1@3": make_source_hash()},
         resolved_evidence=("evidence/EV-1",),
+        resolved_benchmarks=("benchmark/M1.0",),
         initial_acl=(*make_owner_acl(make_namespace()), deny),
     )
     created = store.append_revision(
@@ -251,3 +252,57 @@ def test_missing_provenance_is_rejected_without_success_audit() -> None:
     assert result.decision is Decision.REJECTED
     assert result.error_code is ErrorCode.PROVENANCE_MISSING
     assert store.list_audit_events() == ()
+
+
+def test_invalid_model_copy_is_revalidated_before_append() -> None:
+    revision = make_semantic_revision()
+    owner = make_owner()
+    store = make_store()
+    invalid = revision.model_copy(
+        update={
+            "idempotency_key": "idem-invalid-copy",
+            "content": {"fact_candidate": "changed without content hash"},
+        }
+    )
+
+    result = store.append_revision(
+        actor=owner,
+        revision=invalid,
+        expected_head_revision_id=None,
+        correlation_id="invalid-copy",
+    )
+
+    assert result.decision is Decision.REJECTED
+    assert result.error_code is ErrorCode.INVALID_SCHEMA
+    assert store.list_audit_events() == ()
+
+
+def test_state_event_actor_mismatch_is_rejected_without_mutation() -> None:
+    revision = make_semantic_revision()
+    owner = make_owner()
+    store = make_store()
+    store.append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=None,
+        correlation_id="create",
+    )
+    event = StateEvent.create(
+        memory_id=revision.memory_id,
+        revision_id=revision.revision_id,
+        from_state=LifecycleState.CANDIDATE,
+        to_state=LifecycleState.VERIFIED,
+        reason_code="EVIDENCE_VERIFIED",
+        actor_principal_ref="agent-other",
+        policy_decision_ref="policy/verify",
+        occurred_at=FIXED_NOW,
+        nonce="actor-mismatch",
+    )
+
+    result = store.append_state_event(
+        actor=owner, event=event, correlation_id="actor-mismatch"
+    )
+
+    assert result.decision is Decision.REJECTED
+    assert result.error_code is ErrorCode.ACL_DENIED
+    assert store.get_effective_state(memory_id=revision.memory_id) is LifecycleState.CANDIDATE

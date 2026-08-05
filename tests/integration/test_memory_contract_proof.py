@@ -12,8 +12,8 @@ def test_contract_proof_and_independent_replay(tmp_path: Path) -> None:
     replay = replay_contract_proof(tmp_path)
 
     assert report.verdict == "PASS"
-    assert report.metrics.total == 10
-    assert report.metrics.passed == 10
+    assert report.metrics.total == 15
+    assert report.metrics.passed == 15
     assert report.metrics.critical_false_green == 0
     assert report.metrics.unauthorized_namespace_actions == 0
     assert report.metrics.unauthorized_promotion_actions == 0

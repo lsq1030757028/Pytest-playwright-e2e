@@ -101,5 +101,6 @@ def make_store() -> DeterministicMemoryReference:
     return DeterministicMemoryReference(
         resolved_sources={"requirement/REQ-1@3": make_source_hash()},
         resolved_evidence=("evidence/EV-1",),
+        resolved_benchmarks=("benchmark/M1.0",),
         initial_acl=make_owner_acl(namespace),
     )
