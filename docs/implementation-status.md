@@ -6,7 +6,8 @@
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
 > 演进路线：`docs/agent-os-evolution-roadmap.md` v3.0  
-> 机器可读路线台账：`docs/agent-os-roadmap.yaml`
+> 机器可读路线台账：`docs/agent-os-roadmap.yaml`  
+> GitHub 研发流程：`docs/github-development-ssot.md`
 
 ---
 
@@ -154,7 +155,45 @@ Safety Gate：沿用并持续验证
 
 ---
 
-## 6. 下一阶段 M1
+## 6. GitHub 研发流程治理
+
+仓库研发统一遵循：
+
+```text
+AGENTS.md
+→ docs/github-development-ssot.md
+→ docs/github-development-ssot.yaml
+→ Goal / Issue
+→ Branch / PR / GitHub Actions
+→ Main / Release / Ledger
+```
+
+研发验证不再使用“每个模块固定跑单元测试和集成测试”的机械口径。
+
+每个变化必须：
+
+- 选择 `DEV0`—`DEV3` 或 `DEV-E`；
+- 建立 Change Map 和可证伪 Test Obligations；
+- 根据真实业务和技术边界选择最小但充分的证据；
+- 说明执行和跳过的测试层级及原因；
+- 保留 GitHub Actions、Artifact、Review、Merge 和 Release 证据；
+- 合并后再验证主干、发布和台账。
+
+基本选择逻辑：
+
+| Profile | 典型证据 |
+|---|---|
+| DEV0 | Lint、Schema、引用和策略一致性；不默认要求 Unit / Integration |
+| DEV1 | 目标 Unit / Property / Contract；按边界决定 Integration |
+| DEV2 | Unit / Contract + 真实边界 Integration + 失败路径 + 受影响回归 |
+| DEV3 | 独立测试设计、威胁模型、Integration、Adversarial、Replay / Mutation / Benchmark、Rollback、人工批准 |
+| DEV-E | 最小安全验证、小范围发布、强监控、回滚和限期 Evidence Backfill |
+
+仓库完整 CI 是回归和发布保护基线，不替代本次变化的专属测试设计。
+
+---
+
+## 7. 下一阶段 M1
 
 ```text
 M1.0 Memory Benchmark & Threat Model
@@ -166,21 +205,22 @@ M1.0 Memory Benchmark & Threat Model
 → M1F Memory Benchmark Gate
 ```
 
-每个模块继续要求：
+M1 的每个变化需要按照 GitHub 研发 SSOT 选择证据，而不是机械复用相同测试清单。M1 默认存在 Memory、晋升、自我迭代和治理风险，多数核心变化至少为 DEV3。
 
-- 独立测试设计；
-- 单元测试；
-- 阶段集成测试；
-- Golden / Negative / Adversarial 资产；
-- CI；
-- 机器可读台账；
-- 状态机汇报。
+M1 通常需要的资产包括：
+
+- 独立测试设计和 Memory Threat Model；
+- Unit / Contract 与真实 Store / Retrieval Integration；
+- Golden / Negative / Adversarial / Poisoning 场景；
+- Memory Off / On Benchmark；
+- Promotion / Rollback / Forget / Conflict 证据；
+- GitHub Actions 和机器可读实验台账。
 
 M1 不允许 Agent 直接自修改 Oracle、Policy、Permission 或生产 Capability。所有学习结果先作为 Candidate，经独立 Benchmark 和 Rollback Gate 后才能晋升。
 
 ---
 
-## 7. 阶段交付条件
+## 8. 阶段交付条件
 
 项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
 
