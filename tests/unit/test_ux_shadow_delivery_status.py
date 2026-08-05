@@ -23,20 +23,21 @@ def ux_module() -> dict[str, object]:
     )
 
 
-def test_ux_status_truthfully_records_merged_closed_runtime() -> None:
+def test_ux_status_truthfully_records_closed_runtime_and_ux1_spec() -> None:
     ux_status = UX_STATUS_PATH.read_text(encoding="utf-8")
     project_status = PROJECT_STATUS_PATH.read_text(encoding="utf-8")
 
-    assert "Runtime：`MERGED_CLOSED`" in ux_status
+    assert "UX0 Playwright Shadow Runtime：MERGED / CLOSED" in ux_status
+    assert "TodoMVC UX Mutation Proof：SPEC_DRAFT" in ux_status
+    assert "UX Mutation Proof Runner：NOT_IMPLEMENTED" in ux_status
     assert "Gate Mode：`SHADOW_NONBLOCKING`" in ux_status
-    assert "Playwright Shadow Runner：MERGED / CLOSED" in ux_status
-    assert "TodoMVC UX Mutation Proof：SPEC_NEXT" in ux_status
     assert "Advisory PR Gate：DISABLED" in ux_status
     assert "Blocking Release Gate：DISABLED" in ux_status
     assert "Human UAT：`REQUIRED`" in ux_status
 
-    assert "Synthetic User Runtime：MERGED / CLOSED" in project_status
-    assert "TodoMVC UX Mutation Proof：SPEC_NEXT" in project_status
+    assert "UX0 Synthetic User Runtime：MERGED / CLOSED" in project_status
+    assert "TodoMVC UX Mutation Proof：SPEC_DRAFT" in project_status
+    assert "UX Mutation Proof Runner：NOT_IMPLEMENTED" in project_status
     assert "UX Gate Mode：SHADOW / NONBLOCKING" in project_status
     assert "M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT" in project_status
     assert "M1 Memory Gate：0 / 1" in project_status
@@ -92,6 +93,7 @@ def test_cleanup_and_status_do_not_enable_advisory_or_blocking() -> None:
 
     assert '"agent/ux0-synthetic-user-shadow-runner"' in cleanup
     assert '"docs/ux0-shadow-final-ledger"' in cleanup
+    assert '"spec/ux1-todomvc-ux-mutation-proof"' in cleanup
     assert "ADVISORY_ENABLED" not in combined_status
     assert "BLOCKING_ENABLED" not in combined_status
     assert "Release Effect 固定为 `NONBLOCKING_SHADOW`" in combined_status
