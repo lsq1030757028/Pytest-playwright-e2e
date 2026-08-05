@@ -25,44 +25,52 @@ def ux1_module() -> dict[str, object]:
     )
 
 
-def test_live_status_records_verified_merge_pending_runtime() -> None:
+def test_live_status_records_merged_closed_runtime() -> None:
     ux_status = UX_STATUS_PATH.read_text(encoding="utf-8")
     project_status = PROJECT_STATUS_PATH.read_text(encoding="utf-8")
 
-    assert "UX1 TodoMVC UX Mutation Proof：SPEC MERGED / CLOSED" in ux_status
-    assert "UX Mutation Proof Runner：VERIFIED / MERGE_PENDING" in ux_status
+    assert "UX1 TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED" in ux_status
+    assert "UX1 Mutation Proof Runner：MERGED / CLOSED" in ux_status
     assert "Five-mutation Campaign：5 / 5 KILLED" in ux_status
     assert "Independent Replay：PASS / 100%" in ux_status
     assert "Critical False Green：0" in ux_status
+    assert "UX False-positive / False-negative Benchmark：NEXT / SPEC" in ux_status
 
-    assert "TodoMVC UX Mutation Proof：SPEC MERGED / CLOSED" in project_status
-    assert "UX Mutation Proof Runner：VERIFIED / MERGE_PENDING" in project_status
+    assert "TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED" in project_status
+    assert "UX Mutation Proof Runner：MERGED / CLOSED" in project_status
     assert "Five-mutation Campaign：5 / 5 KILLED" in project_status
     assert "M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT" in project_status
     assert "M1 Memory Gate：0 / 1" in project_status
     assert "Stage Delivery：NOT_READY" in project_status
 
 
-def test_ux1_ledger_binds_pr_evidence_without_claiming_merge() -> None:
+def test_ux1_ledger_binds_main_release_and_cleanup_evidence() -> None:
     module = ux1_module()
     evidence = module["test_evidence"]
     notes = "\n".join(module["notes"])
 
-    assert module["status"] == "VERIFIED"
-    assert module["branch"] == "agent/ux1-todomvc-mutation-proof-runner"
+    assert module["status"] == "MERGED"
+    assert module["branch"] == "main"
     assert module["pull_request"] == 37
-    assert module["ci_run"] == 31001744148
-    assert "7 focused Unit/Contract/Sandbox/State-machine PASS" in evidence[
+    assert module["commit"] == "2b5bc958e5c302cef8649e28ff13d8ebafa3afcc"
+    assert module["ci_run"] == 31002716954
+    assert "10 focused Unit/Contract/Sandbox/Delivery PASS" in evidence[
         "unit_result"
     ]
     assert "5/5 real TodoMVC mutations KILLED" in evidence["integration_result"]
     assert "independent replay 100%" in evidence["integration_result"]
     assert "Critical False Green 0" in evidence["integration_result"]
-    assert "github-actions-artifact:8928601100" in evidence["asset_paths"]
-    assert "sha256:17a9ba0146a0acb8bc3ddf0a485be016" in notes
-    assert "sha256:c0cfca3acd6c0f9b97575af221e44aa2" in notes
-    assert "sha256:a0620348d61622cac018c4c766fc699a" in notes
-    assert "Main, release and implementation-branch cleanup remain pending" in notes
+    assert "github-actions-artifact:8929019254" in evidence["asset_paths"]
+    assert "python-distribution-artifact:8928961328" in evidence["asset_paths"]
+    assert "docker-build-record:8928992374" in evidence["asset_paths"]
+    assert "Main UX1 Gate Run #17 / 31002717005 SUCCESS" in notes
+    assert "Main Quality Run #174 / 31002716954 SUCCESS" in notes
+    assert "Release Run #14 / 31002716980 SUCCESS" in notes
+    assert "Cleanup Run #12 / 31002717017 SUCCESS" in notes
+    assert "sha256:c7e5f7e9ce4e2190c7e043765b3176f" in notes
+    assert "sha256:0ec56a6ca9f0b5f2c9b4564b5bc173df" in notes
+    assert "sha256:34c8915bccb010a814b7783f43db25bc" in notes
+    assert "implementation branch deleted" in notes
 
 
 def test_runtime_document_and_cleanup_preserve_protected_boundaries() -> None:
@@ -74,12 +82,13 @@ def test_runtime_document_and_cleanup_preserve_protected_boundaries() -> None:
         + runtime_doc
     )
 
-    assert "VERIFIED / MERGE_PENDING" in runtime_doc
-    assert "Focused UX1 Gate：Run #10 / 31001744148 — SUCCESS" in runtime_doc
+    assert "MERGED / CLOSED" in runtime_doc
+    assert "Main UX1 Gate：Run #17 / 31002717005 — SUCCESS" in runtime_doc
     assert "Real Mutation Campaign：5 / 5 KILLED" in runtime_doc
     assert "Independent Replay：100%" in runtime_doc
     assert "NONBLOCKING_SHADOW" in runtime_doc
     assert "Human UAT" in runtime_doc
     assert '"agent/ux1-todomvc-mutation-proof-runner"' in cleanup
+    assert '"docs/ux1-mutation-final-ledger"' in cleanup
     assert "ADVISORY_ENABLED" not in combined_status
     assert "BLOCKING_ENABLED" not in combined_status
