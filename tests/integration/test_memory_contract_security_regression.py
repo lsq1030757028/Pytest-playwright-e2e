@@ -3,6 +3,10 @@ from datetime import timedelta
 import pytest
 
 from test_workflow.memory_contracts import (
+    AccessOperation,
+    AclEffect,
+    AclEntry,
+    AclSubjectType,
     Decision,
     ErrorCode,
     LifecycleState,
@@ -74,6 +78,23 @@ def _promote_first_revision(store, owner, revision) -> None:
         correlation_id="security-promote",
     )
     assert promoted.effective_state is LifecycleState.PROMOTED
+
+
+def _forget(store, owner, revision) -> None:
+    store.revoke_memory(
+        actor=owner,
+        memory_id=revision.memory_id,
+        reason_code="REVOKE",
+        policy_decision_ref="policy/revoke",
+        correlation_id="revoke",
+    )
+    store.forget_memory(
+        actor=owner,
+        memory_id=revision.memory_id,
+        reason_code="FORGET",
+        policy_decision_ref="policy/forget",
+        correlation_id="forget",
+    )
 
 
 def test_new_revision_does_not_inherit_promoted_state() -> None:
@@ -159,38 +180,69 @@ def test_idempotency_replay_is_bound_to_current_permission_actor_and_cas_request
     assert exc.value.code is ErrorCode.DUPLICATE_IDEMPOTENCY_KEY
 
 
-def test_forgotten_memory_id_cannot_accept_new_content_revision() -> None:
+def test_idempotency_replay_rechecks_permission_for_same_actor() -> None:
     revision = make_semantic_revision()
     owner = make_owner()
     store = make_store()
-    store.append_revision(
+    created = store.append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=None,
+        correlation_id="create-before-deny",
+    )
+    deny_owner_append = AclEntry(
+        rule_id="deny-owner-append",
+        effect=AclEffect.DENY,
+        subject_type=AclSubjectType.PRINCIPAL,
+        subject_id=owner.principal_id,
+        operations=(AccessOperation.APPEND_REVISION,),
+        namespace=revision.namespace,
+    )
+    acl_result = store.append_acl_event(
+        actor=owner,
+        entry=deny_owner_append,
+        correlation_id="deny-owner-append",
+    )
+    replay = store.append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=None,
+        correlation_id="replay-after-deny",
+    )
+
+    assert created.decision is Decision.ACCEPTED
+    assert acl_result.decision is Decision.ACCEPTED
+    assert replay.decision is Decision.REJECTED
+    assert replay.error_code is ErrorCode.ACL_DENIED
+
+
+def test_forgotten_memory_id_cannot_accept_or_replay_content_revision() -> None:
+    revision = make_semantic_revision()
+    owner = make_owner()
+    store = make_store()
+    created = store.append_revision(
         actor=owner,
         revision=revision,
         expected_head_revision_id=None,
         correlation_id="create",
     )
-    store.revoke_memory(
-        actor=owner,
-        memory_id=revision.memory_id,
-        reason_code="REVOKE",
-        policy_decision_ref="policy/revoke",
-        correlation_id="revoke",
-    )
-    store.forget_memory(
-        actor=owner,
-        memory_id=revision.memory_id,
-        reason_code="FORGET",
-        policy_decision_ref="policy/forget",
-        correlation_id="forget",
-    )
+    _forget(store, owner, revision)
 
-    rejected = store.append_revision(
+    replay = store.append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=None,
+        correlation_id="replay-after-forget",
+    )
+    later = store.append_revision(
         actor=owner,
         revision=_next_revision(revision, key="idem-after-forget"),
         expected_head_revision_id=revision.revision_id,
         correlation_id="append-after-forget",
     )
 
-    assert rejected.decision is Decision.REJECTED
-    assert rejected.effective_state is LifecycleState.FORGOTTEN
-    assert rejected.error_code is ErrorCode.FORGOTTEN_CONTENT_UNAVAILABLE
+    assert created.decision is Decision.ACCEPTED
+    for rejected in (replay, later):
+        assert rejected.decision is Decision.REJECTED
+        assert rejected.effective_state is LifecycleState.FORGOTTEN
+        assert rejected.error_code is ErrorCode.FORGOTTEN_CONTENT_UNAVAILABLE
