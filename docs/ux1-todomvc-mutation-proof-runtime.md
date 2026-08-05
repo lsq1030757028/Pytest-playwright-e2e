@@ -1,6 +1,6 @@
 # UX1 TodoMVC Mutation Proof Runner
 
-> Status: `IMPLEMENTED / EVIDENCE_PENDING`  
+> Status: `VERIFIED / MERGE_PENDING`  
 > Goal: Issue #36  
 > Pull request: #37  
 > SPEC: `SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0`  
@@ -13,7 +13,7 @@
 
 ## Purpose
 
-The UX1 Runner proves that the merged Synthetic User Shadow Runtime can detect bounded user-experience regressions, not only pass healthy journeys.
+The UX1 Runner proves that the merged Synthetic User Shadow Runtime detects bounded user-experience regressions, not only healthy journeys.
 
 For each catalogued mutation it executes:
 
@@ -25,10 +25,11 @@ Materialize isolated pinned TodoMVC checkout
 → verify exact postimage and changed-file boundary
 → Mutated affected journeys fail the declared Experience Oracle checkpoints
 → classify KILLED or SURVIVED without AI authority
-→ restore exact original bytes in recovery-safe flow
+→ restore exact original bytes in a recovery-safe flow
 → verify preimage hash and clean Git tree
 → Restored affected journeys PASS
 → write artifact and replay manifests
+→ independently replay the semantic proof
 ```
 
 The campaign passes only when all five critical mutations are killed, every healthy phase passes, source restoration is exact, Critical False Green is zero, hidden metadata leakage is zero, and independent replay reproduces the semantic verdict.
@@ -37,50 +38,25 @@ The campaign passes only when all five critical mutations are killed, every heal
 
 ### Frozen contracts
 
-`src/test_workflow/ux_mutation/models.py` defines:
+`src/test_workflow/ux_mutation/models.py` defines target source inventory, mutation catalog, phases, outcomes, proof states, transition/patch/phase evidence, per-mutation results, campaign metrics/verdict and artifact/replay manifests.
 
-- target source inventory and mutation catalog contracts;
-- mutation families, phases, outcomes and proof states;
-- transition, patch and phase evidence;
-- per-mutation proof results;
-- campaign metrics and verdict;
-- artifact and replay manifests.
-
-The loaded catalog enriches every mutation with the pinned mutable-file Git blob and required-unmodified file inventory, so runtime checks cannot silently omit the SPEC source boundary.
+The loaded catalog binds every mutation to the pinned mutable-file Git blob and required-unmodified file inventory so runtime execution cannot omit the SPEC source boundary.
 
 ### Catalog and plan loading
 
-`src/test_workflow/ux_mutation/catalog.py` loads the UX1 campaign, merged mutation catalog and existing UX0 campaign. It verifies:
-
-- SPEC, parent runtime and mandate references;
-- target revision alignment with UX0;
-- selected mutation IDs;
-- affected Journey, Experience Oracle and checkpoint mappings;
-- target manifest consistency;
-- SHADOW, nonblocking and Human UAT invariants.
+`src/test_workflow/ux_mutation/catalog.py` loads the UX1 campaign, merged mutation catalog and existing UX0 campaign. It validates SPEC, parent runtime and mandate references, target revision pins, selected mutation IDs, Journey/Oracle/checkpoint mappings, target manifest consistency, SHADOW mode, nonblocking release effect and Human UAT.
 
 ### Disposable target sandbox
 
-`src/test_workflow/ux_mutation/sandbox.py` enforces:
+`src/test_workflow/ux_mutation/sandbox.py` enforces relative paths, traversal denial, symlink rejection before resolution, target containment, clean preimage worktree, mutable/required-unmodified Git blob inventory, exact Search/Replacement/preimage/postimage hashes, replacement count = 1, declared-file-only mutation, byte-for-byte restoration and clean Git status.
 
-- relative paths without traversal;
-- symlink rejection before path resolution;
-- target path containment inside the disposable checkout;
-- clean preimage worktree;
-- mutable and required-unmodified Git blob inventory;
-- exact preimage, Search and Replacement hashes;
-- replacement count exactly equal to one;
-- exact postimage hash;
-- only the declared file changed;
-- byte-for-byte restore and clean Git status.
-
-Recovery calls restore from saved original bytes even when the mutated phase raises an exception. Failure to restore makes the proof `INVALID`.
+Recovery restores saved original bytes even when the mutated phase raises. Failure to restore makes the proof `INVALID`.
 
 ### Three-phase runner
 
-`src/test_workflow/ux_mutation/runner.py` reuses the merged UX0 Playwright execution and deterministic evaluator. It runs only the affected Journey set declared by each mutation and records per-phase:
+`src/test_workflow/ux_mutation/runner.py` reuses the merged UX0 Playwright execution and deterministic evaluator. It runs only affected Journeys and records per phase:
 
-- UX campaign report and semantic digest;
+- UX report and semantic digest;
 - Playwright Trace, screenshot and semantic snapshot;
 - state and interaction events;
 - actor-input hashes;
@@ -88,7 +64,11 @@ Recovery calls restore from saved original bytes even when the mutated phase rai
 - target file hash and changed-file list;
 - target logs and clean-tree status.
 
-Mutation and expected-failure metadata are not included in the actor input. AI Candidate Findings remain supplemental and cannot convert a surviving mutation into a kill.
+Mutation ID, patch and expected failures never enter actor input. AI Candidate Findings remain supplemental and cannot convert a surviving mutation into a kill.
+
+### Stable UX0 route observation
+
+`src/test_workflow/ux/execution.py` waits for the TodoMVC hash route and two animation frames before evaluating the completed-filter state. This removed a real healthy-baseline race without weakening the Oracle: UXM-005 still settles to the mutated active route and is killed deterministically.
 
 ### CLI
 
@@ -105,7 +85,7 @@ uv run test-workflow ux-mutation replay \
   --workspace /tmp/test-workflow-ux-mutation-replay
 ```
 
-The default runtime workspace is under the system temporary directory rather than the repository. `INVALID`, `BLOCKED` and non-PASS campaign verdicts exit nonzero.
+The default workspace is under the system temporary directory rather than the repository. Invalid, blocked and non-PASS campaign verdicts exit nonzero.
 
 ## Proof state machine
 
@@ -123,7 +103,7 @@ PLANNED
 → CLOSED_PASS
 ```
 
-A surviving mutation still restores before reaching `MUTATION_SURVIVED`:
+A surviving mutation still restores before terminal failure:
 
 ```text
 MUTATED_RUNNING
@@ -132,9 +112,9 @@ MUTATED_RUNNING
 → MUTATION_SURVIVED
 ```
 
-Terminal failure states include `BASELINE_FAILED`, `MUTATION_APPLY_FAILED`, `MUTATION_SURVIVED`, `RESTORE_FAILED`, `REPLAY_DRIFTED`, `INVALID_EVIDENCE` and `BLOCKED`. No terminal failure can transition to PASS.
+Terminal failures cannot transition to PASS.
 
-## Five initial mutations
+## Five verified mutations
 
 1. `UXM-001 / MISSING_FEEDBACK`
 2. `UXM-002 / VISIBLE_SUCCESS_STATE_LOSS`
@@ -144,73 +124,60 @@ Terminal failure states include `BASELINE_FAILED`, `MUTATION_APPLY_FAILED`, `MUT
 
 Each mutation is an exact-text replacement against the pinned `index.html` preimage in a separate disposable checkout.
 
-## Evidence gates
+## Evidence
 
 ### Focused Unit / Contract
 
-`tests/unit/test_ux_mutation_runtime.py` covers:
-
-- five-mutation catalog and target-pin loading;
-- exact mutation and restoration;
-- source-inventory rejection;
-- symbolic-link rejection;
-- repository/workspace isolation;
-- survived-mutation recovery order;
-- illegal state transitions.
+`tests/unit/test_ux_mutation_runtime.py` covers catalog and target pins, source-inventory binding, exact mutation/restoration, blob drift rejection, symlink rejection, repository/workspace isolation, survived-mutation recovery order and illegal transitions.
 
 ### Real target integration
 
-`tests/integration/test_ux_mutation_proof_integration.py` is designed to prove:
-
-- five real TodoMVC mutations are killed by affected Playwright Journeys;
-- Baseline and Restored phases remain green;
-- exact restore and hidden-boundary metrics are 100% / zero as required;
-- phase traces, screenshots and semantic evidence exist;
-- independent replay reproduces the campaign semantic digest;
-- artifact tampering is rejected before replay.
+`tests/integration/test_ux_mutation_proof_integration.py` executes the five real mutations, healthy Baseline and Restored phases, automatic replay before report persistence, explicit manifest replay and artifact tamper rejection.
 
 ### Dedicated GitHub Action
 
-`.github/workflows/ux1-todomvc-mutation-proof.yml` executes:
+`.github/workflows/ux1-todomvc-mutation-proof.yml` runs focused lint, Unit/Contract, CLI validation, real five-mutation Playwright proof, independent replay/tamper rejection and evidence upload.
 
-1. focused lint;
-2. Unit / Contract / sandbox / state-machine evidence;
-3. CLI validation;
-4. real five-mutation Playwright campaign;
-5. independent replay and tamper rejection;
-6. evidence artifact upload.
-
-## Current evidence status
+### Authoritative PR evidence
 
 ```text
-Implementation: PRESENT
-Focused Lint: PASS in an initial PR run
-Focused Unit: EVIDENCE_PENDING after a porcelain-path parser repair
-CLI Validate: PENDING
-Real Five-mutation Campaign: PENDING
-Independent Replay: PENDING
-Full Repository CI: PENDING
-Review Threads: PENDING
-Merge: NOT_ELIGIBLE
+Focused UX1 Gate：Run #10 / 31001744148 — SUCCESS
+Historical UX0 Gate：Run #53 / 31001743622 — SUCCESS
+Focused Unit / Contract：7 / 7 PASS
+Real Integration：1 / 1 PASS
+Real Mutation Campaign：5 / 5 KILLED
+Baseline False Positive：0
+Critical False Green：0
+Exact Restore：100%
+Independent Replay：100%
+Oracle Coverage：100%
+Journey Coverage：100%
+Hidden Metadata Leakage：0
+Undeclared Changed Files：0
+AI-only Kills：0
+Artifact：8928601100
+Artifact Digest：sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
+Semantic Digest：sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
+Artifact Manifest Digest：sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
 ```
 
-This document must be updated with authoritative run IDs, artifact IDs and semantic digests only after the final focused and full CI executions succeed.
+The implementation remains `MERGE_PENDING` until the status/ledger commit receives final focused/full CI, review is clear and PR #37 merges. Main, release and cleanup facts are intentionally not claimed here.
 
 ## Protected boundaries
 
 - Target writes are limited to disposable local pinned checkouts.
 - Repository, remote service, production environment and customer data writes are forbidden.
-- Arbitrary commands, Regex mutations, path traversal and symlink escape are forbidden.
-- AI-only findings cannot count as mutation kills.
+- Arbitrary commands, Regex mutations, traversal and symlink escape are forbidden.
+- AI-only findings cannot count as kills.
 - Experience Oracle and expected failures remain hidden from the acting Synthetic User.
-- Runtime remains `SHADOW` and release effect remains `NONBLOCKING_SHADOW`.
-- Advisory and Blocking gates remain disabled.
+- Runtime remains `SHADOW`; release effect remains `NONBLOCKING_SHADOW`.
+- Advisory and Blocking remain disabled.
 - Human UAT remains required.
 - M1A remains the project main module; the M1 Memory Gate remains open.
 
 ## Rollback and recovery
 
 - Runtime rollback: revert the implementation merge or disable the dedicated UX1 workflow.
-- Per-mutation recovery: restore saved original bytes in the runner recovery path, terminate browser/target processes and verify clean Git status.
-- Evidence remains historical and hash-verifiable after rollback.
+- Per-mutation recovery: restore saved original bytes, terminate target/browser processes and verify clean Git status.
+- Historical evidence remains hash-verifiable.
 - No production schema, data or irreversible external resource is changed.
