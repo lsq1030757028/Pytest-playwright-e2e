@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from itertools import pairwise
 from pathlib import Path
 
 import yaml
@@ -98,9 +99,7 @@ def test_pinned_target_preimage_matches_canonical_snapshot() -> None:
 
 def test_five_ordered_mutations_cover_all_required_families() -> None:
     spec = load_yaml(SPEC_PATH)
-    catalog = load_yaml(CATALOG_PATH)
-    mutations = catalog["mutations"]
-
+    mutations = load_yaml(CATALOG_PATH)["mutations"]
     expected_ids = [f"UXM-{index:03d}" for index in range(1, 6)]
     expected_families = [
         "MISSING_FEEDBACK",
@@ -109,6 +108,7 @@ def test_five_ordered_mutations_cover_all_required_families() -> None:
         "INTERRUPTED_RESUME_FAILURE",
         "FILTER_ROUTE_STATE_DRIFT",
     ]
+
     assert [item["mutation_id"] for item in mutations] == expected_ids
     assert [item["family"] for item in mutations] == expected_families
     assert spec["mutation_families"] == expected_families
@@ -121,11 +121,11 @@ def test_five_ordered_mutations_cover_all_required_families() -> None:
 
 
 def test_every_mutation_matches_once_has_expected_postimage_and_restores_exactly() -> None:
-    catalog = load_yaml(CATALOG_PATH)
+    mutations = load_yaml(CATALOG_PATH)["mutations"]
     original = PREIMAGE_PATH.read_text(encoding="utf-8")
     original_digest = sha256_text(original)
 
-    for mutation in catalog["mutations"]:
+    for mutation in mutations:
         search = mutation["search_text"]
         replacement = mutation["replacement_text"]
         assert mutation["target_path"] == "index.html"
@@ -146,28 +146,24 @@ def test_every_mutation_matches_once_has_expected_postimage_and_restores_exactly
 
 
 def test_mutations_map_to_existing_journeys_oracles_and_checkpoints() -> None:
-    mutation_catalog = load_yaml(CATALOG_PATH)
+    mutations = load_yaml(CATALOG_PATH)["mutations"]
     ux0_catalog = load_yaml(UX0_CATALOG_PATH)
     journeys = {
         f"{journey['journey_id']}@{journey['revision']}": journey
         for journey in ux0_catalog["journeys"]
     }
-    oracle_refs = {
+    oracles = {
         f"{journey['oracle']['oracle_id']}@{journey['oracle']['revision']}": journey[
             "oracle"
         ]
         for journey in ux0_catalog["journeys"]
     }
-
     mapped_journeys: set[str] = set()
     mapped_oracles: set[str] = set()
-    for mutation in mutation_catalog["mutations"]:
-        assert mutation["affected_journey_refs"]
-        assert mutation["oracle_refs"]
-        assert mutation["expected_failed_checkpoints"]
+
+    for mutation in mutations:
         mapped_journeys.update(mutation["affected_journey_refs"])
         mapped_oracles.update(mutation["oracle_refs"])
-
         available_checkpoints: set[str] = set()
         for journey_ref in mutation["affected_journey_refs"]:
             assert journey_ref in journeys
@@ -175,7 +171,7 @@ def test_mutations_map_to_existing_journeys_oracles_and_checkpoints() -> None:
                 journeys[journey_ref]["oracle"]["required_checkpoints"]
             )
         for oracle_ref in mutation["oracle_refs"]:
-            assert oracle_ref in oracle_refs
+            assert oracle_ref in oracles
         assert set(mutation["expected_failed_checkpoints"]) <= available_checkpoints
 
     assert mapped_journeys == {
@@ -232,6 +228,7 @@ def test_mutation_contract_is_exact_bounded_and_command_free() -> None:
 
 def test_hidden_mutation_metadata_never_enters_actor_input() -> None:
     boundary = load_yaml(SPEC_PATH)["hidden_evaluation_boundary"]
+    forbidden = set(boundary["actor_input_forbidden_fields"])
 
     assert set(boundary["actor_visible"]) == {
         "user_goal",
@@ -241,8 +238,7 @@ def test_hidden_mutation_metadata_never_enters_actor_input() -> None:
         "allowed_capabilities",
         "budgets",
     }
-    forbidden = set(boundary["actor_input_forbidden_fields"])
-    assert {
+    assert forbidden == {
         "mutation_id",
         "mutation_family",
         "mutation_patch",
@@ -251,7 +247,7 @@ def test_hidden_mutation_metadata_never_enters_actor_input() -> None:
         "preferred_locator_sequence",
         "expected_phase_verdict",
         "evaluator_scoring_key",
-    } == forbidden
+    }
     assert forbidden.isdisjoint(boundary["actor_visible"])
     assert boundary["leakage_action"] == "INVALID_EVIDENCE"
 
@@ -264,10 +260,10 @@ def test_state_machine_is_closed_and_requires_restore_before_pass() -> None:
 
     assert success_path[0] == "PLANNED"
     assert success_path[-1] == "CLOSED_PASS"
-    assert "RESTORING" in success_path
-    assert "RESTORE_VERIFIED" in success_path
-    assert "RESTORED_RUNNING" in success_path
-    for source, target in zip(success_path, success_path[1:], strict=True):
+    assert {"RESTORING", "RESTORE_VERIFIED", "RESTORED_RUNNING"} <= set(
+        success_path
+    )
+    for source, target in pairwise(success_path):
         assert target in transitions[source]
     for targets in transitions.values():
         assert set(targets) <= all_states
@@ -282,11 +278,11 @@ def test_state_machine_is_closed_and_requires_restore_before_pass() -> None:
 
 def test_negative_assets_cover_catalog_application_adjudication_restore_and_replay() -> None:
     cases = load_yaml(NEGATIVE_PATH)
-
-    assert len(cases["invalid_catalog_cases"]) >= 10
     catalog_errors = {
         item["expected_error"] for item in cases["invalid_catalog_cases"]
     }
+
+    assert len(cases["invalid_catalog_cases"]) >= 10
     assert {
         "TARGET_PATH_DENIED",
         "MUTATION_OPERATION_DENIED",
