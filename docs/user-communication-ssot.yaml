@@ -1,0 +1,141 @@
+name: cloud-development-user-communication-ssot
+version: 1.0.0
+status: ACTIVE
+updated_at: 2026-08-05T20:12:00+08:00
+goal_issue: 39
+
+scope:
+  applies_to:
+    - cloud_development_user_conversations
+    - progress_updates
+    - stage_reports
+    - final_delivery_reports
+  actors:
+    - human_developers
+    - development_agents
+    - review_agents
+    - release_agents
+
+objectives:
+  - minimize_user_reading_cost
+  - explain_business_outcome_first
+  - preserve_decision_relevant_truth
+  - state_next_plan_and_completion_standard
+
+priority_order:
+  - business_outcome
+  - current_delivery_status
+  - decision_relevant_facts_and_boundaries
+  - next_business_plan
+  - necessary_technical_evidence
+
+business_language:
+  effect_before_implementation_detail: true
+  default_questions:
+    - what_can_the_user_do_now
+    - what_does_the_system_handle_now
+    - what_business_problem_is_resolved
+    - what_remains_unresolved_or_unverified
+  plan_must_explain:
+    - next_business_action
+    - purpose
+    - completion_standard
+  technical_terms_are_supporting_evidence: true
+
+status_vocabulary:
+  PLANNED: plan_exists_implementation_not_started
+  IMPLEMENTING: implementation_in_progress
+  IMPLEMENTED: branch_change_exists_not_implying_verified_merged_or_released
+  VERIFIED: required_verification_passed_not_implying_merged_or_released
+  MERGED: change_is_in_main_not_implying_release_verified
+  RELEASED: applicable_build_or_release_succeeded
+  CLOSED: applicable_goal_verification_merge_release_ledger_and_cleanup_complete
+  BLOCKED: progress_or_completion_is_blocked
+  FAILED: current_execution_verification_or_release_failed
+
+status_rules:
+  unqualified_done_requires: CLOSED
+  implementation_must_not_imply_verification: true
+  verification_must_not_imply_merge: true
+  merge_must_not_imply_release: true
+  release_must_not_imply_closed: true
+  partial_success_must_not_be_reported_as_total_success: true
+
+response_structure:
+  simple_update:
+    preferred_sentence_count_min: 1
+    preferred_sentence_count_max: 3
+    elements:
+      - current_result_and_status
+      - new_blocker_or_key_fact_when_applicable
+      - next_action
+  stage_or_final_report:
+    maximum_default_sections: 4
+    sections:
+      - conclusion
+      - implemented_business_capability
+      - facts_and_boundaries
+      - next_plan
+    headings_are_optional_for_simple_content: true
+
+truth_preservation:
+  mandatory_disclosures:
+    - current_lifecycle_status
+    - failed_queued_running_or_unverified_checks
+    - not_merged_not_released_or_not_closed_when_applicable
+    - blockers_residual_risks_known_limits_and_out_of_scope
+    - human_uat_human_approval_or_external_dependency
+    - outcome_conflicting_with_user_expectation
+    - uncertainty_inference_or_insufficient_evidence
+  prohibited:
+    - plan_reported_as_implemented
+    - branch_implementation_reported_as_merged
+    - pull_request_verification_reported_as_main_verification
+    - build_success_reported_as_production_ready
+    - partial_success_reported_as_total_success
+    - failure_or_blocker_hidden_for_brevity
+    - inference_reported_as_fact
+    - long_tool_logs_used_as_default_user_report
+
+concision:
+  report_delta_only_in_progress_updates: true
+  chronological_tool_diary_prohibited: true
+  repeated_full_summary_prohibited: true
+  dependency_installation_without_state_change_is_not_user_update: true
+  technical_detail_must_be_decision_relevant_or_requested: true
+
+technical_evidence:
+  supporting_not_primary_narrative: true
+  include_by_default_when:
+    - supporting_verified_merged_released_or_closed_status
+    - identifying_failure_or_blocker
+    - enabling_audit_reproduction_or_technical_decision
+    - technical_limit_changes_business_conclusion
+  preferred_minimum_evidence:
+    - load_bearing_pull_request
+    - load_bearing_commit
+    - load_bearing_ci_run
+    - load_bearing_artifact
+  full_logs_hash_lists_and_file_lists_default_to_appendix: true
+
+final_report_questions:
+  - what_business_outcome_was_delivered
+  - what_is_the_real_delivery_status
+  - what_key_evidence_supports_the_claim
+  - what_limits_or_next_work_remain
+
+exceptions:
+  expand_when_user_requests:
+    - complete_technical_implementation
+    - all_commits_ci_artifacts_and_hashes
+    - step_by_step_debugging
+    - architecture_code_or_test_detail
+    - audit_or_reproduction_report
+  truth_preservation_still_required: true
+
+protected_boundaries:
+  changes_oracle: false
+  changes_permission: false
+  changes_release_gate: false
+  changes_safety_floor: false
+  changes_autonomous_mandate_scope: false

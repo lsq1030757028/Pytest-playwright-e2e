@@ -8,12 +8,14 @@ Before planning or editing, read:
 
 1. `docs/github-development-ssot.md` — normative GitHub development lifecycle.
 2. `docs/github-development-ssot.yaml` — machine-readable policy invariants.
-3. `docs/ux-assurance-ssot.md` — normative user-experience acceptance addendum.
-4. `docs/ux-assurance-ssot.yaml` — machine-readable UX assurance policy.
-5. `docs/specs/autonomous-execution-mandate.yaml` — active standing authorization.
-6. `docs/implementation-status.md` — current project state and next milestone.
-7. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
-8. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
+3. `docs/user-communication-ssot.md` — normative cloud-development user communication standard.
+4. `docs/user-communication-ssot.yaml` — machine-readable communication invariants.
+5. `docs/ux-assurance-ssot.md` — normative user-experience acceptance addendum.
+6. `docs/ux-assurance-ssot.yaml` — machine-readable UX assurance policy.
+7. `docs/specs/autonomous-execution-mandate.yaml` — active standing authorization.
+8. `docs/implementation-status.md` — current project state and next milestone.
+9. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
+10. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
 
 A chat instruction may define or change a Goal, but durable authority must be recorded through a repository Goal, Change Event, SPEC, mandate, or approved policy asset.
 
@@ -207,16 +209,32 @@ A PR is ready only when:
 
 The Agent may auto-merge `DEV0`—`DEV3` when the active mandate covers the Goal, profile, and SPEC and all SSOT gates pass. `DEV-E` production actions and out-of-mandate boundaries are never covered by routine auto-merge.
 
-## 11. Completion report
+## 11. User-facing cloud development communication
 
-Report completion using evidence:
+All user-facing progress updates and delivery reports must follow `docs/user-communication-ssot.md`.
 
-- Goal, SPEC, mandate, branch, PR, and merge commit;
-- DEV and UX assurance profiles;
-- tests, journeys, and evidence executed;
-- CI and release run IDs;
-- artifacts and hashes;
-- assets added, changed, invalidated, or retired;
+Default behavior:
+
+- explain the business outcome before internal implementation detail;
+- distinguish `PLANNED`, `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, `MERGED`, `RELEASED`, `CLOSED`, `BLOCKED`, and `FAILED`;
+- use unqualified “done” only when the work is `CLOSED`;
+- describe the next plan as a business action, its purpose, and its completion standard;
+- keep PR, Commit, CI, Artifact, Hash, class, function, and tool details as supporting evidence;
+- report only meaningful state changes rather than a chronological tool diary;
+- never hide failed, running, queued, unverified, unmerged, unreleased, blocked, out-of-scope, uncertain, or Human-UAT-dependent facts for brevity.
+
+Simple updates should normally fit in one to three sentences. Stage or final reports should normally use no more than four parts: conclusion, implemented business capability, facts and boundaries, and next plan. Expand technical detail when the user requests it or when it changes the business conclusion.
+
+## 12. Completion report
+
+Report completion using concise business language first, then the minimum evidence needed to support the claim:
+
+- business outcome and real lifecycle status;
+- most important implemented capabilities;
+- tests, journeys, CI, release, and evidence needed to substantiate the status;
+- assets added, changed, invalidated, or retired when decision-relevant;
 - Human UAT readiness, uncovered areas, residual risks, and next state.
 
-The full normative development process is `docs/github-development-ssot.md`. The UX addendum is `docs/ux-assurance-ssot.md`.
+Goal, SPEC, mandate, branch, PR, merge commit, run IDs, artifacts, and hashes belong in the evidence portion or a technical appendix rather than the opening narrative.
+
+The full normative development process is `docs/github-development-ssot.md`. The communication standard is `docs/user-communication-ssot.md`. The UX addendum is `docs/ux-assurance-ssot.md`.
