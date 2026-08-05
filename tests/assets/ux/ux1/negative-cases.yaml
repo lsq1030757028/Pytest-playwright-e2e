@@ -1,0 +1,195 @@
+asset_id: UX1-TODOMVC-MUTATION-NEGATIVE-CASES
+version: 1.0.0
+spec_ref: SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0
+
+invalid_catalog_cases:
+  - case_id: UX1-NEG-001
+    title: Absolute target path
+    payload: {target_path: /etc/passwd}
+    expected_error: TARGET_PATH_DENIED
+  - case_id: UX1-NEG-002
+    title: Parent traversal target path
+    payload: {target_path: ../../src/test_workflow/ux/shadow_runner.py}
+    expected_error: TARGET_PATH_DENIED
+  - case_id: UX1-NEG-003
+    title: Arbitrary shell command
+    payload: {application_type: SHELL, command: "sed -i ..."}
+    expected_error: MUTATION_OPERATION_DENIED
+  - case_id: UX1-NEG-004
+    title: Regex mutation
+    payload: {application_type: REGEX_REPLACE, pattern: ".*"}
+    expected_error: MUTATION_OPERATION_DENIED
+  - case_id: UX1-NEG-005
+    title: Missing preimage hash
+    payload: {preimage_sha256: null}
+    expected_error: INVALID_MUTATION_CONTRACT
+  - case_id: UX1-NEG-006
+    title: Duplicate mutation ID
+    payload: {mutation_ids: [UXM-001, UXM-001]}
+    expected_error: DUPLICATE_MUTATION_ID
+  - case_id: UX1-NEG-007
+    title: Noncontiguous mutation IDs
+    payload: {mutation_ids: [UXM-001, UXM-003]}
+    expected_error: NONCONTIGUOUS_MUTATION_ID
+  - case_id: UX1-NEG-008
+    title: Missing Oracle mapping
+    payload: {oracle_refs: []}
+    expected_error: ORACLE_MAPPING_REQUIRED
+  - case_id: UX1-NEG-009
+    title: AI-only kill basis
+    payload: {minimum_evidence_level: E0, kill_basis: AI_CANDIDATE_ONLY}
+    expected_error: KILL_EVIDENCE_INSUFFICIENT
+  - case_id: UX1-NEG-010
+    title: Production target mutation
+    payload: {target_repository: https://production.example.com/app}
+    expected_error: TARGET_SCOPE_DENIED
+
+application_cases:
+  - case_id: UX1-APP-001
+    preimage_matches: false
+    observed_replacement_count: 1
+    observed_postimage_matches: true
+    expected_result: INVALID
+    expected_error: PREIMAGE_HASH_MISMATCH
+  - case_id: UX1-APP-002
+    preimage_matches: true
+    observed_replacement_count: 0
+    observed_postimage_matches: false
+    expected_result: INVALID
+    expected_error: REPLACEMENT_COUNT_MISMATCH
+  - case_id: UX1-APP-003
+    preimage_matches: true
+    observed_replacement_count: 2
+    observed_postimage_matches: false
+    expected_result: INVALID
+    expected_error: REPLACEMENT_COUNT_MISMATCH
+  - case_id: UX1-APP-004
+    preimage_matches: true
+    observed_replacement_count: 1
+    observed_postimage_matches: false
+    expected_result: INVALID
+    expected_error: POSTIMAGE_HASH_MISMATCH
+  - case_id: UX1-APP-005
+    preimage_matches: true
+    observed_replacement_count: 1
+    observed_postimage_matches: true
+    undeclared_changed_files: [dist/bundle.js]
+    expected_result: INVALID
+    expected_error: UNDECLARED_FILE_CHANGED
+
+phase_adjudication_cases:
+  - case_id: UX1-PHASE-001
+    baseline_verdict: FAIL
+    mutated_verdict: FAIL
+    restored_verdict: PASS
+    expected_result: INVALID
+    expected_error: BASELINE_NOT_PROVEN
+  - case_id: UX1-PHASE-002
+    baseline_verdict: PASS
+    mutated_verdict: PASS
+    restored_verdict: PASS
+    expected_result: SURVIVED
+    expected_error: CRITICAL_FALSE_GREEN
+  - case_id: UX1-PHASE-003
+    baseline_verdict: PASS
+    mutated_verdict: WARN
+    deterministic_expected_oracle_failure: false
+    ai_candidate_present: true
+    restored_verdict: PASS
+    expected_result: SURVIVED
+    expected_error: AI_ONLY_FINDING_NOT_KILL
+  - case_id: UX1-PHASE-004
+    baseline_verdict: PASS
+    mutated_verdict: FAIL
+    deterministic_expected_oracle_failure: true
+    evidence_level: E3
+    restored_verdict: FAIL
+    expected_result: INVALID
+    expected_error: RESTORED_PHASE_FAILED
+  - case_id: UX1-PHASE-005
+    baseline_verdict: PASS
+    mutated_verdict: FAIL
+    deterministic_expected_oracle_failure: true
+    evidence_level: E2
+    restored_verdict: PASS
+    expected_result: SURVIVED
+    expected_error: KILL_EVIDENCE_INSUFFICIENT
+  - case_id: UX1-PHASE-006
+    baseline_verdict: PASS
+    mutated_verdict: FAIL
+    deterministic_expected_oracle_failure: true
+    evidence_level: E3
+    restored_verdict: PASS
+    expected_result: KILLED
+
+restoration_cases:
+  - case_id: UX1-RESTORE-001
+    restored_hash_matches: false
+    git_status_clean: true
+    expected_result: INVALID
+    expected_error: RESTORE_HASH_MISMATCH
+  - case_id: UX1-RESTORE-002
+    restored_hash_matches: true
+    git_status_clean: false
+    expected_result: INVALID
+    expected_error: DIRTY_TARGET_AFTER_RESTORE
+  - case_id: UX1-RESTORE-003
+    restored_hash_matches: true
+    git_status_clean: true
+    expected_result: RESTORE_VERIFIED
+
+hidden_boundary_cases:
+  - case_id: UX1-HIDDEN-001
+    actor_fields: [user_goal, profile, experience_environment, visible_application_state]
+    expected_result: ACCEPT
+  - case_id: UX1-HIDDEN-002
+    actor_fields: [user_goal, mutation_id]
+    expected_result: INVALID
+    expected_error: MUTATION_METADATA_LEAKAGE
+  - case_id: UX1-HIDDEN-003
+    actor_fields: [user_goal, expected_failed_checkpoint]
+    expected_result: INVALID
+    expected_error: EVALUATOR_METADATA_LEAKAGE
+  - case_id: UX1-HIDDEN-004
+    actor_fields: [user_goal, phase_expected_verdict]
+    expected_result: INVALID
+    expected_error: EVALUATOR_METADATA_LEAKAGE
+
+replay_cases:
+  - case_id: UX1-REPLAY-001
+    artifact_hashes_match: true
+    semantic_digest_matches: true
+    final_verdict_matches: true
+    expected_result: PASS
+  - case_id: UX1-REPLAY-002
+    artifact_hashes_match: false
+    semantic_digest_matches: true
+    final_verdict_matches: true
+    expected_result: INVALID
+    expected_error: ARTIFACT_TAMPERED
+  - case_id: UX1-REPLAY-003
+    artifact_hashes_match: true
+    semantic_digest_matches: false
+    final_verdict_matches: false
+    expected_result: INVALID
+    expected_error: REPLAY_DRIFTED
+
+transition_cases:
+  allowed:
+    - [PLANNED, BASELINE_RUNNING]
+    - [BASELINE_RUNNING, BASELINE_PROVEN]
+    - [BASELINE_PROVEN, MUTATION_APPLYING]
+    - [MUTATION_APPLYING, MUTATION_VERIFIED]
+    - [MUTATION_VERIFIED, MUTATED_RUNNING]
+    - [MUTATED_RUNNING, MUTATION_KILLED]
+    - [MUTATION_KILLED, RESTORING]
+    - [RESTORING, RESTORE_VERIFIED]
+    - [RESTORE_VERIFIED, RESTORED_RUNNING]
+    - [RESTORED_RUNNING, CLOSED_PASS]
+  denied:
+    - [PLANNED, MUTATION_APPLYING]
+    - [BASELINE_FAILED, MUTATION_APPLYING]
+    - [MUTATION_SURVIVED, CLOSED_PASS]
+    - [MUTATION_KILLED, CLOSED_PASS]
+    - [RESTORE_FAILED, RESTORED_RUNNING]
+    - [CLOSED_PASS, PLANNED]
