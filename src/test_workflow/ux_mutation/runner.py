@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import json
 import shutil
 import tempfile
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,7 +28,6 @@ from .models import (
     UXMutation,
     UXMutationArtifactManifest,
     UXMutationCampaignReport,
-    UXMutationProofPlan,
     UXMutationReplayManifest,
 )
 from .sandbox import TargetMutationSandbox, changed_files
@@ -75,6 +73,7 @@ _ALLOWED_TRANSITIONS: dict[ProofState, set[ProofState]] = {
     },
     ProofState.MUTATED_RUNNING: {
         ProofState.MUTATION_KILLED,
+        ProofState.RESTORING,
         ProofState.MUTATION_SURVIVED,
         ProofState.BLOCKED,
         ProofState.INVALID_EVIDENCE,
@@ -90,6 +89,7 @@ _ALLOWED_TRANSITIONS: dict[ProofState, set[ProofState]] = {
     },
     ProofState.RESTORE_VERIFIED: {
         ProofState.RESTORED_RUNNING,
+        ProofState.MUTATION_SURVIVED,
         ProofState.INVALID_EVIDENCE,
     },
     ProofState.RESTORED_RUNNING: {
@@ -122,14 +122,15 @@ class _TransitionRecorder:
             raise ValueError(
                 f"illegal UX mutation proof transition: {self.current} -> {target}"
             )
-        event = ProofTransitionEvent(
-            event_id=f"{self.mutation_id}:transition:{len(self.events) + 1}",
-            sequence=len(self.events) + 1,
-            from_state=self.current,
-            to_state=target,
-            reason_code=reason,
+        self.events.append(
+            ProofTransitionEvent(
+                event_id=f"{self.mutation_id}:transition:{len(self.events) + 1}",
+                sequence=len(self.events) + 1,
+                from_state=self.current,
+                to_state=target,
+                reason_code=reason,
+            )
         )
-        self.events.append(event)
         self.current = target
 
 
@@ -161,22 +162,24 @@ class UXMutationProofRunner:
         verify_replay: bool = True,
     ) -> UXMutationCampaignReport:
         loaded = load_ux_mutation_proof(plan_file)
+        resolved_output = Path(output_dir).resolve()
         report = self._run_once(
             loaded,
             workspace=Path(workspace).resolve(),
-            output_dir=Path(output_dir).resolve(),
+            output_dir=resolved_output,
         )
         if verify_replay:
             with tempfile.TemporaryDirectory(prefix="ux-mutation-auto-replay-") as temp:
                 replayed = self._run_once(
-                    load_ux_mutation_proof(Path(output_dir).resolve() / "input" / "plan.json"),
+                    load_ux_mutation_proof(resolved_output / "input" / "plan.json"),
                     workspace=Path(temp) / "workspace",
                     output_dir=Path(temp) / "output",
                 )
             if replayed.semantic_digest != report.semantic_digest:
                 raise ValueError(
                     "automatic UX mutation replay drifted: "
-                    f"expected={report.semantic_digest}, observed={replayed.semantic_digest}"
+                    f"expected={report.semantic_digest}, "
+                    f"observed={replayed.semantic_digest}"
                 )
             report = report.model_copy(
                 update={
@@ -185,7 +188,7 @@ class UXMutationProofRunner:
                     )
                 }
             )
-        self._write_report_and_manifests(Path(output_dir).resolve(), report)
+        self._write_report_and_manifests(resolved_output, report)
         return report
 
     def replay(
@@ -251,19 +254,18 @@ class UXMutationProofRunner:
         self._prepare_workspace(workspace, loaded.project_root)
         self._write_input_bundle(output_dir, loaded)
 
-        results: list[MutationProofResult] = []
-        for mutation in loaded.selected_mutations:
-            result = self._run_mutation(
+        results = tuple(
+            self._run_mutation(
                 loaded,
                 mutation,
                 workspace=workspace / mutation.mutation_id.lower(),
                 evidence_root=output_dir / "mutations" / mutation.mutation_id,
                 campaign_root=output_dir,
             )
-            results.append(result)
-
-        metrics = self._metrics(tuple(results), loaded)
-        verdict = self._campaign_verdict(tuple(results))
+            for mutation in loaded.selected_mutations
+        )
+        metrics = self._metrics(results, loaded)
+        verdict = self._campaign_verdict(results)
         core = {
             "schema_version": "1.0",
             "campaign_id": loaded.plan.campaign_id,
@@ -366,16 +368,46 @@ class UXMutationProofRunner:
             observed_failed = self._failed_checkpoint_union(mutated)
             killed = self._is_killed(mutation, mutated_result.report, observed_failed)
             if killed:
-                recorder.move(ProofState.MUTATION_KILLED, "expected_oracle_failure_proven")
+                recorder.move(
+                    ProofState.MUTATION_KILLED,
+                    "expected_oracle_failure_proven",
+                )
                 recorder.move(ProofState.RESTORING, "restore_started")
             else:
-                recorder.move(ProofState.MUTATION_SURVIVED, "expected_oracle_failure_missing")
                 failures.append("mutation_survived")
+                recorder.move(
+                    ProofState.RESTORING,
+                    "mutation_survived_restore_started",
+                )
 
             patch_evidence = sandbox.restore()
             exact_restore = patch_evidence.restore_clean
+            recorder.move(ProofState.RESTORE_VERIFIED, "exact_restore_verified")
+
             if not killed:
                 actor_consistent = self._actor_hashes_equal(baseline, mutated, None)
+                if not actor_consistent:
+                    recorder.move(ProofState.INVALID_EVIDENCE, "actor_input_hash_drift")
+                    failures.append("actor_input_hash_drift")
+                    return self._result(
+                        mutation,
+                        recorder,
+                        MutationOutcome.INVALID,
+                        baseline,
+                        patch_evidence,
+                        mutated,
+                        restored,
+                        observed_failed,
+                        actor_consistent,
+                        exact_restore,
+                        failures,
+                        evidence_root,
+                        campaign_root,
+                    )
+                recorder.move(
+                    ProofState.MUTATION_SURVIVED,
+                    "expected_oracle_failure_missing",
+                )
                 return self._result(
                     mutation,
                     recorder,
@@ -392,7 +424,6 @@ class UXMutationProofRunner:
                     campaign_root,
                 )
 
-            recorder.move(ProofState.RESTORE_VERIFIED, "exact_restore_verified")
             recorder.move(ProofState.RESTORED_RUNNING, "restored_phase_started")
             restored_result = self._execute_phase(
                 loaded,
@@ -465,9 +496,11 @@ class UXMutationProofRunner:
                         patch_evidence = recovered
                         exact_restore = recovered.restore_clean
                 except Exception as recovery_exc:  # recovery evidence must be preserved
-                    failures.append(f"recovery_failed:{type(recovery_exc).__name__}:{recovery_exc}")
-            outcome = MutationOutcome.BLOCKED if baseline is None else MutationOutcome.INVALID
-            terminal = ProofState.BLOCKED if baseline is None else ProofState.INVALID_EVIDENCE
+                    failures.append(
+                        "recovery_failed:"
+                        f"{type(recovery_exc).__name__}:{recovery_exc}"
+                    )
+            outcome, terminal = self._failure_classification(recorder.current, baseline)
             if terminal in _ALLOWED_TRANSITIONS[recorder.current]:
                 recorder.move(terminal, "runtime_or_evidence_boundary_failed")
             return self._result(
@@ -497,7 +530,10 @@ class UXMutationProofRunner:
         campaign_root: Path,
     ) -> _PhaseResult:
         self._prepare_empty_directory(output_dir, f"{phase.value} phase output")
-        selected_ids = tuple(ref.split("@", maxsplit=1)[0] for ref in mutation.affected_journey_refs)
+        selected_ids = tuple(
+            ref.split("@", maxsplit=1)[0]
+            for ref in mutation.affected_journey_refs
+        )
         phase_plan = loaded.ux_campaign.plan.model_copy(
             update={
                 "campaign_id": (
@@ -547,12 +583,17 @@ class UXMutationProofRunner:
                         environment = environments[journey.environment_refs[0]]
                         actor_input = build_actor_input(journey, profile, environment)
                         actor_payload = actor_input.model_dump(mode="json")
-                        leaked = _FORBIDDEN_ACTOR_KEYS.intersection(_recursive_keys(actor_payload))
+                        leaked = _FORBIDDEN_ACTOR_KEYS.intersection(
+                            _recursive_keys(actor_payload)
+                        )
                         if leaked:
                             raise ValueError(
-                                f"mutation metadata leaked into actor input: {sorted(leaked)}"
+                                "mutation metadata leaked into actor input: "
+                                f"{sorted(leaked)}"
                             )
-                        expected_actor_hashes[journey.ref] = canonical_digest(actor_payload)
+                        expected_actor_hashes[journey.ref] = canonical_digest(
+                            actor_payload
+                        )
                         run = self.shadow_runner._execute_journey(
                             browser=browser,
                             base_url=running.base_url,
@@ -563,7 +604,9 @@ class UXMutationProofRunner:
                             evidence_root=evidence_dir,
                         )
                         if run.actor_input_hash != expected_actor_hashes[journey.ref]:
-                            raise ValueError("Synthetic User actor input hash was not reproducible")
+                            raise ValueError(
+                                "Synthetic User actor input hash was not reproducible"
+                            )
                         runs.append(run)
                 finally:
                     browser.close()
@@ -586,11 +629,15 @@ class UXMutationProofRunner:
         }
         evidence = PhaseEvidence(
             phase=phase,
-            report_path=(output_dir / "report.json").relative_to(campaign_root).as_posix(),
+            report_path=(output_dir / "report.json")
+            .relative_to(campaign_root)
+            .as_posix(),
             report_semantic_digest=report.semantic_digest,
             verdict=report.verdict.value,
             journey_refs=tuple(run.journey_ref for run in report.runs),
-            actor_input_hashes={run.journey_ref: run.actor_input_hash for run in report.runs},
+            actor_input_hashes={
+                run.journey_ref: run.actor_input_hash for run in report.runs
+            },
             failed_checkpoints=failed,
             target_file_sha256=file_hash,
             changed_files=changes,
@@ -608,9 +655,20 @@ class UXMutationProofRunner:
             return False
         if not set(mutation.expected_failed_checkpoints).issubset(observed_failed):
             return False
-        if any(run.evaluation.verdict in {UXVerdict.INVALID, UXVerdict.BLOCKED} for run in report.runs):
+        if any(
+            run.evaluation.verdict in {UXVerdict.INVALID, UXVerdict.BLOCKED}
+            for run in report.runs
+        ):
             return False
-        return all(run.evaluation.evidence_level.value in {"E3", "E4"} for run in report.runs)
+        accepted_levels = (
+            {"E4"}
+            if mutation.minimum_evidence_level == "E4"
+            else {"E3", "E4"}
+        )
+        return all(
+            run.evaluation.evidence_level.value in accepted_levels
+            for run in report.runs
+        )
 
     @staticmethod
     def _failed_checkpoint_union(phase: PhaseEvidence) -> tuple[str, ...]:
@@ -634,7 +692,23 @@ class UXMutationProofRunner:
             return False
         if baseline.actor_input_hashes != mutated.actor_input_hashes:
             return False
-        return restored is None or baseline.actor_input_hashes == restored.actor_input_hashes
+        return (
+            restored is None
+            or baseline.actor_input_hashes == restored.actor_input_hashes
+        )
+
+    @staticmethod
+    def _failure_classification(
+        current: ProofState,
+        baseline: PhaseEvidence | None,
+    ) -> tuple[MutationOutcome, ProofState]:
+        if baseline is None:
+            return MutationOutcome.BLOCKED, ProofState.BLOCKED
+        if current == ProofState.MUTATION_APPLYING:
+            return MutationOutcome.INVALID, ProofState.MUTATION_APPLY_FAILED
+        if current in {ProofState.RESTORING, ProofState.RESTORED_RUNNING}:
+            return MutationOutcome.INVALID, ProofState.RESTORE_FAILED
+        return MutationOutcome.INVALID, ProofState.INVALID_EVIDENCE
 
     @staticmethod
     def _result(
@@ -684,7 +758,8 @@ class UXMutationProofRunner:
         blocked = sum(item.outcome == MutationOutcome.BLOCKED for item in results)
         exact = sum(item.exact_restore for item in results)
         baseline_false_positive = sum(
-            item.baseline is not None and item.baseline.verdict != UXVerdict.PASS.value
+            item.baseline is not None
+            and item.baseline.verdict != UXVerdict.PASS.value
             for item in results
         )
         expected_oracles = {
@@ -729,10 +804,12 @@ class UXMutationProofRunner:
             exact_restore_percent=_percent(exact, total),
             replay_percent=0.0,
             oracle_clause_coverage_percent=_percent(
-                len(covered_oracles), len(expected_oracles)
+                len(covered_oracles),
+                len(expected_oracles),
             ),
             journey_coverage_percent=_percent(
-                len(covered_journeys), len(expected_journeys)
+                len(covered_journeys),
+                len(expected_journeys),
             ),
             hidden_metadata_leakage_count=sum(
                 "metadata leaked" in failure
@@ -768,8 +845,15 @@ class UXMutationProofRunner:
 
     @staticmethod
     def _prepare_workspace(workspace: Path, project_root: Path) -> None:
-        if workspace == project_root or project_root.is_relative_to(workspace):
-            raise ValueError("UX mutation workspace cannot be the repository root or its parent")
+        resolved_root = project_root.resolve()
+        if (
+            workspace == resolved_root
+            or workspace.is_relative_to(resolved_root)
+            or resolved_root.is_relative_to(workspace)
+        ):
+            raise ValueError(
+                "UX mutation workspace must be isolated from the repository tree"
+            )
         if workspace.exists():
             shutil.rmtree(workspace)
         workspace.mkdir(parents=True, exist_ok=True)
@@ -795,7 +879,10 @@ class UXMutationProofRunner:
         dump_model(input_dir / "mutation-catalog.yaml", loaded.mutation_catalog)
         dump_model(input_dir / "ux-campaign.json", normalized_ux_plan)
         dump_model(input_dir / "ux-catalog.yaml", loaded.ux_campaign.catalog)
-        dump_model(input_dir / "target-manifest.yaml", loaded.ux_campaign.target_manifest)
+        dump_model(
+            input_dir / "target-manifest.yaml",
+            loaded.ux_campaign.target_manifest,
+        )
 
     @staticmethod
     def _write_report_and_manifests(
@@ -848,8 +935,15 @@ class UXMutationProofRunner:
             f"- Release effect: `{report.release_effect}`",
             f"- Human UAT required: `{report.human_uat_required}`",
             f"- Target revision: `{report.target_revision}`",
-            f"- Mutations killed: `{report.metrics.killed_mutations}/{report.metrics.total_mutations}`",
-            f"- Critical False Green: `{report.metrics.critical_false_green_count}`",
+            (
+                "- Mutations killed: "
+                f"`{report.metrics.killed_mutations}/"
+                f"{report.metrics.total_mutations}`"
+            ),
+            (
+                "- Critical False Green: "
+                f"`{report.metrics.critical_false_green_count}`"
+            ),
             f"- Exact restore: `{report.metrics.exact_restore_percent:.0f}%`",
             f"- Independent replay: `{report.metrics.replay_percent:.0f}%`",
             f"- Semantic digest: `{report.semantic_digest}`",
@@ -859,14 +953,18 @@ class UXMutationProofRunner:
         ]
         for result in report.mutation_results:
             lines.append(
-                f"| {result.mutation_id} | {result.family.value} | {result.outcome.value} | "
+                f"| {result.mutation_id} | {result.family.value} | "
+                f"{result.outcome.value} | "
                 f"{', '.join(result.observed_failed_checkpoints) or '-'} | "
                 f"{'PASS' if result.exact_restore else 'FAIL'} |"
             )
         lines.extend(
             [
                 "",
-                "This proof remains SHADOW evidence. Advisory/Blocking are disabled and Human UAT remains required.",
+                (
+                    "This proof remains SHADOW evidence. Advisory/Blocking are "
+                    "disabled and Human UAT remains required."
+                ),
             ]
         )
         return "\n".join(lines) + "\n"
