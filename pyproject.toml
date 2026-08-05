@@ -49,6 +49,7 @@ markers = [
   "target_integration: pinned open-source target integration tests",
   "target_regression: deterministic business regression tests for pinned targets",
   "harness_integration: staged integration tests for the harness foundation",
+  "ux_integration: real pinned-target Synthetic User journey and replay tests",
   "destructive: tests that modify or delete data",
   "serial: tests that cannot run in parallel",
 ]
