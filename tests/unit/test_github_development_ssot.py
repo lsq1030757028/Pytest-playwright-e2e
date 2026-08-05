@@ -2,7 +2,6 @@ from pathlib import Path
 
 import yaml
 
-
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / "docs/github-development-ssot.yaml"
 
