@@ -1,6 +1,6 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T19:40:00+08:00
+updated_at: 2026-08-05T20:00:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
@@ -264,7 +264,7 @@ modules:
 
   - module_id: ux1-todomvc-mutation-proof-runner
     title: Deterministic TodoMVC UX mutation proof runner and replay gate
-    status: VERIFIED
+    status: MERGED
     code_paths:
       - src/test_workflow/ux_mutation/models.py
       - src/test_workflow/ux_mutation/catalog.py
@@ -279,32 +279,47 @@ modules:
       - docs/ux-assurance-status.md
       - docs/implementation-status.md
     test_evidence:
-      unit_command: uv run pytest tests/unit/test_ux_mutation_runtime.py
-      unit_result: 7 focused Unit/Contract/Sandbox/State-machine PASS
+      unit_command: uv run pytest tests/unit/test_ux_mutation_runtime.py tests/unit/test_ux1_mutation_delivery_status.py
+      unit_result: 10 focused Unit/Contract/Sandbox/Delivery PASS
       integration_command: RUN_UX_MUTATION_INTEGRATION=1 uv run pytest tests/integration/test_ux_mutation_proof_integration.py -m ux_integration
       integration_result: 5/5 real TodoMVC mutations KILLED; Baseline and Restored PASS; exact restore 100%; independent replay 100%; tamper rejection PASS; Critical False Green 0
       asset_paths:
         - benchmarks/ux/ux1
         - tests/assets/ux/ux1
         - tests/unit/test_ux_mutation_runtime.py
+        - tests/unit/test_ux1_mutation_delivery_status.py
         - tests/integration/test_ux_mutation_proof_integration.py
-        - github-actions-artifact:8928601100
-    branch: agent/ux1-todomvc-mutation-proof-runner
+        - github-actions-artifact:8929019254
+        - full-ci-artifact:8929036962
+        - python-distribution-artifact:8928961328
+        - docker-build-record:8928992374
+    branch: main
     pull_request: 37
-    ci_run: 31001744148
+    commit: 2b5bc958e5c302cef8649e28ff13d8ebafa3afcc
+    ci_run: 31002716954
     notes:
-      - "Goal Issue #36"
+      - "Goal Issue #36 CLOSED"
       - SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0
       - UX0-SYNTHETIC-USER-SHADOW@1.0.0
       - MANDATE-AUTONOMY-M1-M3@1.0.0
-      - "Focused UX1 Gate Run #10 / 31001744148 SUCCESS"
-      - "Historical UX0 Gate Run #53 / 31001743622 SUCCESS"
+      - "Final PR UX1 Gate Run #16 / 31002474167 SUCCESS"
+      - "Final PR Full Quality Run #173 / 31002474184 SUCCESS"
+      - "Main UX1 Gate Run #17 / 31002717005 SUCCESS"
+      - "Main Quality Run #174 / 31002716954 SUCCESS"
+      - "Release Run #14 / 31002716980 SUCCESS"
+      - "Cleanup Run #12 / 31002717017 SUCCESS"
       - Runtime mode SHADOW; release effect NONBLOCKING_SHADOW; Human UAT REQUIRED
       - Critical mutation kill rate 100%; baseline false positives 0; Critical False Green 0
       - exact restore 100%; independent replay 100%; Oracle and Journey coverage 100%
       - hidden mutation metadata leakage 0; undeclared changed files 0; AI-only kills 0
-      - artifact digest sha256:17a9ba0146a0acb8bc3ddf0a485be0161eb8ca9cf08227b879405f9e70549833
-      - semantic digest sha256:c0cfca3acd6c0f9b97575af221e44aa2c44bd7d68efa797ba503c3e37b20d3c0
-      - artifact manifest digest sha256:a0620348d61622cac018c4c766fc699ad72b8d12bb4dd7d2b48e4bbe199d6795
-      - Main, release and implementation-branch cleanup remain pending until merge
-      - Advisory and Blocking remain disabled
+      - main UX artifact digest sha256:c7e5f7e9ce4e2190c7e043765b3176fcc459782439f58c472954de417396c1fa
+      - main semantic digest sha256:0ec56a6ca9f0b5f2c9b4564b5bc173df7f0621e32a15d1d84fa8711dad1c6322
+      - main artifact manifest digest sha256:34c8915bccb010a814b7783f43db25bcaf320c8a4634497e3eb70a4417622fed
+      - full CI artifact digest sha256:ba84a47b9eed5b57d684dd08186f46342e7cb08a7a1aea1098012161a6888c70
+      - Python distribution digest sha256:bd18044e8fa442c54afb0e1d4e90d25e0caec81fc07b7b1be6b7152a2880d086
+      - Docker build record digest sha256:5e857db4bfe699961cb3d6934926e8587728763d5422c3f5c93ccb3dfb0f4761
+      - GHCR tags main and sha-2b5bc95
+      - image digest sha256:e119014c9810d745ff989bf5b46f5aa19f71acf094e854130c968a26d2aa10ac
+      - image config sha256:7f6d6488d9562074a53ac0acd0de8768d93764b2c2bf1757a400ea0d2023287e
+      - implementation branch deleted
+      - Advisory and Blocking remain disabled; False-positive / False-negative Benchmark is next
