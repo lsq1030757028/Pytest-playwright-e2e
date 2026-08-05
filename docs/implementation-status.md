@@ -5,15 +5,13 @@
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
 > 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
-> 已关闭模块：`M1.0 MEMORY_BENCHMARK_AND_THREAT_MODEL`  
 > 当前主模块：`M1A MEMORY_CONTRACTS_AND_NAMESPACES`  
 > 当前主模块阶段：`SPEC_DRAFT_NEXT`  
-> 并行跨切面：`UX0 Synthetic User & Experience Acceptance Plane`  
-> UX0 阶段：`SHADOW_RUNTIME_VERIFIED_MERGE_PENDING`  
+> 并行跨切面：`UX Assurance Plane`  
+> 已关闭 UX 模块：`UX0 SYNTHETIC_USER_SHADOW_RUNTIME`  
+> 下一 UX 模块：`TODO_MVC_UX_MUTATION_PROOF_SPEC`  
 > UX Gate：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`  
-> M1.0 SPEC：`SPEC-M1.0-MEMORY-BENCHMARK@1.0.0`  
-> UX0 SPEC：`SPEC-UX0-SYNTHETIC-USER@1.0.0 MERGED`  
 > 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
 
 ---
@@ -22,12 +20,11 @@
 
 ```text
 M0 Harness Baseline：MERGED
-M1.0 SPEC：MERGED / CLOSED
-Autonomous Mandate：ACTIVE
-M1.0 Benchmark Harness：MERGED / CLOSED
+M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT
 UX0 Synthetic User SPEC：MERGED / CLOSED
-Synthetic User Runtime：VERIFIED / MERGE_PENDING
+Synthetic User Runtime：MERGED / CLOSED
+TodoMVC UX Mutation Proof：SPEC_NEXT
 UX Gate Mode：SHADOW / NONBLOCKING
 Human UAT：REQUIRED
 M1 Memory Gate：0 / 1
@@ -36,7 +33,7 @@ Stage Delivery：NOT_READY
 
 M1.0 已证明 Memory Benchmark、威胁场景、证据和独立 Replay 基线；它不实现生产 Memory Store，也不关闭完整 M1 Memory Gate。
 
-UX0 Synthetic User 已完成规范并形成可执行 Shadow Runtime 候选：四条真实 TodoMVC Journey、确定性体验裁决、Trace / Screenshot / Semantic Snapshot、AI Candidate Finding、Artifact Manifest 和独立 Replay均已通过专属 Gate。该能力尚未合并到 `main`，因此状态是 `VERIFIED / MERGE_PENDING`，不是 `MERGED`。
+UX0 Synthetic User Shadow Runtime 已完成 SPEC、实现、真实 Playwright Journey、独立 Replay、PR Review、主干合并、Python/GHCR 发布、台账和分支清理。它能够在 UAT 前生成真实体验证据，但仍是非阻断 SHADOW，不替代 Human UAT。
 
 ---
 
@@ -54,8 +51,8 @@ flowchart LR
     --> H[⬜ M1F Memory Gate]
 
     B --> U1[✅ UX0 SPEC]
-    U1 --> U2[🟡 Shadow Runtime<br/>VERIFIED / MERGE PENDING]
-    U2 --> U3[⬜ TodoMVC UX Mutation Proof]
+    U1 --> U2[✅ Shadow Runtime<br/>MERGED / CLOSED]
+    U2 --> U3[🟡 TodoMVC UX Mutation Proof<br/>SPEC NEXT]
     U3 --> U4[⬜ False-positive / False-negative Benchmark]
     U4 --> U5[⬜ Advisory Gate Candidate]
     U5 --> U6[⬜ Blocking Policy Candidate]
@@ -125,10 +122,10 @@ Experience Oracle
 → UAT Report / Artifact Manifest / Replay
 ```
 
-### 4.2 已实现
+### 4.2 已交付
 
 - 强类型 Profile、Environment、Oracle、Journey、Event、Metric、Finding 和 Report；
-- Profile 仅描述行为能力，不推断敏感人口属性；
+- Profile 只描述行为能力，不推断敏感人口属性；
 - Synthetic Fixture Only 和生产账号拒绝；
 - Actor Input 与 evaluator-only 字段隔离；
 - `test-workflow ux validate | run | replay`；
@@ -140,25 +137,36 @@ Experience Oracle
 - JSON / Markdown 报告、Artifact Manifest 和 Replay Manifest；
 - Artifact Tamper 和 Replay Drift 拒绝。
 
-### 4.3 当前证据
+### 4.3 交付证据
 
 ```text
-Focused Runtime Gate：Run #16 / 30991412463 — SUCCESS
-Unit / Contract：9 / 9 PASS
-CLI Validate：PASS
+Merge Commit：f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+PR Focused Runtime：Run #25 / 30992515643 — SUCCESS
+PR Full Quality：Run #134 / 30992515715 — SUCCESS
+Main UX Shadow Gate：Run #26 / 30993021836 — SUCCESS
+Main Quality：Run #135 / 30993021825 — SUCCESS
+Release：Run #12 / 30993022051 — SUCCESS
+Cleanup：Run #10 / 30993021598 — SUCCESS
+Unit / Contract / Delivery / Approval：17 / 17 PASS
 Real Playwright Journeys：4 / 4 PASS
 Journey Checkpoints：14 / 14 PASS
 Independent Replay：PASS
 Campaign Verdict：PASS
-Full Repository CI：Run #125 / 30991412405 — SUCCESS
+Critical False Green：0
 ```
 
 ```text
-Artifact ID：8924285005
-Artifact ZIP Digest：sha256:349f51fa11cca5c5f83bee863c69b289b19eebc63bfabe6c5623399b8254a3fc
+Main UX Artifact：8924951167
+Main UX Artifact Digest：sha256:afd95dfea4ba738494bc24e2c9b2c2247eb64cbaff1b5d07901ea20c4b758134
+Python Distribution：8924921509
+Python Digest：sha256:6ff953f33d5699d64dc832bb7bf73d63425eb5e5ae2a2f24bec9558c0996e16d
+Docker Build Record：8924949424
+Docker Build Digest：sha256:89e9c4b4c971f4e9a0524abdb75a2514434a3b53e72b81add762f31fe74eafc9
+GHCR Tags：main / sha-f687fd9
+Image Digest：sha256:a0d20ae869f323a0622e71dad8c4257fac3f32963552ea3ac9781086c3e2797d
+Image Config：sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
 Semantic Digest：sha256:1dda03adfcc3a264240b20a883daf2a230e3ce6dcd00c43dccfb84da40b885c5
 Artifact Manifest Digest：sha256:702fdce96eedbb8b81566dda08768d33434346a7edf88653594587f676c92fa4
-Manifest Files：19
 ```
 
 ### 4.4 尚未完成
@@ -190,7 +198,34 @@ M1A SPEC 不选择数据库、向量库、Embedding Model 或 Ranking Algorithm�
 
 ---
 
-## 6. 当前自治与安全边界
+## 6. 下一 UX 模块：TodoMVC UX Mutation Proof
+
+该模块先落独立 SPEC，证明 Synthetic User 不只会让正常页面通过，还能可靠发现体验退化。
+
+首批 Mutation Family：
+
+```text
+Missing Feedback
+Visible Success but Lost State
+Keyboard / Focus / Semantic Barrier
+Interrupted Resume Failure
+Filter / Route State Drift
+```
+
+每个 Mutation 使用：
+
+```text
+Baseline PASS
+→ Mutation KILLED
+→ Source Restored
+→ Restored PASS
+```
+
+并记录假阳性、假阴性、Critical False Green、Replay 和恢复完整性。该模块仍不启用 Advisory 或 Blocking。
+
+---
+
+## 7. 当前自治与安全边界
 
 `MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 范围内的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
 
@@ -215,22 +250,23 @@ Synthetic User 额外禁止：
 
 ---
 
-## 7. 近期执行顺序
+## 8. 近期执行顺序
 
 ```text
-1. UX0 Shadow Runtime Final Review / Merge / Main / Release / Cleanup
-2. M1A Memory Contracts SPEC PR / Merge
-3. TodoMVC UX Mutation Proof SPEC
-4. M1A Domain Contracts Implementation
-5. UX False-positive / False-negative Benchmark
-6. M1B Store & Progressive Retrieval
+1. UX0 Final Ledger / CLOSED
+2. TodoMVC UX Mutation Proof SPEC
+3. M1A Memory Contracts SPEC PR / Merge
+4. TodoMVC UX Mutation Proof Implementation
+5. M1A Domain Contracts Implementation
+6. UX False-positive / False-negative Benchmark
+7. M1B Store & Progressive Retrieval
 ```
 
 UX 与 Memory 可交错推进，但不能通过并行降低各自的 Evidence Gate。
 
 ---
 
-## 8. 阶段交付条件
+## 9. 阶段交付条件
 
 项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
 

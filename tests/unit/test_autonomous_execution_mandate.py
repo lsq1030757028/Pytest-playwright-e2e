@@ -102,7 +102,7 @@ def test_ssot_and_templates_reference_standing_mandate_authorization() -> None:
 def test_mandate_does_not_claim_m1_gate_completion() -> None:
     status = (ROOT / "docs/implementation-status.md").read_text(encoding="utf-8")
 
-    assert "M1.0 Benchmark Harness：MERGED / CLOSED" in status
+    assert "M1.0 Memory Benchmark Harness：MERGED / CLOSED" in status
     assert "M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT" in status
     assert "M1 Memory Gate：0 / 1" in status
     assert "Stage Delivery：NOT_READY" in status

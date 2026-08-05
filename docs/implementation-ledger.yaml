@@ -1,6 +1,6 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T17:05:00+08:00
+updated_at: 2026-08-05T17:30:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
@@ -210,7 +210,7 @@ modules:
 
   - module_id: ux0-synthetic-user-shadow-runner
     title: AI-driven Synthetic User shadow runtime and replay evidence
-    status: VERIFIED
+    status: MERGED
     code_paths:
       - src/test_workflow/ux/models.py
       - src/test_workflow/ux/catalog.py
@@ -225,27 +225,39 @@ modules:
       - docs/ux-assurance-status.md
       - docs/testing/ux0-synthetic-user-agent-test-design.md
     test_evidence:
-      unit_result: 9 focused Unit/Contract PASS
+      unit_result: 17 focused Unit/Contract/Delivery/Approval PASS
       integration_result: 4 real TodoMVC Playwright journeys and 14/14 checkpoints PASS; independent replay PASS; campaign verdict PASS
       asset_paths:
         - benchmarks/ux/ux0
         - tests/unit/test_ux_shadow_runtime.py
+        - tests/unit/test_ux_shadow_delivery_status.py
         - tests/integration/test_ux_shadow_runner_integration.py
-        - github-actions-artifact:8924285005
-    branch: agent/ux0-synthetic-user-shadow-runner
+        - github-actions-artifact:8924951167
+        - python-distribution-artifact:8924921509
+        - docker-build-record:8924949424
+    branch: main
     pull_request: 32
-    commit: c55448e99f850fdc1e4b7e3182072f6fe60bffdd
-    ci_run: 30991412463
+    commit: f687fd9c30873c4a81d9ffb57b20459fdcebe4ee
+    ci_run: 30993021825
     notes:
       - "Goal Issue #31"
       - SPEC-UX0-SYNTHETIC-USER@1.0.0
       - APPROVAL-UX0-SYNTHETIC-USER-SPEC@1.0.0
       - MANDATE-AUTONOMY-M1-M3@1.0.0
-      - "Focused Runtime Gate Run #16 / 30991412463 SUCCESS"
-      - "Full Repository CI Run #125 / 30991412405 SUCCESS"
+      - "PR Focused Runtime Run #25 / 30992515643 SUCCESS"
+      - "PR Full Quality Run #134 / 30992515715 SUCCESS"
+      - "Main UX Shadow Gate Run #26 / 30993021836 SUCCESS"
+      - "Main Quality Run #135 / 30993021825 SUCCESS"
+      - "Release Run #12 / 30993022051 SUCCESS"
+      - "Cleanup Run #10 / 30993021598 SUCCESS"
       - Runtime mode SHADOW; release effect NONBLOCKING_SHADOW; Human UAT REQUIRED
       - AI Candidate Findings cannot block or change Experience Oracle or Release Verdict
-      - artifact ZIP digest sha256:349f51fa11cca5c5f83bee863c69b289b19eebc63bfabe6c5623399b8254a3fc
+      - main UX artifact digest sha256:afd95dfea4ba738494bc24e2c9b2c2247eb64cbaff1b5d07901ea20c4b758134
+      - Python distribution digest sha256:6ff953f33d5699d64dc832bb7bf73d63425eb5e5ae2a2f24bec9558c0996e16d
+      - Docker build record digest sha256:89e9c4b4c971f4e9a0524abdb75a2514434a3b53e72b81add762f31fe74eafc9
       - semantic digest sha256:1dda03adfcc3a264240b20a883daf2a230e3ce6dcd00c43dccfb84da40b885c5
       - artifact manifest digest sha256:702fdce96eedbb8b81566dda08768d33434346a7edf88653594587f676c92fa4
+      - image digest sha256:a0d20ae869f323a0622e71dad8c4257fac3f32963552ea3ac9781086c3e2797d
+      - image config sha256:69fad9daed03cfdb4a7373e57a5dc6439a5d285c1ce0eae9d80385993c2f72b7
+      - implementation branch deleted
       - TodoMVC UX Mutation Proof and Advisory/Blocking promotion remain open

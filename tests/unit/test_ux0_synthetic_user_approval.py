@@ -54,7 +54,7 @@ def test_approval_is_bound_to_green_focused_and_full_evidence() -> None:
     }
 
 
-def test_approval_remains_historical_after_shadow_runtime_implementation() -> None:
+def test_approval_remains_historical_after_shadow_runtime_closure() -> None:
     approval = load_yaml(APPROVAL_PATH)
     non_claims = approval["non_claims"]
     invariants = approval["protected_invariants"]
@@ -71,8 +71,9 @@ def test_approval_remains_historical_after_shadow_runtime_implementation() -> No
     assert invariants["initial_runtime_mode"] == "SHADOW"
     assert invariants["blocking_gate_enabled"] is False
 
-    assert "Runtime：`VERIFIED_MERGE_PENDING`" in status
+    assert "Runtime：`MERGED_CLOSED`" in status
     assert "Gate Mode：`SHADOW_NONBLOCKING`" in status
+    assert "TodoMVC UX Mutation Proof：SPEC_NEXT" in status
     assert "Blocking Release Gate：DISABLED" in status
     assert "Human UAT：`REQUIRED`" in status
 
