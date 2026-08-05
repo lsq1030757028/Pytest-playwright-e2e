@@ -73,6 +73,7 @@ jobs:
       - name: Real pinned TodoMVC journeys and independent replay
         env:
           RUN_UX_INTEGRATION: "1"
+          UX_EVIDENCE_DIR: test-results/ux-runtime
         run: >-
           uv run pytest tests/integration/test_ux_shadow_runner_integration.py
           -m ux_integration
