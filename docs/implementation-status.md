@@ -38,6 +38,7 @@ Stage Delivery：NOT_READY
 历史阶段记录（非当前状态）：
 
 ```text
+TodoMVC UX Mutation Proof：SPEC_DRAFT
 UX Mutation Proof Runner：NOT_IMPLEMENTED
 UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
 ```
