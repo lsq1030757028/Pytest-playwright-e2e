@@ -310,6 +310,7 @@ def test_state_event_actor_mismatch_is_rejected_without_mutation() -> None:
     assert result.error_code is ErrorCode.ACL_DENIED
     assert store.get_effective_state(memory_id=revision.memory_id) is LifecycleState.CANDIDATE
 
+
 def test_source_hash_mismatch_is_integrity_failure() -> None:
     revision = make_semantic_revision()
     owner = make_owner()
