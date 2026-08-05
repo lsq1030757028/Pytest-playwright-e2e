@@ -32,3 +32,5 @@ jobs:
           git diff --cached --check
           git commit -m "feat(m1a): implement governed memory runtime contracts"
           git push origin HEAD:"${GITHUB_REF_NAME}"
+
+# retrigger bootstrap after payload upload
