@@ -1,6 +1,6 @@
 project: AI Test Harness
 schema_version: 1
-updated_at: 2026-08-05T09:00:00+08:00
+updated_at: 2026-08-05T13:25:00+08:00
 modules:
   - module_id: stage-0
     title: Pytest Playwright deterministic execution foundation
@@ -244,3 +244,32 @@ modules:
     notes:
       - Python distribution artifact digest sha256:c8ce6f1ff318a949e9f9f5bc9c632b9cc6630aa5995546c8b803c046a063785d
       - GHCR tags are ghcr.io/lsq1030757028/pytest-playwright-e2e:main and ghcr.io/lsq1030757028/pytest-playwright-e2e:sha-dc38f6a
+
+  - module_id: m1.0-memory-benchmark-harness
+    title: Deterministic Memory benchmark harness and replay gate
+    status: IMPLEMENTED
+    code_paths:
+      - src/test_workflow/memory_benchmark/models.py
+      - src/test_workflow/memory_benchmark/catalog.py
+      - src/test_workflow/memory_benchmark/evaluator.py
+      - src/test_workflow/memory_benchmark/runner.py
+      - src/test_workflow/cli.py
+    document_paths:
+      - docs/m1.0-memory-benchmark-harness.md
+      - docs/testing/m1.0-memory-benchmark-harness-test-design.md
+      - docs/specs/m1.0-memory-benchmark-threat-model-spec.md
+    test_evidence:
+      unit_command: uv run pytest tests/unit/test_memory_benchmark.py
+      unit_result: PENDING authoritative PR CI
+      integration_command: uv run pytest tests/integration/test_memory_benchmark_harness_integration.py -m harness_integration && test-workflow memory run/replay
+      integration_result: PENDING authoritative PR CI
+      asset_paths:
+        - benchmarks/memory/m1.0
+        - tests/unit/test_memory_benchmark.py
+        - tests/integration/test_memory_benchmark_harness_integration.py
+    branch: agent/m1-0-memory-benchmark-harness
+    notes:
+      - Goal Issue #25
+      - SPEC-M1.0-MEMORY-BENCHMARK@1.0.0
+      - MANDATE-AUTONOMY-M1-M3@1.0.0
+      - SPEC and mandate are merged; implementation evidence is not yet verified
