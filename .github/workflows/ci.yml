@@ -29,7 +29,11 @@ jobs:
         run: uv run ruff check .
 
       - name: Collect tests
-        run: uv run pytest --collect-only
+        shell: bash
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          uv run pytest --collect-only 2>&1 | tee test-results/collect.log
 
       - name: Unit and API tests
         run: uv run pytest tests/unit tests/api --junitxml=test-results/junit-core.xml
