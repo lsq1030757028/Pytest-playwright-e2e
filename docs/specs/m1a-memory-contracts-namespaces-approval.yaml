@@ -1,0 +1,53 @@
+approval_id: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC
+version: 1.0.0
+status: APPROVED
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+goal_issue: 28
+milestone: M1
+phase: SPEC
+assurance: DEV3
+ux_assurance: UX0
+authority:
+  mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+  approval_event: pull_request_merge
+  pull_request: 41
+  merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
+approved_scope:
+  - memory_identity_and_immutable_revision_contracts
+  - memory_kinds_and_session_boundary
+  - namespaces_and_default_deny_acl
+  - provenance_and_transformation_lineage
+  - lifecycle_promotion_retention_revoke_and_forget
+  - compare_and_swap_conflict_and_idempotency
+  - procedural_and_skill_compatibility_boundaries
+  - vendor_neutral_store_and_query_ports
+runtime_authorization:
+  m1a_runtime_contracts_may_begin: true
+  m1b_store_and_retrieval_remains_blocked: true
+  unblock_condition: M1A_RUNTIME_CONTRACTS_VERIFIED
+protected_boundaries:
+  promoted_memory_is_not_fact_oracle_policy_or_permission: true
+  candidate_self_promotion_forbidden: true
+  cross_project_or_agent_access_default_deny: true
+  production_data_or_secret_use_authorized: false
+  memory_gate_closed: false
+verification:
+  pr_spec_gate_run: 31006481889
+  pr_full_quality_run: 31006482580
+  main_spec_gate_run: 31006798787
+  main_full_quality_run: 31006798834
+  release_run: 31006798767
+  cleanup_run: 31006798731
+  main_spec_artifact: 8930644975
+  main_spec_artifact_digest: sha256:7f0489a0b461b54d1f18cfd7f9bb66a46c721c76a16c1e45b0404d9d7816e804
+  python_distribution_artifact: 8930645632
+  python_distribution_digest: sha256:84803f865bcbe09372b0aaacfb9a9c33222547355bc8f22e00ee4e83d246c04c
+  docker_build_record: 8930679753
+  docker_build_record_digest: sha256:512718f679f4d02a96a154d68222927b1d601c5995cfcbc311617ce27a56f470
+  review_threads: 0
+  spec_branch_deleted: true
+result:
+  m1a_spec: MERGED_CLOSED
+  next_module: M1A_RUNTIME_CONTRACTS
+  m1_memory_gate: OPEN
+  stage_delivery: NOT_READY
