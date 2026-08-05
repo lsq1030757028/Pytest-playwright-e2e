@@ -45,7 +45,7 @@ def test_real_todomvc_five_mutation_proof_and_independent_replay(
         CAMPAIGN,
         workspace=workspace,
         output_dir=output,
-        verify_replay=False,
+        verify_replay=True,
     )
 
     diagnostic = report.model_dump_json(indent=2)
@@ -59,6 +59,7 @@ def test_real_todomvc_five_mutation_proof_and_independent_replay(
     assert report.metrics.baseline_false_positive_count == 0
     assert report.metrics.critical_false_green_count == 0
     assert report.metrics.exact_restore_percent == 100
+    assert report.metrics.replay_percent == 100
     assert report.metrics.hidden_metadata_leakage_count == 0
     assert report.metrics.undeclared_changed_files_count == 0
     assert report.metrics.ai_only_kill_count == 0
@@ -82,6 +83,10 @@ def test_real_todomvc_five_mutation_proof_and_independent_replay(
             assert any(phase_dir.glob("evidence/*/trace.zip"))
             assert any(phase_dir.glob("evidence/*/final.png"))
             assert any(phase_dir.glob("evidence/*/semantic.json"))
+
+    persisted_report = load_model(output / "report.json", type(report))
+    assert persisted_report.metrics.replay_percent == 100
+    assert persisted_report.semantic_digest == report.semantic_digest
 
     manifest = load_model(
         output / "artifact-manifest.json",
