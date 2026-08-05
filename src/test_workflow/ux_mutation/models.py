@@ -152,7 +152,10 @@ class UXMutationCatalog(FrozenModel):
         families = [mutation.family for mutation in self.mutations]
         if len(families) != len(set(families)):
             raise ValueError("first UX proof requires one mutation per family")
-        if any(mutation.target_path != self.target.mutable_file.path for mutation in self.mutations):
+        if any(
+            mutation.target_path != self.target.mutable_file.path
+            for mutation in self.mutations
+        ):
             raise ValueError("all UX1 mutations must target the declared mutable file")
         return self
 
