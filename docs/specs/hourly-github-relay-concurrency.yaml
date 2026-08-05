@@ -17,9 +17,15 @@ lease:
     - RESOLVE_CAMPAIGN
     - FETCH_LEASE_AND_BLOB_SHA
     - CHECK_ACTIVE_AND_EXPIRY
+    - INCREMENT_SEQUENCE_IN_SAME_CAS
     - UPDATE_WITH_EXACT_BLOB_SHA
+    - REREAD_AND_VERIFY_HOLDER_TOKEN
     - ON_CONFLICT_EXIT_BUSY
   duration_minutes: 90
+  sequence:
+    monotonic: true
+    incremented_atomically_on_acquire: true
+    token_format: relay-<campaign-id>-<sequence>-<UTC-start-time>
   heartbeat:
     after_meaningful_transition: true
     before_long_ci_wait: true
@@ -28,11 +34,47 @@ lease:
     final_status: IDLE
     preserve_last_run_summary: true
   force_update: forbidden
+fencing:
+  required_before_every_mutation: true
+  reread_lease: true
+  required_conditions:
+    - STATUS_ACTIVE
+    - HOLDER_TOKEN_MATCHES_CURRENT_RUN
+    - NOW_BEFORE_EXPIRES_AT
+    - TARGET_BRANCH_MATCHES
+  lost_lease_behavior:
+    - STOP_ALL_FURTHER_MUTATION
+    - REPORT_LOST_LEASE
+    - FINAL_STATUS_BUSY_OR_REPLAN_REQUIRED_OR_BLOCKED
+  fenced_actions:
+    - FILE_WRITE
+    - CAMPAIGN_STATE_WRITE
+    - COMMIT_CREATE
+    - BRANCH_REF_UPDATE
+    - PR_METADATA_UPDATE
+    - RUN_COMMENT_UPDATE
+    - CI_RERUN
+    - HEARTBEAT
+    - LEASE_RELEASE
+branch_head_cas:
+  verify_before_commit: true
+  expected_field: target_head_sha
+  self_commit_updates_expected_head: true
+  unexpected_movement_status: REPLAN_REQUIRED
+  force_push: forbidden
+  reset_or_overwrite: forbidden
 busy:
   development_writes: forbidden
   ci_rerun_owned_by_active_run: forbidden
   competing_branch_or_pr: forbidden
+  active_campaign_comment_write: forbidden
   chat_final: required
+  report_fields:
+    - ACTIVE_RUN_TOKEN
+    - CAMPAIGN
+    - TARGET
+    - HEARTBEAT_AT
+    - EXPIRES_AT
   optional_record_target: ISSUE_49
 stale_recovery:
   expiry_alone_sufficient: false
@@ -53,6 +95,14 @@ surfaces:
   relay_compatible_manual_sessions_use_same_lease: true
 pipeline:
   pilot_mode: SINGLE_HOURLY_ORCHESTRATOR
+  phase_selection: STATE_DRIVEN_NOT_TIMER_DRIVEN
+  modes:
+    - REORIENT
+    - PLAN
+    - IMPLEMENT
+    - VERIFY
+    - WAIT
+    - CLOSE
   separate_stage_tasks_initially_forbidden: true
   reason:
     - REDUCE_CONTEXT_REHYDRATION
