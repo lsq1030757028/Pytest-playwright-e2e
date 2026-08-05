@@ -1,0 +1,190 @@
+project: AI Test Harness
+roadmap_version: 3.0
+updated_at: 2026-08-05T10:20:00+08:00
+current_state: FOUNDATION_BASELINE
+stage_delivery_status: NOT_READY
+next_milestone: M1
+
+principles:
+  - memory_before_multi_agent
+  - controlled_evolution_not_unbounded_self_modification
+  - safe_degradation_before_model_parity
+  - simulator_before_real_device_scale
+  - single_agent_stability_before_parallel_efficiency
+  - deterministic_safety_gates
+
+stage_delivery_gate:
+  required_milestones: [M1, M2, M3]
+  safety_requirements:
+    critical_false_green: 0
+    unauthorized_oracle_policy_permission_changes: 0
+    replayable_critical_evidence_percent: 100
+    rollback_for_promoted_assets: required
+    model_memory_device_provenance: required
+
+milestones:
+  - id: M0
+    title: Harness microkernel and trustworthy test baseline
+    status: MERGED
+    objective: Prove controlled capability execution and executable test evidence.
+    evidence:
+      main_commit: 11aabf0351376830a817b5b7bf5cdecdbe8560d2
+      final_quality_run: 30965665125
+      final_release_run: 30965665110
+      modules_merged: 14
+    limitations:
+      - representative project diversity is insufficient
+      - evidence is concentrated in web and TodoMVC-style targets
+      - no production memory learning loop
+      - no cross-model capability benchmark
+      - no real-device control plane
+
+  - id: M1
+    title: Memory and controlled self-evolution
+    status: NEXT
+    depends_on: [M0]
+    modules:
+      - M1.0 Memory benchmark and threat model
+      - M1A Memory contracts and namespaces
+      - M1B Memory store and progressive retrieval
+      - M1C Hot-path and background memory formation
+      - M1D Shared memory governance
+      - M1E Controlled self-evolution
+      - M1F Memory benchmark gate
+    test_assets:
+      - memory_off_vs_on
+      - repeated_task
+      - similar_but_different_task
+      - stale_memory
+      - conflicting_memory
+      - memory_poisoning
+      - shared_memory_acl
+      - promotion_and_rollback
+    gates:
+      provenance_percent: 100
+      unauthorized_memory_write: 0
+      assumption_to_fact_or_oracle_leakage: 0
+      critical_false_green: 0
+      minimum_improvement_any:
+        correctness_percent_points: 15
+        human_intervention_reduction_percent: 20
+        token_or_cost_reduction_percent: 20
+
+  - id: M2
+    title: Cross-model generalization and safe degradation
+    status: PLANNED
+    depends_on: [M1]
+    modules:
+      - M2A Model capability profile
+      - M2B Model contract and output normalization
+      - M2C Weak-model execution ladder
+      - M2D Cross-model benchmark
+      - M2E Model routing and escalation
+    model_tiers: [strong, medium, weak, deterministic_baseline]
+    runs_per_task_minimum: 3
+    gates:
+      safe_completion_percent_all_tiers: 98
+      strong_correct_completion_percent: 95
+      medium_correct_completion_percent: 90
+      weak_correct_completion_percent: 80
+      critical_false_green: 0
+      unauthorized_changes: 0
+      deterministic_gate_consistency_percent: 100
+
+  - id: M3
+    title: Project complexity and architecture generalization
+    status: PLANNED
+    depends_on: [M2]
+    modules:
+      - M3A Project and architecture contracts
+      - M3B Complex web matrix
+      - M3C Mobile adapters and devices
+      - M3D Mini-program adapter
+      - M3E Embedded and IoT adapter
+      - M3F Device lab and cross-project gate
+    minimum_project_matrix:
+      complex_web: 2
+      mobile: 2
+      mini_program: 1
+      embedded_iot: 1
+      total: 6
+    minimum_real_devices:
+      android: 1
+      embedded_board: 1
+      ios: feasibility_report_required
+    cross_cutting_requirements:
+      technology_stacks_minimum: 3
+      business_domains_minimum: 2
+      critical_business_scenario_required: true
+      model_tiers_required: 3
+    gates:
+      critical_false_green: 0
+      device_lease_conflict: 0
+      dirty_device_state_leakage: 0
+      replay_bundle_per_project: required
+      simulator_real_device_delta_traceable: required
+
+  - id: M4
+    title: Task decomposition and multi-agent parallel orchestration
+    status: PLANNED_AFTER_STAGE_GATE
+    depends_on: [M1, M2, M3]
+    modules:
+      - TaskGraph and ownership
+      - Harness-validated decomposition
+      - Parallel worker execution
+      - Artifact join and conflict resolution
+      - Failure takeover and cancellation
+      - Valid progress aggregation
+    gates:
+      quality_regression: prohibited
+      safety_regression: prohibited
+      duplicate_context_reduction: measured
+      end_to_end_duration_reduction: measured
+
+  - id: M5
+    title: Durable runtime and control plane
+    status: FUTURE
+    depends_on: [M4]
+    modules:
+      - PostgreSQL campaign and memory store
+      - Object storage
+      - Queue and event bus
+      - Durable scheduler and worker leases
+      - API gateway and web console
+      - RBAC secrets approvals and cost center
+      - SLO alerts and audit
+
+  - id: M6
+    title: Test Agent OS Beta
+    status: FUTURE
+    depends_on: [M5]
+    modules:
+      - Agent identity and lifecycle
+      - Capability SDK and package versioning
+      - Model router
+      - Memory service
+      - Device lab
+      - Multi-agent runtime
+      - Multi-tenant project spaces
+      - Infrastructure sandbox
+
+next_execution_sequence:
+  - M1.0
+  - M1A
+  - M1B
+  - M1C
+  - M1D
+  - M1E
+  - M1F
+  - M2A
+  - M2B
+  - M2C
+  - M2D
+  - M2E
+  - M3A
+  - M3B
+  - M3C
+  - M3D
+  - M3E
+  - M3F
+  - M4
