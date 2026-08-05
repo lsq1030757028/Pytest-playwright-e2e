@@ -30,7 +30,6 @@ from .models import (
     UXCampaignReport,
     UXCatalog,
     UXEvaluation,
-    UXEvent,
     UXJourney,
     UXJourneyRun,
     UXReplayManifest,
