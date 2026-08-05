@@ -53,7 +53,13 @@ from .ports import (
     MemoryRevisionPort,
     MemoryStatePort,
 )
-from .reference import DeterministicMemoryReference
+from . import reference as _reference_module
+from .reference_hardened import DeterministicMemoryReference
+
+# Keep the historical module import path safe as well as the package export. Python
+# loads this package before resolving ``memory_contracts.reference``, so direct
+# submodule consumers and the deterministic proof receive the hardened adapter.
+_reference_module.DeterministicMemoryReference = DeterministicMemoryReference
 
 __all__ = [
     "ALLOWED_TRANSITIONS",
