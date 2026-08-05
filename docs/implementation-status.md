@@ -5,36 +5,81 @@
 > M0 基线提交：`11aabf0351376830a817b5b7bf5cdecdbe8560d2`  
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
+> 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
+> 当前模块：`M1.0 MEMORY_BENCHMARK_AND_THREAT_MODEL`  
+> 当前模块阶段：`SPEC_BASELINED_WHEN_MERGED`  
+> Goal：GitHub Issue #20  
 > 演进路线：`docs/agent-os-evolution-roadmap.md` v3.0  
-> 机器可读路线台账：`docs/agent-os-roadmap.yaml`  
+> 机器可读路线台账：`docs/agent-os-roadmap.yaml` v3.1  
 > GitHub 研发流程：`docs/github-development-ssot.md`
 
 ---
 
 ## 1. 状态结论
 
-当前项目已经完成并合并测试领域 Agent OS 的微内核基线：
+当前项目已经完成并合并测试领域 Agent OS 的微内核基线，包括 Capability、Artifact、Policy、Budget、Permission、动态 DAG、风险治理、TestSpec、生成证明、诊断、回归、Replay、Mutation、构建和 GHCR 发布。
 
-- Capability Contracts；
-- Registry / Artifact Store；
-- Policy / Budget / Permission；
-- Workflow Compiler / Orchestrator；
-- Existing Capability Adapters；
-- Risk Router 与 Change-aware Campaign；
-- Incremental Business Understanding；
-- TestSpec 与测试代码生成；
-- Mutation Proof；
-- Diagnosis / Safe Repair；
-- Intelligent Regression / Benchmark；
-- Python Package、Docker 和 GHCR 发布。
+这代表 v0.1 工程基线已经收口，不代表 Test Agent OS 达到阶段产品交付条件。
 
-现有实施台账中的基线模块全部为 `MERGED`。这代表 v0.1 工程基线已经收口，不代表 Test Agent OS 已达到阶段产品交付条件。
+下一产品路线为：
 
-当前证据主要集中在仓库 Demo 与固定 TodoMVC Web 场景。项目尚未证明长期记忆、自主迭代、跨模型稳定性、复杂项目泛化和真实设备控制。
+```text
+M1 Memory & Controlled Evolution
+→ M2 Cross-model Generalization
+→ M3 Project / Architecture Generalization
+→ Stage Delivery Gate
+→ M4 Multi-agent Orchestration
+```
+
+当前已开始 M1.0，但只完成 SPEC 后才能进入 Memory Benchmark Harness 实现。
 
 ---
 
-## 2. 当前能力状态机
+## 2. M1.0 当前状态
+
+```mermaid
+flowchart LR
+    A[✅ Goal #20]
+    --> B[🟡 M1.0 SPEC]
+    --> C[⬜ SPEC Review / Main]
+    --> D[⬜ M1.0 Benchmark Harness DEV3]
+    --> E[⬜ M1A Contracts]
+    --> F[⬜ M1B Store / Retrieval]
+```
+
+M1.0 SPEC 资产：
+
+- `docs/specs/m1.0-memory-benchmark-threat-model-spec.md`；
+- `docs/specs/m1.0-memory-benchmark-threat-model.yaml`；
+- `benchmarks/memory/m1.0/scenario-catalog.yaml`；
+- `docs/testing/m1.0-memory-benchmark-threat-model-test-design.md`；
+- `tests/unit/test_m1_0_memory_spec.py`。
+
+SPEC 已定义：
+
+- 受保护资产和 Trust Zones；
+- `MEM-T01`—`MEM-T20` 威胁基线；
+- Memory Off / Verified / Candidate / Adversarial 条件；
+- 16 个 Golden、Negative、Adversarial、Poisoning、ACL、Rollback 和 Replay 场景；
+- 配对实验、隐藏 Holdout、污染失效和重复运行要求；
+- 正确率、人工介入、成本、延迟、安全和 Memory 质量指标；
+- `Critical False Green = 0` 等 Safety Gate；
+- Candidate、Promotion、Canary 和 Rollback 边界；
+- M1A 与 M1B 的接口职责和禁止范围。
+
+SPEC 不包含：
+
+- Memory Store 代码；
+- 向量数据库或 Embedding 选择；
+- 真实模型调用；
+- Shared Memory Runtime；
+- 自主迭代或生产晋升。
+
+SPEC 阶段归类为 `DEV2`；后续 M1.0 Benchmark Harness 和 Memory Runtime 默认为 `DEV3`。
+
+---
+
+## 3. 当前能力状态机
 
 ```mermaid
 flowchart LR
@@ -49,20 +94,18 @@ flowchart LR
     --> I[✅ Understanding / Generation]
     --> J[✅ Diagnosis / Regression]
     --> K[✅ Build / Package / GHCR]
-    --> L[🟡 M1 Memory & Controlled Evolution]
-    --> M[⬜ M2 Cross-model Generalization]
-    --> N[⬜ M3 Project / Architecture Generalization]
-    --> O{阶段交付 Gate}
-    --> P[⬜ M4 Multi-agent Orchestration]
-    --> Q[⬜ M5 Durable Runtime]
-    --> R[⬜ M6 Test Agent OS Beta]
+    --> L[🟡 M1.0 Memory SPEC]
+    --> M[⬜ M1 Memory Runtime]
+    --> N[⬜ M2 Cross-model Generalization]
+    --> O[⬜ M3 Project / Architecture Generalization]
+    --> P{阶段交付 Gate}
 ```
 
 ---
 
-## 3. 当前验证事实
+## 4. 当前验证事实
 
-最终主干质量流水线已经覆盖：
+M0 主干质量流水线覆盖：
 
 - Ruff 和 Pytest Collect；
 - Unit / API；
@@ -84,73 +127,35 @@ Restored：3 / 3 PASS
 Critical False Green：0
 ```
 
-发布事实：
+M1.0 SPEC 新增独立 CI Gate：
 
-- Python wheel / sdist：已构建；
-- GHCR `main` 镜像：已发布；
-- 实施临时分支：已清理；
-- 开放实施 PR：0。
+```text
+M1.0 Memory SPEC validation
+→ threat / scenario / gate / promotion / module-boundary consistency
+```
+
+该 Gate 只证明 SPEC 一致性，不能替代未来真实 Store、Retrieval、Poisoning 和 Memory Off/On Benchmark。
 
 ---
 
-## 4. 为什么当前不是阶段产品交付
-
-### 4.1 项目与架构代表性不足
+## 5. 为什么当前仍不是阶段产品交付
 
 尚未完成：
 
-- 复杂模块化单体；
-- 微服务与异步消息；
-- Android / iOS；
-- 小程序；
-- 嵌入式模拟器与 Hardware-in-the-loop；
+- 生产级 Working / Semantic / Episodic / Procedural / Skill Memory；
+- Memory Store、Retrieval、Formation、Shared Governance 和 Controlled Evolution；
+- Memory Off / On 实际 Benchmark；
+- 跨模型强、中、弱档稳定性；
+- 复杂 Web、Mobile、小程序和嵌入式项目矩阵；
 - 真实设备 Inventory、Lease、Reset 和 Quarantine。
 
-### 4.2 缺少生产级 Memory 与自主迭代闭环
-
-尚未完成：
-
-- Working / Semantic / Episodic / Procedural / Skill Memory；
-- Memory Provenance、TTL、Conflict、Forget 和 Rollback；
-- Shared Memory ACL；
-- Memory Poisoning Benchmark；
-- Experience → Candidate → Benchmark → Canary → Promote / Rollback。
-
-### 4.3 缺少跨模型泛化证据
-
-尚未证明：
-
-- 强、中、弱模型使用相同 Harness 时都能稳定执行；
-- 弱模型可以安全降级或显式升级；
-- 模型变化不会导致 Critical False Green；
-- 模型差异能通过 Benchmark、Routing 和 Escalation 解释。
-
----
-
-## 5. 新路线与进度口径
-
-不再使用旧的“17 个能力节点百分比”，因为当前阶段转换为跨阶段研究与产品化路线，节点工作量差异过大。
-
-采用里程碑口径：
-
-| 里程碑 | 状态 | 说明 |
-|---|---|---|
-| M0 Harness Microkernel Baseline | `MERGED` | 当前已完成工程基线 |
-| M1 Memory & Controlled Evolution | `NEXT` | 下一实施阶段 |
-| M2 Cross-model Generalization | `PLANNED` | M1 后执行 |
-| M3 Project / Architecture Generalization | `PLANNED` | M2 后执行 |
-| Stage Delivery Gate | `NOT_READY` | M1、M2、M3 和 Safety 全部通过后 |
-| M4 Multi-agent Orchestration | `PLANNED_AFTER_GATE` | 先稳定，再并行提效 |
-| M5 Durable Runtime / Control Plane | `FUTURE` | 服务化和平台化 |
-| M6 Test Agent OS Beta | `FUTURE` | Agent OS 阶段目标 |
-
-当前阶段交付核心 Gate：
+当前阶段交付 Gate：
 
 ```text
 Memory Gate：0 / 1
 Model Generalization Gate：0 / 1
 Project / Architecture Gate：0 / 1
-Safety Gate：沿用并持续验证
+Safety Gate：持续验证
 ```
 
 ---
@@ -161,62 +166,49 @@ Safety Gate：沿用并持续验证
 
 ```text
 AGENTS.md
-→ docs/github-development-ssot.md
-→ docs/github-development-ssot.yaml
+→ GitHub Development SSOT
 → Goal / Issue
+→ SPEC
 → Branch / PR / GitHub Actions
+→ Implementation
 → Main / Release / Ledger
 ```
 
-研发验证不再使用“每个模块固定跑单元测试和集成测试”的机械口径。
+每个模块开工先落 SPEC。研发验证根据变更风险和真实边界选择最小但充分证据，不机械要求每次执行相同 Unit / Integration 清单。
 
-每个变化必须：
+M1.0 SPEC 的证据选择：
 
-- 选择 `DEV0`—`DEV3` 或 `DEV-E`；
-- 建立 Change Map 和可证伪 Test Obligations；
-- 根据真实业务和技术边界选择最小但充分的证据；
-- 说明执行和跳过的测试层级及原因；
-- 保留 GitHub Actions、Artifact、Review、Merge 和 Release 证据；
-- 合并后再验证主干、发布和台账。
+- 结构化 SPEC 和场景目录一致性测试；
+- DEV2 GitHub Workflow 边界验证；
+- 完整仓库回归保护；
+- 不虚构尚不存在的 Memory Store Integration。
 
-基本选择逻辑：
+M1.0 实现阶段的证据选择将升级为 DEV3，包括：
 
-| Profile | 典型证据 |
-|---|---|
-| DEV0 | Lint、Schema、引用和策略一致性；不默认要求 Unit / Integration |
-| DEV1 | 目标 Unit / Property / Contract；按边界决定 Integration |
-| DEV2 | Unit / Contract + 真实边界 Integration + 失败路径 + 受影响回归 |
-| DEV3 | 独立测试设计、威胁模型、Integration、Adversarial、Replay / Mutation / Benchmark、Rollback、人工批准 |
-| DEV-E | 最小安全验证、小范围发布、强监控、回滚和限期 Evidence Backfill |
-
-仓库完整 CI 是回归和发布保护基线，不替代本次变化的专属测试设计。
+- 独立威胁模型；
+- Unit / Contract；
+- 真实 Store / Retrieval Integration；
+- Negative / Adversarial / Poisoning；
+- Replay 和稳定性重复；
+- Promotion / Rollback / Forget；
+- 人类批准。
 
 ---
 
-## 7. 下一阶段 M1
+## 7. 下一执行节点
+
+SPEC 合并并完成主干、发布和分支清理验证后，下一节点为：
 
 ```text
-M1.0 Memory Benchmark & Threat Model
-→ M1A Memory Contracts / Namespace
-→ M1B Store / Progressive Retrieval
-→ M1C Hot-path / Background Formation
-→ M1D Shared Memory Governance
-→ M1E Controlled Self-Evolution
-→ M1F Memory Benchmark Gate
+M1.0 Benchmark Harness DEV3 SPEC
+→ deterministic Memory Off / On campaign runner
+→ scenario fixture loader
+→ evidence and metric artifacts
+→ hidden evaluator boundary
+→ benchmark verdict gate
 ```
 
-M1 的每个变化需要按照 GitHub 研发 SSOT 选择证据，而不是机械复用相同测试清单。M1 默认存在 Memory、晋升、自我迭代和治理风险，多数核心变化至少为 DEV3。
-
-M1 通常需要的资产包括：
-
-- 独立测试设计和 Memory Threat Model；
-- Unit / Contract 与真实 Store / Retrieval Integration；
-- Golden / Negative / Adversarial / Poisoning 场景；
-- Memory Off / On Benchmark；
-- Promotion / Rollback / Forget / Conflict 证据；
-- GitHub Actions 和机器可读实验台账。
-
-M1 不允许 Agent 直接自修改 Oracle、Policy、Permission 或生产 Capability。所有学习结果先作为 Candidate，经独立 Benchmark 和 Rollback Gate 后才能晋升。
+M1.0 Benchmark Harness 仍需先提交独立实现 SPEC 或在当前 M1.0 SPEC 下形成明确的 Implementation Addendum，经过 DEV3 人类批准后才能写运行时代码。
 
 ---
 
@@ -230,17 +222,6 @@ M2 Model Generalization Gate：PASS
 M3 Project / Architecture Gate：PASS
 Global Safety Gate：PASS
 ```
-
-最低项目矩阵：
-
-- Complex Web：2；
-- Mobile：2；
-- Mini-program：1；
-- Embedded / IoT：1；
-- 总计：至少 6 个代表性项目；
-- 至少 3 个技术栈、2 个业务领域；
-- 至少 1 台 Android 实机和 1 块嵌入式开发板；
-- 强、中、弱 3 档模型交叉验证。
 
 全局 Safety 指标继续要求：
 
