@@ -7,11 +7,16 @@ on:
       - "src/test_workflow/cli.py"
       - "benchmarks/ux/ux0/**"
       - "tests/unit/test_ux_shadow_runtime.py"
+      - "tests/unit/test_ux_shadow_delivery_status.py"
+      - "tests/unit/test_ux0_synthetic_user_approval.py"
       - "tests/integration/test_ux_shadow_runner_integration.py"
+      - "docs/ux0-synthetic-user-shadow-runtime.md"
       - "docs/ux-assurance-status.md"
+      - "docs/implementation-status.md"
       - "docs/implementation-ledger.yaml"
       - "pyproject.toml"
       - ".github/workflows/ux0-synthetic-user-shadow.yml"
+      - ".github/workflows/cleanup-implementation-branches.yml"
   push:
     branches: [main]
     paths:
@@ -19,11 +24,16 @@ on:
       - "src/test_workflow/cli.py"
       - "benchmarks/ux/ux0/**"
       - "tests/unit/test_ux_shadow_runtime.py"
+      - "tests/unit/test_ux_shadow_delivery_status.py"
+      - "tests/unit/test_ux0_synthetic_user_approval.py"
       - "tests/integration/test_ux_shadow_runner_integration.py"
+      - "docs/ux0-synthetic-user-shadow-runtime.md"
       - "docs/ux-assurance-status.md"
+      - "docs/implementation-status.md"
       - "docs/implementation-ledger.yaml"
       - "pyproject.toml"
       - ".github/workflows/ux0-synthetic-user-shadow.yml"
+      - ".github/workflows/cleanup-implementation-branches.yml"
   workflow_dispatch:
 
 permissions:
@@ -60,11 +70,16 @@ jobs:
           src/test_workflow/ux
           src/test_workflow/cli.py
           tests/unit/test_ux_shadow_runtime.py
+          tests/unit/test_ux_shadow_delivery_status.py
+          tests/unit/test_ux0_synthetic_user_approval.py
           tests/integration/test_ux_shadow_runner_integration.py
 
-      - name: Unit and contract evidence
+      - name: Unit contract and delivery status evidence
         run: >-
-          uv run pytest tests/unit/test_ux_shadow_runtime.py
+          uv run pytest
+          tests/unit/test_ux_shadow_runtime.py
+          tests/unit/test_ux_shadow_delivery_status.py
+          tests/unit/test_ux0_synthetic_user_approval.py
           --junitxml=test-results/junit-ux-shadow-unit.xml
 
       - name: Validate CLI campaign contract
