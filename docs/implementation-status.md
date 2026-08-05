@@ -1,261 +1,211 @@
-# AI 测试 Agent 实现状态
+# AI Test Harness / Test Agent OS 实现状态
 
 > 文档角色：项目状态单一事实源  
 > 最近更新：2026-08-05  
-> 总体计划：`docs/ai-test-agent-closed-loop-plan.md` v2.1  
-> Harness 架构：`docs/harness-architecture.md`  
-> Module 03 计划：`docs/module-03-risk-adaptive-change-aware-plan.md` v1.1  
-> Phase 1 PR：#7；Module 01 PR：#8；当前堆叠 PR：#9
+> 当前主干基线：`11aabf0351376830a817b5b7bf5cdecdbe8560d2`  
+> 当前状态：`FOUNDATION_BASELINE`  
+> 阶段产品交付：`NOT_READY`  
+> 演进路线：`docs/agent-os-evolution-roadmap.md` v3.0  
+> 机器可读路线台账：`docs/agent-os-roadmap.yaml`
 
 ---
 
-## 1. 状态定义
+## 1. 状态结论
 
-| 状态 | 含义 |
-|---|---|
-| `PLANNED` | 已进入计划，尚未编码 |
-| `IN_PROGRESS` | 正在实现，接口仍可能变化 |
-| `PARTIAL` | 已有部分实现，尚不能独立完成目标 |
-| `IMPLEMENTED` | 代码和单元测试完成 |
-| `VERIFIED` | 拒绝路径、阶段集成、文档和远端 CI 全部通过 |
-| `MERGED` | 已验证并合并进入 `main` |
-| `BLOCKED` | 因权限、环境、依赖或冲突暂停 |
+当前项目已经完成并合并测试领域 Agent OS 的微内核基线：
 
-`IMPLEMENTED` 不等于 `VERIFIED`，`VERIFIED` 不等于 `MERGED`。
+- Capability Contracts；
+- Registry / Artifact Store；
+- Policy / Budget / Permission；
+- Workflow Compiler / Orchestrator；
+- Existing Capability Adapters；
+- Risk Router 与 Change-aware Campaign；
+- Incremental Business Understanding；
+- TestSpec 与测试代码生成；
+- Mutation Proof；
+- Diagnosis / Safe Repair；
+- Intelligent Regression / Benchmark；
+- Python Package、Docker 和 GHCR 发布。
 
----
+现有实施台账中的基线模块全部为 `MERGED`。这代表 v0.1 工程基线已经收口，不代表 Test Agent OS 已达到阶段产品交付条件。
 
-## 2. 架构调整
-
-项目对外仍是 Test Workflow，但内部正式调整为：
-
-```text
-Capability Atoms
-+ Versioned Artifacts
-+ Harness Orchestrator
-+ Dynamic Execution Graph
-+ Progressive Context Loading
-```
-
-新增 Harness Foundation 的原因：
-
-- 防止 Router、Campaign、业务理解、生成和诊断各自实现状态与编排；
-- 防止固定 Workflow 越来越长；
-- 防止每个 Agent 节点全量加载上下文；
-- 统一权限、预算、重试、暂停恢复和审计；
-- 让需求变化能够局部重编译，而不是全部重跑。
-
-已有能力不回退，后续将通过 Adapter 逐步接入 Harness，不做一次性重构。
+当前证据主要集中在仓库 Demo 与固定 TodoMVC Web 场景。项目尚未证明长期记忆、自主迭代、跨模型稳定性、复杂项目泛化和真实设备控制。
 
 ---
 
-## 3. 总体状态机 v2.1
+## 2. 当前能力状态机
 
 ```mermaid
 flowchart LR
-    A[确定性执行底座\nMERGED]
-    --> B[TestSpec 与 Oracle\nVERIFIED · PR #7]
-    --> C[环境 / Mock / 造数\nVERIFIED · PR #7]
-    --> D[Replay Bundle\nVERIFIED · PR #7]
-    --> E[固定目标运行时\nVERIFIED · PR #8]
-    --> F[Product Adapter\nVERIFIED · PR #8]
-    --> G[业务 Baseline\nVERIFIED · PR #9]
-    --> H[Mutation 证伪\nVERIFIED · PR #9]
-    --> I[GREEN → RED → GREEN\nVERIFIED · PR #9]
-    --> J[Harness Foundation\nNEXT]
-    --> K[Assurance Router\nPLANNED]
-    --> L[Change-aware Campaign\nPLANNED]
-    --> M[增量业务理解与 Loss Scenario\nPLANNED]
-    --> N[AI TestSpec 编译\nPLANNED]
-    --> O[测试代码生成\nPLANNED]
-    --> P[诊断与安全修复\nPLANNED]
-    --> Q[智能回归与 Benchmark\nPLANNED]
+    A[✅ 确定性测试执行]
+    --> B[✅ TestSpec / Oracle / Truth Boundary]
+    --> C[✅ Environment / Mock / Seed]
+    --> D[✅ Replay Bundle]
+    --> E[✅ Target / Product Adapter]
+    --> F[✅ Mutation Proof]
+    --> G[✅ Harness Microkernel]
+    --> H[✅ Risk / Change-aware Campaign]
+    --> I[✅ Understanding / Generation]
+    --> J[✅ Diagnosis / Regression]
+    --> K[✅ Build / Package / GHCR]
+    --> L[🟡 M1 Memory & Controlled Evolution]
+    --> M[⬜ M2 Cross-model Generalization]
+    --> N[⬜ M3 Project / Architecture Generalization]
+    --> O{阶段交付 Gate}
+    --> P[⬜ M4 Multi-agent Orchestration]
+    --> Q[⬜ M5 Durable Runtime]
+    --> R[⬜ M6 Test Agent OS Beta]
 ```
-
-按 17 个主要能力节点统计：
-
-- `MERGED / VERIFIED`：9；
-- `NEXT`：1；
-- `PLANNED`：7；
-- 架构节点完成度：`9 / 17 ≈ 53%`。
-
-此前 v2.0 为 `9 / 16 ≈ 56%`。比例变化来自新增 Harness Foundation，不代表已有工作回退。
 
 ---
 
-## 4. 当前已验证链路
+## 3. 当前验证事实
+
+最终主干质量流水线已经覆盖：
+
+- Ruff 和 Pytest Collect；
+- Unit / API；
+- Harness 3.0A—3.0E；
+- Stage 3—7；
+- Requirement-to-Verdict；
+- Ledger / Release Asset；
+- Replay；
+- Browser Smoke / Live Integration；
+- Pinned TodoMVC Target；
+- TodoMVC Mutation Proof。
+
+可信证明：
 
 ```text
-人工 TestSpec
-→ Environment / Mock / Seed
-→ Truth Boundary / Contract
-→ Replay Bundle
-→ 固定 TodoMVC Revision
-→ Product Adapter
-→ Baseline GREEN × 3
-→ Mutation RED × 5
-→ Restored GREEN × 3
-→ Mutation Score 100%
-→ Critical False Green 0
+Baseline：3 / 3 PASS
+关键 Mutation：5 / 5 KILLED
+Restored：3 / 3 PASS
+Critical False Green：0
 ```
 
-尚未验证：
+发布事实：
 
-```text
-Trigger / Change Event
-→ Harness 编译 Execution Plan
-→ Progressive Context
-→ Capability DAG
-→ Assurance Router
-→ Versioned Campaign
-→ Local Invalidation / Valid Progress
-→ Incremental Business Understanding
-→ AI TestSpec / Code Generation
-```
+- Python wheel / sdist：已构建；
+- GHCR `main` 镜像：已发布；
+- 实施临时分支：已清理；
+- 开放实施 PR：0。
 
 ---
 
-## 5. 分支与发布状态
+## 4. 为什么当前不是阶段产品交付
 
-| 范围 | 状态 | 位置 | 验证 |
-|---|---|---|---|
-| Pytest + Playwright 基础 | `MERGED` | `main` | CI |
-| TestSpec / Mock / Replay | `VERIFIED` | PR #7 | Run #14 |
-| Target Runtime / Adapter | `VERIFIED` | PR #8 | Run #20 |
-| Baseline / Mutation / Restored | `VERIFIED` | PR #9 | Run #23 / #25 |
-| 总体计划 v2.1 | `VERIFIED` | PR #9 | Run #33 |
-| Harness 架构方案 | `VERIFIED` | PR #9 | Run #33 |
-| Harness Foundation | `PLANNED` | 下一模块 | 尚未编码 |
-| Assurance Router / Campaign | `PLANNED` | Harness 后 | 尚未编码 |
+### 4.1 项目与架构代表性不足
 
-PR #7、#8、#9 尚未进入 `main`，对应能力不能标记 `MERGED`。
+尚未完成：
 
----
+- 复杂模块化单体；
+- 微服务与异步消息；
+- Android / iOS；
+- 小程序；
+- 嵌入式模拟器与 Hardware-in-the-loop；
+- 真实设备 Inventory、Lease、Reset 和 Quarantine。
 
-## 6. 能力矩阵
+### 4.2 缺少生产级 Memory 与自主迭代闭环
 
-### 6.1 已验证底座
+尚未完成：
 
-| 能力 | 状态 | 代码 / 资产 | 验证 |
-|---|---|---|---|
-| Pytest / Playwright 执行与证据 | `MERGED` | `tests/`、`conftest.py` | Unit/API、Smoke、Live E2E |
-| TestSpec / Oracle / Truth Boundary | `VERIFIED` | `specs.py`、`mocking.py` | Schema、越界负测 |
-| Environment / Seed / Virtual Service | `VERIFIED` | `control_plane.py`、`virtual_service.py` | Env、Contract Drift |
-| Replay / Hash / Tamper Detection | `VERIFIED` | `bundle.py`、`integrity.py` | 独立 Replay |
-| Target Runtime | `VERIFIED` | `targets.py` | 固定 Revision、真实 Clone/Start |
-| TodoMVC Adapter | `VERIFIED` | `adapters/todomvc.py` | Seed / Probe / Cleanup |
-| Mutation Proof | `VERIFIED` | `proof.py`、`proofs/todomvc/` | 5/5 Killed、False Green 0 |
+- Working / Semantic / Episodic / Procedural / Skill Memory；
+- Memory Provenance、TTL、Conflict、Forget 和 Rollback；
+- Shared Memory ACL；
+- Memory Poisoning Benchmark；
+- Experience → Candidate → Benchmark → Canary → Promote / Rollback。
 
-### 6.2 Stage 3.0 Harness Foundation
+### 4.3 缺少跨模型泛化证据
 
-| 子模块 | 状态 | 交付 | 关键验收 |
-|---|---|---|---|
-| 3.0A Contracts | `NEXT` | Descriptor、Request/Result、ArtifactRef、Context、Budget、Permission、Event | Schema、拒绝路径、序列化 |
-| 3.0B Registry / Artifact Store | `PLANNED` | 注册、版本解析、不可变 Store | 重复注册、哈希、历史保护 |
-| 3.0C Policy / Budget / Permission | `PLANNED` | Policy、预算消耗、越权拒绝 | Floor、超预算、审计原因 |
-| 3.0D Workflow Compiler / Orchestrator | `PLANNED` | DAG、暂停恢复、局部重编译 | 稳定计划、中断恢复 |
-| 3.0E Existing Capability Adapters | `PLANNED` | spec/target/test/proof 包装 | L1 TodoMVC Harness Gate |
+尚未证明：
 
-### 6.3 风险自适应与变更感知
-
-| 子模块 | 状态 | 交付 | 关键验收 |
-|---|---|---|---|
-| 03A Source & Revision Registry | `PLANNED` | Revision、Authority、ChangeEvent | 不可覆盖、未授权拒绝 |
-| 03B Assurance Router | `PLANNED` | L0/L1/L2/L3/LE、Floor、Budget | 高风险不降级、低风险不误升级 |
-| 03C Campaign State Machine | `PLANNED` | Campaign、Freeze、Block/Resume | 非法转换、任意阶段 Change |
-| 03D Impact & Invalidation | `PLANNED` | 依赖图、Validity、局部传播 | Oracle 变化不误伤无关 Evidence |
-| 03E Progress & Report | `PLANNED` | Raw/Valid Progress、决策报告 | 进度回算和 DAG 变化正确 |
-
-### 6.4 后续 AI 能力
-
-| 能力 | 状态 |
-|---|---|
-| Incremental Business Model / Invariants | `PLANNED` |
-| Loss Scenario / Risk Promotion | `PLANNED` |
-| AI TestSpec Compiler | `PLANNED` |
-| Test Planner / Code Generator | `PLANNED` |
-| Evidence Diagnoser / Repairer | `PLANNED` |
-| Impact Regression / Benchmark | `PLANNED` |
+- 强、中、弱模型使用相同 Harness 时都能稳定执行；
+- 弱模型可以安全降级或显式升级；
+- 模型变化不会导致 Critical False Green；
+- 模型差异能通过 Benchmark、Routing 和 Escalation 解释。
 
 ---
 
-## 7. 阶段 Gate v2.1
+## 5. 新路线与进度口径
 
-| 阶段 | 集成场景 | 状态 |
+不再使用旧的“17 个能力节点百分比”，因为当前阶段转换为跨阶段研究与产品化路线，节点工作量差异过大。
+
+采用里程碑口径：
+
+| 里程碑 | 状态 | 说明 |
 |---|---|---|
-| Stage 0 | Pytest + Playwright Smoke + Live E2E | `VERIFIED` |
-| Stage 1 | TestSpec + Mock + Env + Replay | `VERIFIED` · PR #7 |
-| Stage 1.5 | 固定目标 + Adapter | `VERIFIED` · PR #8 |
-| Stage 2 | Baseline + Mutation + Restored | `VERIFIED` · PR #9 |
-| Stage 3.0 | Harness Contracts → DAG → Existing Adapters | `NEXT` |
-| Stage 3A | Requirement Revision + Assurance Router | `PLANNED` |
-| Stage 3B | Campaign + Local Invalidation + Valid Progress | `PLANNED` |
-| Stage 4 | Incremental Business Understanding + Loss Scenario | `PLANNED` |
-| Stage 5 | AI TestSpec + Candidate Generation + Proof Gate | `PLANNED` |
-| Stage 6 | Diagnosis + Safe Repair | `PLANNED` |
-| Stage 7 | Intelligent Regression + Benchmark | `PLANNED` |
+| M0 Harness Microkernel Baseline | `MERGED` | 当前已完成工程基线 |
+| M1 Memory & Controlled Evolution | `NEXT` | 下一实施阶段 |
+| M2 Cross-model Generalization | `PLANNED` | M1 后执行 |
+| M3 Project / Architecture Generalization | `PLANNED` | M2 后执行 |
+| Stage Delivery Gate | `NOT_READY` | M1、M2、M3 和 Safety 全部通过后 |
+| M4 Multi-agent Orchestration | `PLANNED_AFTER_GATE` | 先稳定，再并行提效 |
+| M5 Durable Runtime / Control Plane | `FUTURE` | 服务化和平台化 |
+| M6 Test Agent OS Beta | `FUTURE` | Agent OS 阶段目标 |
+
+当前阶段交付核心 Gate：
+
+```text
+Memory Gate：0 / 1
+Model Generalization Gate：0 / 1
+Project / Architecture Gate：0 / 1
+Safety Gate：沿用并持续验证
+```
 
 ---
 
-## 8. 新实施顺序
+## 6. 下一阶段 M1
 
 ```text
-3.0A Capability Contracts
-        ↓
-3.0B Registry / Artifact Store  ||  3.0C Policy / Budget / Permission
-        ↓                                      ↓
-              3.0D Workflow Compiler / Orchestrator
-                              ↓
-                    3.0E Existing Adapters
-                              ↓
-          03A Source  ||  03B Router  ||  03C Campaign
-                              ↓
-                    03D Impact / Invalidation
-                              ↓
-                     03E Progress / Report
+M1.0 Memory Benchmark & Threat Model
+→ M1A Memory Contracts / Namespace
+→ M1B Store / Progressive Retrieval
+→ M1C Hot-path / Background Formation
+→ M1D Shared Memory Governance
+→ M1E Controlled Self-Evolution
+→ M1F Memory Benchmark Gate
 ```
 
-每完成一个子模块必须单独汇报状态机、单元测试、阶段集成、CI 和剩余节点。
+每个模块继续要求：
+
+- 独立测试设计；
+- 单元测试；
+- 阶段集成测试；
+- Golden / Negative / Adversarial 资产；
+- CI；
+- 机器可读台账；
+- 状态机汇报。
+
+M1 不允许 Agent 直接自修改 Oracle、Policy、Permission 或生产 Capability。所有学习结果先作为 Candidate，经独立 Benchmark 和 Rollback Gate 后才能晋升。
 
 ---
 
-## 9. Harness 第一阶段 Golden Gate
+## 7. 阶段交付条件
 
-L1 TodoMVC Campaign：
-
-```text
-source fixture
-→ assurance fixture
-→ compile plan
-→ target.validate
-→ selected test.run
-→ artifact/event/metrics persisted
-```
-
-验收：
-
-- 不加载 Deep Context；
-- 不启动无关 Mock、Mutation 和浏览器探索；
-- DAG 顺序稳定；
-- Budget 和 Permission 拒绝有效；
-- 中断可恢复；
-- 节点失败不污染其他 Artifact；
-- 现有确定性测试结果保持不变。
-
----
-
-## 10. 当前下一步
+项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
 
 ```text
-3.0A CapabilityDescriptor
-→ CapabilityRequest / Result
-→ ArtifactRef
-→ ContextRequest
-→ ExecutionBudget
-→ PermissionScope
-→ DomainEvent
-→ 单元测试
-→ 实施文档
-→ CI
-→ 模块状态机汇报
+M1 Memory Gate：PASS
+M2 Model Generalization Gate：PASS
+M3 Project / Architecture Gate：PASS
+Global Safety Gate：PASS
 ```
+
+最低项目矩阵：
+
+- Complex Web：2；
+- Mobile：2；
+- Mini-program：1；
+- Embedded / IoT：1；
+- 总计：至少 6 个代表性项目；
+- 至少 3 个技术栈、2 个业务领域；
+- 至少 1 台 Android 实机和 1 块嵌入式开发板；
+- 强、中、弱 3 档模型交叉验证。
+
+全局 Safety 指标继续要求：
+
+- Critical False Green：0；
+- 未授权 Oracle / Policy / Permission 修改：0；
+- 关键 Evidence 可重放率：100%；
+- Memory、Model、Device 和 Asset 全部可追溯；
+- 所有自动晋升资产可回滚。
