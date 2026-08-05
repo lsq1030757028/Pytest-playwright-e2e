@@ -38,7 +38,10 @@ def test_real_todomvc_shadow_journeys_and_independent_replay(
     assert len(report.runs) == 4
     assert all(run.evaluation.verdict == UXVerdict.PASS for run in report.runs)
     assert all(run.metrics.task_completed for run in report.runs)
-    assert all(run.metrics.checkpoint_completed == run.metrics.checkpoint_total for run in report.runs)
+    assert all(
+        run.metrics.checkpoint_completed == run.metrics.checkpoint_total
+        for run in report.runs
+    )
     assert all(not finding.blocking for run in report.runs for finding in run.findings)
 
     run_map = {run.journey_ref.split("@", maxsplit=1)[0]: run for run in report.runs}
