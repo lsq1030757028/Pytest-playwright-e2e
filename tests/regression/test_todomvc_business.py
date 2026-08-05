@@ -15,8 +15,10 @@ def commit_new_todo(page: Page, title: str) -> None:
     new_todo.blur()
 
 
-def visible_todo_labels(page: Page):
-    return page.locator(".todo-list li:visible label")
+def expect_single_filtered_item(page: Page, title: str) -> None:
+    items = page.locator(".todo-list li")
+    expect(items).to_have_count(1)
+    expect(items.locator("label")).to_have_text(title)
 
 
 @pytest.fixture
@@ -49,9 +51,9 @@ def test_filters_and_remaining_counter_reflect_business_state(todo_page: Page) -
     ])
     expect(todo_page.locator(".todo-count")).to_contain_text("1 item left")
     todo_page.get_by_role("link", name="Active").click()
-    expect(visible_todo_labels(todo_page)).to_have_text("Active item")
+    expect_single_filtered_item(todo_page, "Active item")
     todo_page.get_by_role("link", name="Completed").click()
-    expect(visible_todo_labels(todo_page)).to_have_text("Completed item")
+    expect_single_filtered_item(todo_page, "Completed item")
 
 
 @pytest.mark.target_regression
