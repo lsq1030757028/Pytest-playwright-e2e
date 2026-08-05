@@ -1,0 +1,115 @@
+module_id: m1a-governed-memory-runtime-contracts
+title: Governed Memory runtime contracts
+status: CLOSED
+phase: IMPLEMENTATION
+profile: DEV3
+ux_profile: UX0
+goal_issue: 43
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+pull_request: 44
+merge_commit: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
+business_outcome:
+  - governed_memory_identity_and_hashing_are_executable_and_storage_independent
+  - project_campaign_agent_organization_and_shared_namespaces_fail_closed
+  - delegation_scope_and_expiry_are_enforced
+  - explicit_deny_overrides_allow_and_relevance_never_grants_authority
+  - revisions_and_nested_provenance_payloads_are_immutable_and_append_only
+  - candidate_promotion_requires_actor_evidence_benchmark_and_revision_binding
+  - stale_writes_create_explicit_conflicts_and_never_silently_replace_head
+  - same_idempotency_key_with_different_payload_is_rejected
+  - expired_revoked_and_forgotten_memory_is_absent_from_effective_reads
+  - procedural_and_skill_memory_must_pass_version_permission_and_environment_compatibility
+  - six_vendor_neutral_port_families_are_executable
+  - deterministic_reference_behavior_is_replayable_and_tamper_evident
+assets:
+  runtime_contracts:
+    - src/test_workflow/memory_contracts/models.py
+    - src/test_workflow/memory_contracts/canonical.py
+    - src/test_workflow/memory_contracts/policy.py
+    - src/test_workflow/memory_contracts/ports.py
+    - src/test_workflow/memory_contracts/reference.py
+    - src/test_workflow/memory_contracts/proof.py
+  documentation:
+    - docs/m1a-memory-runtime-contracts.md
+    - docs/testing/m1a-memory-runtime-contracts-test-design.md
+  tests:
+    - tests/unit/test_memory_contract_models.py
+    - tests/unit/test_memory_contract_policy.py
+    - tests/unit/test_memory_contract_ports.py
+    - tests/integration/test_memory_contract_reference.py
+    - tests/integration/test_memory_contract_proof.py
+  workflow:
+    - .github/workflows/m1a-memory-runtime-contracts.yml
+verification:
+  pr_runtime_gate:
+    run_id: 31018116312
+    result: SUCCESS
+  pr_full_quality:
+    run_id: 31018117595
+    result: SUCCESS
+  pr_ux0_shadow:
+    run_id: 31018115286
+    result: SUCCESS
+  pr_ux1_mutation_proof:
+    run_id: 31018115295
+    result: SUCCESS
+  main_runtime_gate:
+    run_id: 31018460853
+    result: SUCCESS
+    artifact_id: 8935528370
+    artifact_digest: sha256:ffc385f244affde9613f4b599a832e39b6c1c868523532886f2eb942b1cc20a7
+  main_full_quality:
+    run_id: 31018460602
+    result: SUCCESS
+  main_ux0_shadow:
+    run_id: 31018460951
+    result: SUCCESS
+  main_ux1_mutation_proof:
+    run_id: 31018460698
+    result: SUCCESS
+  release:
+    run_id: 31018460644
+    result: SUCCESS
+    python_distribution_artifact: 8935531669
+    python_distribution_digest: sha256:4e5e5ea2aff934011d88b12412b2bc08312ebc09336df37c0a921e7dd72f1392
+    docker_build_record: 8935566555
+    docker_build_record_digest: sha256:01dd2286360485da968f946b0e77973a049acabc0cab63ef36e89cc627fb6d36
+  cleanup:
+    runtime_gate_run_id: 31018460853
+    repository_cleanup_run_id: 31018460929
+    result: SUCCESS
+    implementation_branch_deleted: true
+  review_threads: 0
+  focused_tests:
+    total: 29
+    passed: 29
+  deterministic_proof_scenarios:
+    total: 15
+    passed: 15
+  critical_false_green: 0
+  unauthorized_namespace_actions: 0
+  unauthorized_promotion_actions: 0
+  stale_write_overwrites: 0
+  forgotten_content_reads: 0
+  independent_replay: PASS
+  tamper_rejection: PASS
+protected_boundaries:
+  production_store_implemented: false
+  database_or_vector_backend_selected: false
+  autonomous_memory_promotion_enabled: false
+  memory_gate_closed: false
+  stage_delivery_ready: false
+  human_uat_required_for_user_facing_changes: true
+  production_data_or_secret_access: false
+  oracle_policy_permission_changes: false
+next_state:
+  module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+  status: NEXT
+  phase: SPEC
+  profile: DEV3
+  purpose: define the production Memory Store and progressive retrieval contract without weakening M1A identity authority lifecycle or forget semantics
+  implementation_blocked_until_spec_approved: true
+  m1_memory_gate: OPEN
+  stage_delivery: NOT_READY
