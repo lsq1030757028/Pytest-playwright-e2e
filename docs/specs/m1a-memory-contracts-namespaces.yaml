@@ -1,0 +1,653 @@
+spec_id: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES
+version: 1.0.0
+status: CANDIDATE
+goal_issue: 28
+milestone: M1
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+assurance:
+  spec_phase: DEV3
+  implementation_phase: DEV3
+  threat_model_required: true
+  autonomous_execution_allowed_under_active_mandate: true
+
+purpose: >-
+  Define storage-vendor-neutral contracts for Agent Memory identity, kinds,
+  revisions, namespaces, provenance, lifecycle, ACL, concurrency, retention,
+  audit and M1B Store/Query ports without implementing a production store.
+
+scope:
+  includes:
+    - memory_kind_contract
+    - session_and_governed_memory_boundary
+    - logical_identity_and_immutable_revisions
+    - canonical_content_hash
+    - namespace_hierarchy_and_shared_scope
+    - principals_roles_acl_and_default_deny
+    - provenance_evidence_and_transformation_lineage
+    - lifecycle_state_events_and_effective_visibility
+    - retention_ttl_expiration_revoke_and_forget
+    - compare_and_swap_conflict_and_idempotency
+    - audit_event_contract
+    - procedural_and_skill_compatibility_metadata
+    - vendor_neutral_m1b_ports
+    - m1_0_threat_and_scenario_mapping
+  excludes:
+    - concrete_database_or_storage_vendor
+    - physical_table_index_or_partition_schema
+    - vector_database
+    - embedding_model
+    - semantic_ranking_algorithm
+    - production_retrieval_runtime
+    - hot_path_memory_formation
+    - background_memory_formation
+    - shared_memory_runtime
+    - multi_agent_synchronization
+    - self_evolution_or_autonomous_promotion
+    - real_model_provider_integration
+    - production_data_or_secret_handling
+
+industry_design_inputs:
+  authority: informative_only
+  sources:
+    - id: OPENAI-AGENTS-SESSIONS
+      url: https://openai.github.io/openai-agents-python/sessions/
+      adopted_pattern: session_history_is_separate_from_governed_long_term_memory
+    - id: OPENAI-SANDBOX-MEMORY
+      url: https://openai.github.io/openai-agents-python/sandbox/memory/
+      adopted_pattern: lessons_are_distilled_assets_not_raw_chat_authority
+    - id: LANGGRAPH-MEMORY-CONCEPTS
+      url: https://docs.langchain.com/oss/python/concepts/memory
+      adopted_pattern: short_term_long_term_and_semantic_episodic_procedural_dimensions
+    - id: LANGGRAPH-PERSISTENCE
+      url: https://docs.langchain.com/oss/python/langgraph/persistence
+      adopted_pattern: namespace_key_and_replaceable_store_interface
+    - id: COALA
+      url: https://arxiv.org/abs/2309.02427
+      adopted_pattern: modular_memory_and_structured_memory_actions
+    - id: MEM0
+      url: https://arxiv.org/abs/2504.19413
+      adopted_pattern: explicit_extraction_consolidation_retrieval_and_benchmarking
+    - id: MEMMACHINE
+      url: https://arxiv.org/abs/2604.04853
+      adopted_pattern: ground_truth_preserving_episode_and_context_lineage
+    - id: DMF
+      url: https://arxiv.org/abs/2606.03463
+      adopted_pattern: deterministic_memory_management_baseline
+
+core_separation_invariants:
+  - memory_kind_is_not_lifecycle_state
+  - namespace_scope_is_not_relevance
+  - evidence_status_is_not_oracle_authority
+  - content_revision_is_not_effective_state_event
+  - session_history_is_not_governed_memory
+  - promoted_memory_is_not_fact_oracle_policy_or_permission
+  - storage_backend_is_not_contract_semantics
+
+memory_kinds:
+  WORKING:
+    purpose: bounded_campaign_or_thread_execution_state
+    default_scope_kinds: [CAMPAIGN, AGENT]
+    long_lived: false
+    ttl_required: true
+    promotion_allowed: false
+    content_requirements:
+      - current_plan_or_execution_state
+      - origin_campaign_ref
+    forbidden_content:
+      - secret_value
+      - hidden_evaluator_answer
+      - unrestricted_executable_code
+  SEMANTIC:
+    purpose: evidence_bound_claim_or_domain_knowledge
+    default_scope_kinds: [PROJECT, ORGANIZATION, SHARED]
+    long_lived: true
+    ttl_required: false
+    review_after_supported: true
+    silent_decay_forbidden: true
+    supersession_or_revalidation_required: true
+    content_requirements:
+      - structured_claims
+      - provenance
+      - evidence_or_authority_refs
+  EPISODIC:
+    purpose: ordered_experience_action_result_and_context
+    default_scope_kinds: [CAMPAIGN, AGENT, PROJECT]
+    long_lived: true
+    ttl_required: false
+    content_requirements:
+      - event_or_run_refs
+      - action_sequence_summary
+      - outcome_and_failure_classification
+      - provenance
+    derived_summary_must_be_new_memory: true
+  PROCEDURAL:
+    purpose: verified_method_recipe_or_operating_instruction
+    default_scope_kinds: [PROJECT, ORGANIZATION, SHARED]
+    long_lived: true
+    ttl_required: false
+    content_requirements:
+      - procedure_steps_or_template_ref
+      - compatibility
+      - required_permissions
+      - provenance
+      - rollback_or_recovery
+    promotion_allowed: true
+    executable_code_embedded: false
+  SKILL:
+    purpose: governed_reference_to_versioned_executable_capability
+    default_scope_kinds: [PROJECT, ORGANIZATION, SHARED]
+    long_lived: true
+    ttl_required: false
+    content_requirements:
+      - capability_ref
+      - capability_version
+      - input_output_schema_refs
+      - compatibility
+      - required_permissions
+      - evidence_and_benchmark_refs
+      - rollback_or_disable_ref
+    promotion_allowed: true
+    unrestricted_executable_code_embedded: false
+
+session_boundary:
+  session_contains:
+    - message_history
+    - tool_call_history
+    - transient_turn_state
+    - resumable_thread_checkpoint
+  session_is_memory_record: false
+  ingestion_to_memory_requires:
+    - explicit_formation_event
+    - declared_memory_kind
+    - namespace
+    - provenance
+    - candidate_state
+    - content_hash
+    - policy_and_permission_check
+  raw_session_auto_promotion_forbidden: true
+
+identity_contract:
+  logical_memory_id:
+    field: memory_id
+    type: opaque_globally_unique_string
+    immutable: true
+    storage_location_independent: true
+  revision_id:
+    field: revision_id
+    type: opaque_globally_unique_string
+    immutable: true
+    unique_within_memory: true
+  schema_version:
+    field: schema_version
+    semantic_version_required: true
+  revision_sequence:
+    field: revision_number
+    integer_minimum: 1
+    monotonic_per_memory: true
+  parent_revision_refs:
+    field: parent_revision_refs
+    required_after_first_revision: true
+    maximum_for_normal_append: 1
+    multiple_only_for_explicit_conflict_resolution: true
+  content_hash:
+    algorithm: sha256
+    canonical_format: RFC8785_style_canonical_json
+    covers:
+      - memory_id
+      - revision_id
+      - schema_version
+      - memory_kind
+      - namespace
+      - content
+      - provenance
+      - compatibility
+      - retention_policy
+    excludes:
+      - physical_storage_location
+      - database_internal_id
+      - ingestion_latency
+      - cache_metadata
+    hash_change_requires_new_revision: true
+
+memory_revision_required_fields:
+  - memory_id
+  - revision_id
+  - revision_number
+  - schema_version
+  - memory_kind
+  - namespace
+  - content
+  - provenance
+  - created_at
+  - created_by
+  - idempotency_key
+  - content_hash
+  - retention_policy
+
+namespace_contract:
+  namespace_type: ordered_structured_value
+  canonical_segments:
+    - organization_id
+    - project_id
+    - scope_kind
+    - scope_id
+  organization_id_required: true
+  project_id_required_except_organization_scope: true
+  scope_kinds:
+    ORGANIZATION:
+      scope_id_semantics: organization_id
+      implicit_cross_project_access: false
+    PROJECT:
+      scope_id_semantics: project_id
+      implicit_cross_agent_access: false
+    CAMPAIGN:
+      scope_id_semantics: campaign_id
+      parent_scope: PROJECT
+    AGENT:
+      scope_id_semantics: agent_id
+      parent_scope: PROJECT
+    SHARED:
+      scope_id_semantics: explicit_share_id
+      explicit_membership_required: true
+      implicit_ancestor_access: false
+  canonical_string: org/{organization_id}/project/{project_id_or_dash}/scope/{scope_kind}/{scope_id}
+  rules:
+    - exact_namespace_authorization_before_query
+    - ancestor_namespace_does_not_imply_descendant_access
+    - descendant_namespace_does_not_imply_ancestor_access
+    - relevance_cannot_expand_namespace
+    - embedding_similarity_cannot_expand_namespace
+    - shared_scope_requires_explicit_membership_and_acl
+    - namespace_change_requires_new_revision
+    - wildcard_cross_project_query_forbidden_by_default
+
+principal_contract:
+  principal_types: [USER, AGENT, SERVICE, GROUP, SYSTEM_POLICY]
+  principal_id_required: true
+  authenticated_identity_required: true
+  model_name_is_not_principal_identity: true
+  delegated_identity_requires:
+    - delegator_ref
+    - delegation_scope
+    - expires_at
+    - audit_event
+
+acl_contract:
+  default_effect: DENY
+  effects: [ALLOW, DENY]
+  operations:
+    - READ_METADATA
+    - READ_CONTENT
+    - QUERY
+    - APPEND_REVISION
+    - APPEND_STATE_EVENT
+    - VERIFY
+    - PROMOTE
+    - SUPERSEDE
+    - REVOKE
+    - FORGET
+    - MANAGE_ACL
+    - AUDIT
+  roles:
+    OWNER: [READ_METADATA, READ_CONTENT, QUERY, APPEND_REVISION, APPEND_STATE_EVENT, AUDIT]
+    READER: [READ_METADATA, READ_CONTENT, QUERY]
+    WRITER: [READ_METADATA, READ_CONTENT, QUERY, APPEND_REVISION, APPEND_STATE_EVENT]
+    VERIFIER: [READ_METADATA, READ_CONTENT, QUERY, VERIFY, AUDIT]
+    PROMOTER: [READ_METADATA, READ_CONTENT, QUERY, PROMOTE, SUPERSEDE, REVOKE, AUDIT]
+    PRIVACY_CONTROLLER: [READ_METADATA, REVOKE, FORGET, AUDIT]
+    AUDITOR: [READ_METADATA, AUDIT]
+  evaluation_order:
+    - explicit_principal_deny
+    - explicit_group_deny
+    - namespace_policy_deny
+    - explicit_principal_allow
+    - explicit_group_allow
+    - namespace_role_allow
+    - default_deny
+  deny_overrides_allow: true
+  relevance_cannot_grant_permission: true
+  memory_content_cannot_modify_acl: true
+  self_grant_forbidden: true
+  acl_change_requires_event_and_authorized_principal: true
+
+provenance_contract:
+  required_for_long_lived_memory: true
+  required_fields:
+    - source_refs
+    - evidence_refs
+    - source_content_hashes
+    - created_by_principal
+    - creator_type
+    - capability_or_formation_rule_ref
+    - requirement_revision_refs
+    - code_revision_refs
+    - environment_revision_refs
+    - model_or_provider_profile_refs
+    - parent_memory_refs
+    - transformation_kind
+  creator_types: [HUMAN, AGENT, SERVICE, IMPORT, DERIVATION]
+  transformation_kinds:
+    - RAW_OBSERVATION
+    - EXTRACTION
+    - SUMMARY
+    - CONSOLIDATION
+    - CONFLICT_RESOLUTION
+    - PROCEDURE_COMPILATION
+    - SKILL_REGISTRATION
+  source_refs_must_resolve: true
+  source_hashes_must_verify: true
+  missing_or_unverifiable_provenance_action: QUARANTINE
+  derived_memory_never_overwrites_source: true
+
+lifecycle_contract:
+  states:
+    - CANDIDATE
+    - VERIFIED
+    - PROMOTED
+    - CONFLICTING
+    - QUARANTINED
+    - SUPERSEDED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+  initial_state: CANDIDATE
+  effective_read_states:
+    advisory: [CANDIDATE]
+    evidence_bearing: [VERIFIED]
+    production_retrieval: [PROMOTED]
+  terminal_or_non_effective_states:
+    - QUARANTINED
+    - SUPERSEDED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+  transitions:
+    CANDIDATE: [VERIFIED, CONFLICTING, QUARANTINED, REVOKED, EXPIRED]
+    VERIFIED: [PROMOTED, CONFLICTING, QUARANTINED, SUPERSEDED, REVOKED, EXPIRED]
+    PROMOTED: [CONFLICTING, QUARANTINED, SUPERSEDED, REVOKED, EXPIRED]
+    CONFLICTING: [VERIFIED, QUARANTINED, SUPERSEDED, REVOKED]
+    QUARANTINED: [CANDIDATE, REVOKED, FORGOTTEN]
+    SUPERSEDED: [FORGOTTEN]
+    REVOKED: [FORGOTTEN]
+    EXPIRED: [CANDIDATE, FORGOTTEN]
+    FORGOTTEN: []
+  every_transition_requires:
+    - state_event_id
+    - memory_id
+    - revision_id
+    - from_state
+    - to_state
+    - reason_code
+    - actor_principal_ref
+    - policy_decision_ref
+    - occurred_at
+    - event_hash
+  content_mutation_via_state_event_forbidden: true
+  illegal_transition_action: REJECT
+
+promotion_contract:
+  meaning: admitted_to_declared_retrieval_scope
+  never_means:
+    - confirmed_fact
+    - oracle
+    - policy
+    - permission
+    - production_invariant
+    - unrestricted_executable_capability
+  promotable_kinds: [SEMANTIC, PROCEDURAL, SKILL]
+  non_promotable_kinds: [WORKING]
+  required_inputs:
+    - declared_promotion_scope
+    - evidence_refs
+    - benchmark_or_evaluator_refs
+    - promoter_principal_with_permission
+    - policy_decision_ref
+    - compatibility
+    - effective_from
+    - rollback_or_disable_ref
+  candidate_direct_promotion_forbidden: true
+  verified_state_required: true
+  oracle_policy_permission_change_forbidden: true
+  scope_expansion_requires_new_promotion_event: true
+  rollback_creates_state_event: true
+
+retention_contract:
+  WORKING:
+    ttl_required: true
+    maximum_lifetime_bound_to_campaign: true
+    effective_after_campaign_close: false
+  SEMANTIC:
+    silent_time_decay_forbidden: true
+    review_after_supported: true
+    supersession_or_revalidation_required: true
+  EPISODIC:
+    retention_policy_required: true
+    compaction_creates_derived_revision_or_memory: true
+    raw_episode_history_preserved_per_policy: true
+  PROCEDURAL:
+    compatibility_revalidation_required: true
+    revoke_on_unsafe_or_incompatible: true
+  SKILL:
+    capability_version_and_disable_ref_required: true
+    revoke_on_capability_or_permission_change: true
+  expiration:
+    evaluated_before_retrieval: true
+    cache_and_index_invalidation_required: true
+  revoke:
+    immediate_effective_read_removal: true
+    history_preserved: true
+  forget:
+    protected_content_unavailable: true
+    caches_and_indexes_invalidated: true
+    non_sensitive_tombstone_preserved: true
+    tombstone_fields:
+      - memory_id
+      - namespace_hash
+      - memory_kind
+      - forgotten_at
+      - reason_code
+      - authority_event_ref
+      - prior_revision_hash
+    tombstone_forbidden_fields:
+      - original_content
+      - secret_or_personal_data
+      - raw_source_payload
+
+revision_and_concurrency_contract:
+  append_only_revisions: true
+  in_place_content_update_forbidden: true
+  compare_and_swap_required: true
+  append_request_fields:
+    - expected_head_revision_id
+    - new_revision
+    - idempotency_key
+  stale_expected_head_action: CONFLICT
+  conflict_artifact_required: true
+  conflict_artifact_fields:
+    - conflict_id
+    - memory_id
+    - base_revision_id
+    - current_head_revision_id
+    - attempted_revision_id
+    - conflicting_fields
+    - detected_at
+    - actor_ref
+  last_write_wins_forbidden: true
+  idempotency:
+    same_key_same_payload: RETURN_ORIGINAL_RESULT
+    same_key_different_payload: REJECT
+  conflict_resolution:
+    creates_new_revision: true
+    parent_revision_refs_minimum: 2
+    resolution_provenance_required: true
+
+compatibility_contract:
+  required_for: [PROCEDURAL, SKILL]
+  fields:
+    - project_architecture_families
+    - code_version_range
+    - schema_version_range
+    - capability_version_range
+    - model_profile_constraints
+    - environment_constraints
+    - required_permissions
+    - incompatible_conditions
+  incompatible_memory_effective_action: FILTER_AND_EVENT
+  unrestricted_shell_or_code_payload_forbidden: true
+  executable_reference_must_resolve_to_versioned_capability: true
+
+memory_event_contract:
+  event_types:
+    - MEMORY_CREATED
+    - REVISION_APPENDED
+    - STATE_TRANSITIONED
+    - ACL_CHANGED
+    - CONFLICT_DETECTED
+    - CONFLICT_RESOLVED
+    - VERIFIED
+    - PROMOTED
+    - SUPERSEDED
+    - QUARANTINED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+    - READ_DENIED
+    - WRITE_DENIED
+    - RETRIEVAL_FILTERED
+  required_fields:
+    - event_id
+    - event_type
+    - memory_id
+    - revision_id
+    - namespace
+    - actor_principal_ref
+    - occurred_at
+    - reason_code
+    - policy_decision_ref
+    - event_hash
+  append_only: true
+  causal_refs_supported: true
+  sensitive_content_in_event_forbidden: true
+
+m1b_port_contract:
+  storage_vendor_neutral: true
+  ports:
+    MemoryRevisionPort:
+      operations:
+        - append_revision
+        - get_revision
+        - get_head_revision
+        - list_revision_history
+        - compare_and_append_revision
+    MemoryStatePort:
+      operations:
+        - append_state_event
+        - get_effective_state
+        - list_state_history
+    MemoryAclPort:
+      operations:
+        - evaluate_permission
+        - append_acl_event
+        - list_effective_acl
+    MemoryQueryPort:
+      operations:
+        - query_exact_authorized_namespaces
+        - filter_by_metadata
+        - paginate_deterministically
+      ranking_algorithm_defined_by_m1a: false
+      embedding_required_by_m1a: false
+    MemoryAuditPort:
+      operations:
+        - append_audit_event
+        - list_audit_events
+        - verify_event_chain
+    MemoryMaintenancePort:
+      operations:
+        - expire_due_memories
+        - revoke_memory
+        - forget_memory
+        - verify_cache_and_index_invalidation
+  common_request_requirements:
+    - actor_principal
+    - namespace
+    - operation
+    - policy_context
+    - correlation_id
+    - idempotency_key_when_mutating
+  common_response_requirements:
+    - decision
+    - effective_revision_ref
+    - effective_state
+    - audit_event_ref
+    - deterministic_error_code_when_failed
+  atomicity_requirements:
+    - mutation_and_audit_event_are_one_logical_commit
+    - failed_mutation_does_not_emit_success_event
+  portability_requirements:
+    - no_vendor_specific_types_in_domain_contract
+    - deterministic_pagination_cursor_contract
+    - canonical_serialization_independent_of_backend
+
+error_contract:
+  codes:
+    INVALID_SCHEMA: contract_validation_failed
+    NAMESPACE_DENIED: namespace_or_shared_scope_not_authorized
+    ACL_DENIED: principal_lacks_operation
+    REVISION_CONFLICT: compare_and_swap_failed
+    DUPLICATE_IDEMPOTENCY_KEY: key_reused_with_different_payload
+    ILLEGAL_TRANSITION: lifecycle_transition_not_allowed
+    PROVENANCE_MISSING: source_or_evidence_not_resolvable
+    INTEGRITY_FAILED: hash_or_event_chain_failed
+    MEMORY_NOT_EFFECTIVE: state_not_available_for_requested_read_mode
+    PROMOTION_DENIED: promotion_prerequisite_or_authority_failed
+    COMPATIBILITY_FAILED: procedural_or_skill_memory_not_compatible
+    FORGOTTEN_CONTENT_UNAVAILABLE: content_was_forgotten
+  deterministic: true
+  human_message_must_not_replace_code: true
+
+m1_0_coverage_mapping:
+  MEM-S003: [retention_contract.SEMANTIC, lifecycle_contract.SUPERSEDED]
+  MEM-S004: [lifecycle_contract.CONFLICTING, revision_and_concurrency_contract]
+  MEM-S005: [provenance_contract, lifecycle_contract.QUARANTINED]
+  MEM-S006: [namespace_contract, acl_contract]
+  MEM-S007: [principal_contract, acl_contract]
+  MEM-S008: [lifecycle_contract.CANDIDATE, promotion_contract]
+  MEM-S009: [promotion_contract.oracle_policy_permission_change_forbidden]
+  MEM-S010: [provenance_contract, lifecycle_contract.QUARANTINED]
+  MEM-S011: [promotion_contract, memory_event_contract]
+  MEM-S012: [retention_contract.revoke, retention_contract.forget]
+  MEM-S013: [namespace_contract, m1b_port_contract.MemoryQueryPort]
+  MEM-S014: [identity_contract.content_hash, m1b_port_contract.portability_requirements]
+  MEM-S015: [identity_contract.content_hash, error_contract.INTEGRITY_FAILED]
+  MEM-S016: [revision_and_concurrency_contract]
+
+acceptance_gates:
+  required_memory_kinds: [WORKING, SEMANTIC, EPISODIC, PROCEDURAL, SKILL]
+  required_lifecycle_states:
+    - CANDIDATE
+    - VERIFIED
+    - PROMOTED
+    - CONFLICTING
+    - QUARANTINED
+    - SUPERSEDED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+  default_deny: true
+  deny_overrides_allow: true
+  candidate_direct_protected_authority_promotion: 0
+  last_write_wins_paths: 0
+  long_lived_memory_without_provenance: 0
+  forgotten_content_effectively_readable: 0
+  vendor_specific_domain_types: 0
+  m1_0_safety_scenarios_mapped: 14
+  critical_false_green: 0
+
+implementation_sequence:
+  - M1A_SPEC
+  - M1A_DOMAIN_MODELS
+  - M1A_NAMESPACE_AND_ACL_POLICY
+  - M1A_LIFECYCLE_AND_CONCURRENCY
+  - M1A_PORT_PROTOCOLS
+  - M1A_CONTRACT_AND_ADVERSARIAL_GATE
+  - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL
