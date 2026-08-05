@@ -1,0 +1,13 @@
+schema_version: "1.0"
+campaign_id: ux1-todomvc-mutation-proof
+spec_ref: SPEC-UX1-TODOMVC-MUTATION-PROOF@1.0.0
+parent_runtime_ref: UX0-SYNTHETIC-USER-SHADOW@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+mode: SHADOW
+release_effect: NONBLOCKING_SHADOW
+human_uat_required: true
+project_root: ../../..
+mutation_catalog_path: tests/assets/ux/ux1/mutation-catalog.yaml
+ux_campaign_path: benchmarks/ux/ux0/campaign.yaml
+mutation_ids:
+  - "*"
