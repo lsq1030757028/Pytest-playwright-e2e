@@ -1,0 +1,74 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+status: CANDIDATE_PILOT_APPROVED
+control_plane:
+  branch: ops/hourly-github-relay-control
+  lease_path: .agent/relay/leases/hourly-github-relay.json
+  merge_to_main: forbidden
+  lock_mechanism: GITHUB_CONTENTS_COMPARE_AND_SWAP
+lease:
+  required_before:
+    - START_COMMENT
+    - DEVELOPMENT_BRANCH_WRITE
+    - TEST_MUTATION
+    - CI_RERUN
+  acquisition:
+    - RESOLVE_CAMPAIGN
+    - FETCH_LEASE_AND_BLOB_SHA
+    - CHECK_ACTIVE_AND_EXPIRY
+    - UPDATE_WITH_EXACT_BLOB_SHA
+    - ON_CONFLICT_EXIT_BUSY
+  duration_minutes: 90
+  heartbeat:
+    after_meaningful_transition: true
+    before_long_ci_wait: true
+    extends_duration_minutes: 90
+  release:
+    final_status: IDLE
+    preserve_last_run_summary: true
+  force_update: forbidden
+busy:
+  development_writes: forbidden
+  ci_rerun_owned_by_active_run: forbidden
+  competing_branch_or_pr: forbidden
+  chat_final: required
+  optional_record_target: ISSUE_49
+stale_recovery:
+  expiry_alone_sufficient: false
+  verify:
+    - PREVIOUS_RUN_TOKEN
+    - PREVIOUS_GITHUB_RECORD
+    - TARGET_PR
+    - TARGET_BRANCH
+    - TARGET_HEAD_SHA
+    - ACTIVITY_AFTER_HEARTBEAT
+    - ACTIVE_CI_FOR_PREVIOUS_COMMIT
+  no_force_push: true
+  no_reset: true
+  no_delete: true
+  start_annotation: STALE_LEASE_RECOVERED
+surfaces:
+  chat_and_codex_equal_priority: true
+  relay_compatible_manual_sessions_use_same_lease: true
+pipeline:
+  pilot_mode: SINGLE_HOURLY_ORCHESTRATOR
+  separate_stage_tasks_initially_forbidden: true
+  reason:
+    - REDUCE_CONTEXT_REHYDRATION
+    - REDUCE_RACE_CONDITIONS
+    - PRESERVE_CAMPAIGN_COHERENCE
+  future_specialists_require:
+    - SAME_CAMPAIGN_LEASE
+    - EXPLICIT_INPUT_STATE
+    - EXPLICIT_OUTPUT_STATE
+    - NO_SAME_BRANCH_OVERLAP
+    - GITHUB_HANDOFF
+    - BUSY_ON_FOREIGN_LEASE
+  example_states:
+    - ORIENTING
+    - PLAN_READY
+    - IMPLEMENTING
+    - WAITING_CI
+    - REVIEWING
+    - CLOSING
