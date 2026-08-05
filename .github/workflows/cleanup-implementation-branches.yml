@@ -38,6 +38,7 @@ jobs:
             "spec/m1-0-memory-benchmark-threat-model"
             "spec/autonomous-execution-mandate"
             "spec/ux0-synthetic-user-agent"
+            "spec/ux1-todomvc-ux-mutation-proof"
             "chore/final-branch-cleanup"
           )
 
