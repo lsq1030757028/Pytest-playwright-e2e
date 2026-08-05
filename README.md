@@ -41,6 +41,26 @@ Capability Atoms
 + Policy / Budget / Permission
 ```
 
+## GitHub development SSOT
+
+All human and Agent development follows one cloud-first GitHub process:
+
+```text
+Goal / Issue
+→ risk and impact triage
+→ branch
+→ change-specific evidence plan
+→ implementation
+→ Pull Request and GitHub Actions
+→ review and merge
+→ main / release verification
+→ status, asset, and branch closure
+```
+
+Start with `AGENTS.md`. The normative process is `docs/github-development-ssot.md`, and its machine-readable policy is `docs/github-development-ssot.yaml`.
+
+Testing is risk-adaptive rather than a fixed “unit test + integration test for every module” checklist. Each change selects the cheapest trustworthy evidence for its actual business and technical boundaries; the repository-wide GitHub Actions suite remains the regression and release-protection baseline.
+
 ## Quick start
 
 ```bash
@@ -73,13 +93,15 @@ Then open `http://localhost:8000`.
 ## Repository layout
 
 ```text
+AGENTS.md                         Mandatory Agent development entrypoint
 .agent/skills/web-test-workflow/  Agent Skill and test policies
 src/test_workflow/                Workflow CLI and reusable engine
 examples/demo_app/                Runnable target application
 config/                           Environment configuration
- tests/unit/                      Workflow unit tests
- tests/api/                       Service-level tests
- tests/e2e/                       Playwright pages, flows, and specs
+docs/github-development-ssot.*   GitHub cloud development process SSOT
+tests/unit/                       Workflow unit tests
+tests/api/                        Service-level tests
+tests/e2e/                        Playwright pages, flows, and specs
 .github/workflows/                CI and deployment validation
 ```
 
