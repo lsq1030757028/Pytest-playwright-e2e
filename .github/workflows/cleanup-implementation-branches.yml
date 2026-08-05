@@ -35,6 +35,7 @@ jobs:
             "docs/m1-0-memory-benchmark-final-ledger"
             "spec/m1-0-memory-benchmark-threat-model"
             "spec/autonomous-execution-mandate"
+            "spec/ux0-synthetic-user-agent"
             "chore/final-branch-cleanup"
           )
 

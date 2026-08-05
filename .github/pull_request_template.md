@@ -19,7 +19,7 @@
 
 - Mandate ID / version: `MANDATE-AUTONOMY-M1-M3@1.0.0` / not applicable
 - Mandate status verified: `ACTIVE` / not applicable
-- Covered milestone: `M1` / `M2` / `M3` / not covered
+- Covered milestone: `M1` / `M2` / `M3` / cross-cutting M1-M3 / not covered
 - Covered profile: yes / no
 - Out-of-mandate external effects: none / describe blocker
 - Separate explicit authority when mandate does not apply:
@@ -30,6 +30,22 @@
 - Why this profile is sufficient:
 - Escalation signals considered:
 - Authorization mode: approved Goal / active standing mandate / explicit human authority / blocked
+
+## User experience assurance
+
+- User-facing effect: yes / no / unknown
+- UX level: `UX0` / `UX1` / `UX2` / `UX3`
+- Affected Journey / Experience Oracle refs:
+- Primary Synthetic User Profile:
+- ExperienceEnvironment revision:
+- Accessibility impact:
+- Recovery / interruption / network impact:
+- Synthetic User mode: not applicable / SHADOW / ADVISORY / BLOCKING
+- Experience evidence selected:
+- Experience evidence intentionally skipped and reason:
+- Human UAT required: yes / no, with authority:
+
+Unknown user-facing impact defaults to `UX2`. AI-only findings cannot block.
 
 ## Change map
 
@@ -51,6 +67,7 @@
 - Unit / property / contract:
 - API / boundary integration:
 - Browser / device / E2E:
+- Synthetic User Journey / accessibility / recovery:
 - Replay / mutation / benchmark / canary:
 - Repository regression:
 
@@ -70,22 +87,25 @@ Describe every relevant layer that was not executed and why another form of evid
 - Invalidated / requires rerun:
 - Retired:
 - Test design / Golden / Negative / Adversarial asset paths:
+- UX Profile / Journey / ExperienceEnvironment / Trace assets:
 
-## Requirement, Oracle, Policy, Permission
+## Requirement, Oracle, Experience Oracle, Policy, Permission
 
 - Requirement changed during SPEC or implementation: yes / no
 - Oracle changed: yes / no
+- Experience Oracle changed: yes / no
 - Policy / Permission / Assurance Floor changed: yes / no
 - Mandate scope or status changed: yes / no
 - Change authority and approval:
-- Historical SPEC / evidence impact:
+- Historical SPEC / journey / evidence impact:
 
 ## Deployment, recovery, and rollback
 
-- Runtime / schema / data / model / memory / device impact:
+- Runtime / schema / data / model / memory / device / UX Gate impact:
 - Deployment path:
 - Smoke / probe / canary:
 - Rollback or recovery:
+- Synthetic User Gate rollback:
 - Irreversible effects:
 
 ## Review findings and residual risk
@@ -93,6 +113,7 @@ Describe every relevant layer that was not executed and why another form of evid
 - Open blockers:
 - Accepted residual risks:
 - Assumptions and unknowns:
+- Uncovered UX / Human UAT areas:
 - Follow-up items with owner and deadline:
 
 ## Merge eligibility
@@ -102,8 +123,10 @@ Describe every relevant layer that was not executed and why another form of evid
 - [ ] Implementation did not start before the required SPEC was merged.
 - [ ] Active mandate covers the Goal, milestone, profile, and SPEC when autonomous DEV3 is used.
 - [ ] No out-of-mandate external effect is being executed.
-- [ ] Assurance profile is justified and has not been silently downgraded.
-- [ ] Change-specific evidence is sufficient.
+- [ ] DEV and UX assurance profiles are justified and have not been silently downgraded.
+- [ ] Affected user journeys and Human UAT needs are stated truthfully.
+- [ ] No AI-only UX finding is treated as a blocker.
+- [ ] Change-specific functional and experience evidence is sufficient.
 - [ ] Required GitHub checks are green.
 - [ ] Critical False Green is zero.
 - [ ] Review threads and blockers are resolved.
@@ -113,4 +136,4 @@ Describe every relevant layer that was not executed and why another form of evid
 
 Auto-merge eligibility: `ELIGIBLE` / `NOT_ELIGIBLE` / `OUT_OF_MANDATE`
 
-Normative process: `docs/github-development-ssot.md`.
+Normative process: `docs/github-development-ssot.md`. UX addendum: `docs/ux-assurance-ssot.md`.

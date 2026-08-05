@@ -1,0 +1,289 @@
+asset_id: UX0-CANONICAL-CONTRACTS
+version: 1.0.0
+spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+
+profiles:
+  - profile_id: ux-persona-novice
+    revision: 1.0.0
+    prior_knowledge: NOVICE
+    goal_comprehension_level: BASIC
+    exploration_tendency: MODERATE
+    error_recovery_behavior: READ_VISIBLE_FEEDBACK_THEN_RETRY_ONCE
+    input_preferences: [POINTER, KEYBOARD]
+    accessibility_constraints: []
+    attention_and_interruption_model: CONTINUOUS
+    action_selection_policy_ref: deterministic-visible-affordance-v1
+
+  - profile_id: ux-persona-keyboard
+    revision: 1.0.0
+    prior_knowledge: RETURNING
+    goal_comprehension_level: NORMAL
+    exploration_tendency: LOW
+    error_recovery_behavior: USE_VISIBLE_ERROR_AND_FOCUS_ORDER
+    input_preferences: [KEYBOARD]
+    accessibility_constraints:
+      - FOCUS_VISIBLE
+      - SEMANTIC_NAME_REQUIRED
+    attention_and_interruption_model: CONTINUOUS
+    action_selection_policy_ref: deterministic-keyboard-v1
+
+  - profile_id: ux-persona-interrupted
+    revision: 1.0.0
+    prior_knowledge: INTERRUPTED
+    goal_comprehension_level: NORMAL
+    exploration_tendency: LOW
+    error_recovery_behavior: REFRESH_AND_RESUME_FROM_VISIBLE_STATE
+    input_preferences: [POINTER]
+    accessibility_constraints: []
+    attention_and_interruption_model: REFRESH_AFTER_PRIMARY_ACTION
+    action_selection_policy_ref: deterministic-resume-v1
+
+environments:
+  - environment_id: ux-env-desktop-normal
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: ux-persona-novice@1.0.0
+    journey_revision: ux-journey-add-task@1.0.0
+    requirement_revision: REQ-TODOMVC-ADD@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-FIXTURE@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: ux-hidden-evaluator-v1
+    capability_versions:
+      ux.execute.playwright: 1.0.0
+      ux.evaluate.deterministic: 1.0.0
+      ux.evaluate.ai_proposal: 1.0.0
+      ux.replay: 1.0.0
+    random_seed: 1030757028
+    device_profile:
+      viewport_width: 1280
+      viewport_height: 720
+      device_scale_factor: 1
+      browser_engine: chromium
+      input_modes: [POINTER, KEYBOARD]
+      prefers_reduced_motion: false
+      zoom_percent: 100
+    locale_timezone:
+      locale: en-US
+      timezone: UTC
+      date_number_currency_format: en-US
+    network_profile:
+      latency_ms: 0
+      download_kbps: 100000
+      upload_kbps: 100000
+      offline_schedule: []
+      failure_injections: []
+    accessibility_context:
+      keyboard_only: false
+      screen_reader_semantics: true
+      focus_visibility_required: true
+      contrast_profile: DEFAULT
+      motion_constraints: NONE
+    prior_knowledge: NOVICE
+    account_and_data_state:
+      fixture_ref: UX-TODOMVC-FIXTURE@1.0.0
+      synthetic_fixture_only: true
+    budgets:
+      max_steps: 8
+      max_backtracks: 1
+      max_retries: 1
+      time_budget_seconds: 30
+      context_budget_units: 1000
+    content_hash: sha256:placeholder-generated-during-implementation
+
+  - environment_id: ux-env-keyboard
+    revision: 1.0.0
+    schema_version: 1.0.0
+    persona_revision: ux-persona-keyboard@1.0.0
+    journey_revision: ux-journey-keyboard-primary@1.0.0
+    requirement_revision: REQ-TODOMVC-PRIMARY@v1
+    design_system_revision: DESIGN-TODOMVC@v1
+    code_sha: ${UX_CODE_SHA}
+    fixture_revision: UX-TODOMVC-FIXTURE@1.0.0
+    browser_revision: chromium-pinned
+    playwright_revision: 1.57.x
+    evaluator_revision: ux-hidden-evaluator-v1
+    capability_versions:
+      ux.execute.playwright: 1.0.0
+      ux.observe.accessibility: 1.0.0
+      ux.evaluate.deterministic: 1.0.0
+    random_seed: 1030757028
+    device_profile:
+      viewport_width: 1280
+      viewport_height: 720
+      device_scale_factor: 1
+      browser_engine: chromium
+      input_modes: [KEYBOARD]
+      prefers_reduced_motion: true
+      zoom_percent: 200
+    locale_timezone:
+      locale: en-US
+      timezone: UTC
+      date_number_currency_format: en-US
+    network_profile:
+      latency_ms: 0
+      download_kbps: 100000
+      upload_kbps: 100000
+      offline_schedule: []
+      failure_injections: []
+    accessibility_context:
+      keyboard_only: true
+      screen_reader_semantics: true
+      focus_visibility_required: true
+      contrast_profile: HIGH
+      motion_constraints: REDUCED
+    prior_knowledge: RETURNING
+    account_and_data_state:
+      fixture_ref: UX-TODOMVC-FIXTURE@1.0.0
+      synthetic_fixture_only: true
+    budgets:
+      max_steps: 12
+      max_backtracks: 2
+      max_retries: 1
+      time_budget_seconds: 45
+      context_budget_units: 1000
+    content_hash: sha256:placeholder-generated-during-implementation
+
+journeys:
+  - journey_id: ux-journey-add-task
+    revision: 1.0.0
+    experience_oracle:
+      oracle_id: UX-ORACLE-ADD-TASK
+      revision: 1.0.0
+      journey_goal: Add one task and understand that it remains present.
+      business_value: User can capture a task without uncertainty or data loss.
+      start_state: Empty TodoMVC list.
+      required_checkpoints:
+        - entry_field_is_discoverable
+        - task_is_visible_after_submit
+        - remaining_count_is_consistent
+      success_outcomes:
+        - one_visible_active_task_with_exact_text
+        - active_count_equals_one
+      forbidden_outcomes:
+        - task_disappears_without_user_action
+        - duplicate_task_created_by_single_submit
+        - destructive_action_triggered
+      required_feedback:
+        - submitted_task_appears_in_list
+        - remaining_count_updates
+      recovery_expectations:
+        - blank_input_does_not_create_task
+        - user_can_retry_after_blank_input
+      accessibility_obligations:
+        - input_has_semantic_name
+        - primary_action_is_keyboard_operable
+      authoritative_friction_budgets:
+        max_steps: 8
+        max_backtracks: 1
+      evidence_requirements: [TRACE, SCREENSHOT, STATE_HASH, ACCESSIBILITY_SNAPSHOT]
+      severity_floor: P2
+      authority_refs: [REQ-TODOMVC-ADD@v1]
+    persona_refs: [ux-persona-novice@1.0.0]
+    environment_refs: [ux-env-desktop-normal@1.0.0]
+    start_fixture_ref: UX-TODOMVC-FIXTURE@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.accessibility]
+    required_observations: [task_completion, step_count, required_feedback_latency, semantic_accessibility_failures]
+    cleanup_and_recovery: reset_local_storage
+
+  - journey_id: ux-journey-keyboard-primary
+    revision: 1.0.0
+    experience_oracle:
+      oracle_id: UX-ORACLE-KEYBOARD
+      revision: 1.0.0
+      journey_goal: Add, complete and filter a task with keyboard-only input.
+      business_value: Keyboard users can complete the primary workflow.
+      start_state: Empty TodoMVC list.
+      required_checkpoints:
+        - focus_reaches_input
+        - task_can_be_submitted
+        - task_can_be_completed
+        - completed_filter_can_be_activated
+      success_outcomes:
+        - completed_task_visible_in_completed_filter
+      forbidden_outcomes:
+        - focus_trap
+        - hidden_focus
+        - pointer_required_for_primary_action
+      required_feedback:
+        - focus_state_is_observable
+        - completion_state_is_observable
+      recovery_expectations:
+        - escape_from_nonmodal_state
+      accessibility_obligations:
+        - semantic_names_present
+        - logical_focus_order
+        - focus_visible
+        - keyboard_completion
+      authoritative_friction_budgets:
+        max_steps: 12
+        max_backtracks: 2
+      evidence_requirements: [TRACE, VIDEO, ACCESSIBILITY_SNAPSHOT, FOCUS_EVENT_LOG]
+      severity_floor: P1
+      authority_refs: [REQ-TODOMVC-PRIMARY@v1]
+    persona_refs: [ux-persona-keyboard@1.0.0]
+    environment_refs: [ux-env-keyboard@1.0.0]
+    start_fixture_ref: UX-TODOMVC-FIXTURE@1.0.0
+    allowed_capabilities: [ux.execute.playwright, ux.observe.interaction, ux.observe.accessibility]
+    required_observations: [keyboard_completion, focus_order_violations, semantic_accessibility_failures]
+    cleanup_and_recovery: reset_local_storage
+
+negative_cases:
+  - id: UX-NEG-AI-BLOCKER
+    violation: ai_finding_cannot_mark_blocker
+    input:
+      evidence_level: E0
+      proposed_severity: P0
+      source: ai_only
+    expected: KEEP_NONBLOCKING_CANDIDATE
+
+  - id: UX-NEG-EVALUATOR-LEAK
+    violation: evaluator_only_fields_never_reach_actor
+    input:
+      actor_payload_contains: [hidden_expected_action]
+    expected: INVALID
+
+  - id: UX-NEG-SENSITIVE-PERSONA
+    violation: sensitive_demographic_inference_forbidden
+    input:
+      profile_fields: [inferred_race]
+    expected: REJECT
+
+  - id: UX-NEG-PRODUCTION-DATA
+    violation: synthetic_fixture_only
+    input:
+      account_and_data_state: production_customer_account
+    expected: DENY
+
+  - id: UX-NEG-BLOCKING-BEFORE-BENCHMARK
+    violation: initial_runtime_mode_is_shadow
+    input:
+      requested_mode: BLOCKING
+      benchmark_passed: false
+    expected: PROMOTION_DENIED
+
+  - id: UX-NEG-MISSING-ORACLE
+    violation: blocker_requires_experience_oracle
+    input:
+      finding_state: REPRODUCED
+      oracle_clause_refs: []
+    expected: BLOCKED
+
+verdict_cases:
+  - id: UX-V-CRITICAL-TASK-FAIL
+    evidence_level: E3
+    critical_journey_completed: false
+    expected_verdict: FAIL
+  - id: UX-V-AI-OPINION
+    evidence_level: E0
+    ai_candidate_findings: 3
+    deterministic_failures: 0
+    expected_verdict: WARN
+  - id: UX-V-TAMPERED
+    evidence_integrity: false
+    expected_verdict: INVALID
+  - id: UX-V-MISSING-ORACLE
+    oracle_present: false
+    expected_verdict: BLOCKED

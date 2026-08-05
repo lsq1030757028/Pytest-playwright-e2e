@@ -1,0 +1,64 @@
+approval_id: APPROVAL-UX0-SYNTHETIC-USER-SPEC
+version: 1.0.0
+status: ACTIVE_WHEN_MERGED
+spec_ref: SPEC-UX0-SYNTHETIC-USER@1.0.0
+candidate_status: CANDIDATE
+goal_issue: 29
+pull_request: 30
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+scope: CROSS_CUTTING_M1_M3
+assurance: DEV3
+approved_candidate_commit: 242dfc01353bb5a41a5359f46eae94b0a4ee0d78
+approval_basis:
+  focused_spec_run:
+    id: 30984682783
+    run_number: 2
+    result: PASS
+    tests: 12
+    failed: 0
+    artifact_id: 8921568099
+    artifact_digest: sha256:83944bd5162298d1e2d9e8e2d9111aefff7cd5a0e333de2bc58719aafb32d56a
+  full_repository_run:
+    id: 30984682730
+    run_number: 102
+    result: PASS
+    artifact_id: 8921629226
+    artifact_digest: sha256:1d97b41209075fbbc57c6339dbdc28a6d9b168da25c4debd074726b0b05d119e
+  review_requirements:
+    unresolved_threads: 0
+    blockers: 0
+    critical_false_green: 0
+approved_contracts:
+  - ExperienceEnvironment
+  - SyntheticUserProfile
+  - ExperienceOracle
+  - JourneyContract
+  - SyntheticUserAgentCapabilityBoundary
+  - InteractionEvidence
+  - AICandidateFinding
+  - UX0_UX3_Assurance
+  - ShadowFirstRollout
+  - UATReadinessReporting
+protected_invariants:
+  evaluator_leakage: 0
+  ai_only_blockers: 0
+  blockers_without_oracle_clause: 0
+  blockers_below_E3: 0
+  sensitive_profile_inference: 0
+  production_personal_data_access: 0
+  human_uat_replaced: false
+  initial_runtime_mode: SHADOW
+  blocking_gate_enabled: false
+non_claims:
+  synthetic_user_runtime_implemented: false
+  real_playwright_ux_campaign_executed: false
+  todomvc_ux_mutation_proof_completed: false
+  ux_false_positive_benchmark_completed: false
+  advisory_gate_enabled: false
+  blocking_gate_enabled: false
+  human_uat_replaced: false
+next_state:
+  spec: MERGED_CLOSED_AFTER_POST_MERGE_VERIFICATION
+  runtime: UX0_SHADOW_CONTRACTS_AND_RUNNER_NEXT
+  blocking_gate: BLOCKED_PENDING_BENCHMARK_POLICY_AND_ROLLBACK
+rollback: revert_spec_approval_merge_without_runtime_data_migration
