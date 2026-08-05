@@ -6,27 +6,27 @@
 > 阶段产品交付：`NOT_READY`  
 > 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
 > 当前模块：`M1.0 MEMORY_BENCHMARK_AND_THREAT_MODEL`  
-> 当前模块阶段：`SPEC_CLOSED / IMPLEMENTATION_NEXT`  
+> 当前模块阶段：`IMPLEMENTED / EVIDENCE_PENDING`  
 > M1.0 SPEC：`SPEC-M1.0-MEMORY-BENCHMARK@1.0.0`  
-> 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0`  
+> 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`  
 > GitHub 研发流程：`docs/github-development-ssot.md`
 
 ---
 
 ## 1. 状态结论
 
-当前项目已完成测试领域 Agent OS 微内核基线和 M1.0 Memory Benchmark & Threat Model SPEC，但尚未实现 Memory Benchmark Harness、Memory Store 或 M1 Memory Gate。
-
-仓库所有者通过 Goal Issue #23 授权 M1—M3 进入持续自治模式。授权合并后，覆盖范围内的 `DEV0`—`DEV3` 不再逐模块等待人类批准，但仍必须满足 SPEC、Threat Model、Evidence、Review、Rollback、Main、Release 和 Ledger Gate。
+当前项目已完成测试领域 Agent OS 微内核基线、M1.0 SPEC 和持续自治 Mandate。M1.0 Memory Benchmark Harness 已进入可执行实现状态，但在 PR CI、Review、Main、Release 和 Cleanup 完成前不得标记为 `VERIFIED` 或 `MERGED`。
 
 ```text
 M0 Harness Baseline：MERGED
 M1.0 SPEC：MERGED / CLOSED
-Autonomous Mandate：ACTIVE when merged
-M1.0 Benchmark Harness：NEXT
+Autonomous Mandate：ACTIVE
+M1.0 Benchmark Harness：IMPLEMENTED / EVIDENCE_PENDING
 M1 Memory Gate：0 / 1
 Stage Delivery：NOT_READY
 ```
+
+M1.0 只提供 Memory 实验与证据基础设施，不实现生产 Memory Store，也不关闭完整 M1 Memory Gate。
 
 ---
 
@@ -36,8 +36,8 @@ Stage Delivery：NOT_READY
 flowchart LR
     A[✅ M0 Harness Baseline]
     --> B[✅ M1.0 Goal / SPEC]
-    --> C[🟡 Autonomous Mandate]
-    --> D[⬜ M1.0 Benchmark Harness]
+    --> C[✅ Autonomous Mandate]
+    --> D[🟡 M1.0 Benchmark Harness<br/>Evidence Pending]
     --> E[⬜ M1A Memory Contracts]
     --> F[⬜ M1B Store / Retrieval]
     --> G[⬜ M1C Formation]
@@ -46,42 +46,82 @@ flowchart LR
     --> J[⬜ M1F Memory Gate]
 ```
 
-M1.0 SPEC 已定义：
+---
 
-- 受保护资产和 Trust Zones；
-- `MEM-T01`—`MEM-T20` 威胁基线；
-- Memory Off / Verified / Candidate / Adversarial 条件；
-- Golden、Negative、Poisoning、ACL、Rollback 和 Replay 场景；
-- 配对实验、隐藏 Holdout、污染失效和重复运行；
-- 正确率、人工介入、成本、延迟和安全指标；
-- `Critical False Green = 0`；
-- Candidate、Promotion、Canary 和 Rollback 边界；
-- M1A 与 M1B 的接口职责。
+## 3. M1.0 已实现能力
 
-SPEC 不等于实现。当前尚未实现：
+```text
+Versioned Campaign Plan
+→ Typed Scenario / Fixture Loader
+→ Namespace / ACL / Validity / Budget Filtering
+→ Actor Context without Evaluator-only Fields
+→ Deterministic Reference Actor
+→ Hidden Evaluator
+→ Run Evidence
+→ Paired Metrics
+→ Safety-first Verdict
+→ Artifact Manifest
+→ Independent Replay
+```
 
-- Memory Off / On Campaign Runner；
-- Scenario Fixture Loader；
-- Retrieval / Context Evidence；
-- Hidden Evaluator；
-- Benchmark Verdict；
-- Memory Store 和 Progressive Retrieval。
+已实现：
+
+- 16 个 `MEM-S001`—`MEM-S016` 场景的强类型加载；
+- Memory Off、Candidate、Verified、Adversarial 条件；
+- Requirement、Code SHA、Fixture、Provider、Capability、Tool、Environment、Seed、Budget 和 Evaluator Pin；
+- Stale、Conflict、Poisoning、Cross-project、ACL、Authority、Oracle Contamination、Holdout Contamination、Rollback、Revoke、Budget Flood、Tamper 和 Concurrent Revision 场景；
+- evaluator-only 字段隔离；
+- run / pair / campaign 证据；
+- JSON / Markdown 报告；
+- Artifact / Replay Manifest 和 SHA-256 校验；
+- `test-workflow memory validate | run | replay`；
+- 非 PASS Verdict 返回非零退出码。
+
+当前未完成的权威证据：
+
+- PR 专属 Unit / Contract 结果；
+- PR 边界 Integration 结果；
+- CLI 60-run Campaign 和 Replay 结果；
+- 完整仓库回归；
+- Review 和 Merge；
+- 主干发布与分支清理。
 
 ---
 
-## 3. 自治授权边界
+## 4. M1.0 测试设计与资产
 
-`MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖：
+Change-specific Evidence：
 
-- M1 Memory & Controlled Evolution；
-- M2 Cross-model Generalization；
-- M3 Project / Architecture Generalization；
-- 对应 SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup；
-- 覆盖范围内的 DEV0—DEV3 自动推进。
+- `tests/unit/test_memory_benchmark.py`；
+- `tests/integration/test_memory_benchmark_harness_integration.py`；
+- `benchmarks/memory/m1.0/scenario-catalog.yaml`；
+- `benchmarks/memory/m1.0/fixture-catalog.yaml`；
+- `benchmarks/memory/m1.0/campaign.yaml`；
+- `docs/testing/m1.0-memory-benchmark-harness-test-design.md`。
+
+测试义务覆盖：
+
+- Catalog / Fixture / Pin 拒绝路径；
+- Hidden Evaluator 隔离；
+- Namespace、ACL、Validity、Integrity 和 Budget；
+- Candidate Authority；
+- Oracle Relaxation 反例；
+- Safety 优先于 Efficiency；
+- 稳定 Semantic Digest；
+- Artifact Tamper Detection；
+- Catalog → Verdict → Replay 的真实文件系统边界。
+
+仓库完整 CI 仍作为既有回归保护，不替代本次模块的专属测试设计。
+
+---
+
+## 5. 自治授权边界
+
+`MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup，以及范围内的 DEV0—DEV3 自动推进。
 
 自治不覆盖：
 
-- M1—M3 外的范围扩张；
+- M1—M3 外范围扩张；
 - 真实生产数据、个人数据和 Secret；
 - 破坏性生产迁移和不可逆外部写；
 - 实质性不可逆费用；
@@ -94,13 +134,12 @@ SPEC 不等于实现。当前尚未实现：
 
 ---
 
-## 4. 当前可信基线
+## 6. 当前可信基线
 
-主干质量流水线持续覆盖：
+既有主干质量持续覆盖：
 
 - Ruff / Pytest Collect；
-- Development SSOT 和 Autonomous Mandate Gate；
-- M1.0 Memory SPEC Gate；
+- Development SSOT / Autonomous Mandate / M1.0 SPEC Gate；
 - Unit / API；
 - Harness 3.0A—3.0E；
 - Stage 3—7；
@@ -122,50 +161,24 @@ Critical False Green：0
 
 ---
 
-## 5. GitHub 研发执行规则
+## 7. 下一状态转换
 
 ```text
-AGENTS.md
-→ GitHub Development SSOT
-→ Active Mandate
-→ Goal / Issue
-→ Module SPEC
-→ Implementation Branch / PR
-→ Change-specific Evidence
-→ Review / Merge
-→ Main / Release / Ledger / Cleanup
+IMPLEMENTED
+→ PR Change-specific Evidence
+→ Full Repository Regression
+→ DEV3 Review
+→ VERIFIED
+→ MERGED
+→ RELEASE_VERIFYING
+→ CLOSED
 ```
 
-每个模块开工先落 SPEC。测试和证据按风险与真实边界动态选择，不机械要求固定测试层级或数量。
-
-覆盖 Mandate 的 DEV3 可以在以下条件满足后自治合并：
-
-- Goal、SPEC、Mandate 范围一致；
-- 独立 Test Design 和 Threat Model 完整；
-- Unit / Contract、真实边界 Integration、Negative / Adversarial 和适用 Proof 通过；
-- Review Thread、Blocker、Critical False Green 均为 0；
-- Rollback / Recovery 可信；
-- Main、Release、Ledger、Cleanup 成功。
+M1.0 通过后，下一个模块为 `M1A Memory Contracts & Namespaces`，并先落独立 SPEC。
 
 ---
 
-## 6. 下一执行节点
-
-```text
-M1.0 Benchmark Harness IMPLEMENTATION / DEV3
-→ deterministic Memory Off / On Campaign Runner
-→ scenario fixture loader
-→ evidence and metric artifacts
-→ hidden evaluator boundary
-→ benchmark verdict gate
-→ replayable benchmark report
-```
-
-该实现直接引用已经合并的 `SPEC-M1.0-MEMORY-BENCHMARK@1.0.0`，无需再次等待人类批准。超出 SPEC 时必须创建 Change Event 或 Addendum。
-
----
-
-## 7. 阶段交付条件
+## 8. 阶段交付条件
 
 项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
 
