@@ -40,8 +40,10 @@ jobs:
             tools/m1a-hardening/chunk-05d.b64
             tools/m1a-hardening/chunk-06.b64
           )
+          sha256sum "${chunks[@]}"
           cat "${chunks[@]}" > /tmp/m1a-hardening.patch.b64
           base64 --decode /tmp/m1a-hardening.patch.b64 > /tmp/m1a-hardening.patch
+          sha256sum /tmp/m1a-hardening.patch
           echo "9d16033226beb3e69a49f33fa97ed87ac60fcff202757a2b2e236619298dce84  /tmp/m1a-hardening.patch" | sha256sum -c -
           git apply --check /tmp/m1a-hardening.patch
           git apply /tmp/m1a-hardening.patch
