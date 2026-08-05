@@ -44,6 +44,21 @@ jobs:
           uv run pytest tests/unit/test_m1_0_memory_spec.py
           --junitxml=test-results/junit-m1.0-memory-spec.xml
 
+      - name: M1.0 Memory Benchmark Harness validation
+        env:
+          BENCHMARK_CODE_SHA: ${{ github.sha }}
+        run: |
+          uv run pytest tests/unit/test_memory_benchmark.py \
+            --junitxml=test-results/junit-m1.0-memory-benchmark-unit.xml
+          uv run pytest tests/integration/test_memory_benchmark_harness_integration.py \
+            -m harness_integration \
+            --junitxml=test-results/junit-m1.0-memory-benchmark-integration.xml
+          rm -rf test-results/m1.0-memory-benchmark
+          uv run test-workflow memory validate benchmarks/memory/m1.0/campaign.yaml
+          uv run test-workflow memory run benchmarks/memory/m1.0/campaign.yaml \
+            --output test-results/m1.0-memory-benchmark
+          uv run test-workflow memory replay test-results/m1.0-memory-benchmark
+
       - name: Collect tests
         shell: bash
         run: |

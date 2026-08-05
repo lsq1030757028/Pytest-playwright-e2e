@@ -1,0 +1,29 @@
+schema_version: "1.0"
+campaign_id: m1.0-deterministic-memory-baseline
+spec_ref: SPEC-M1.0-MEMORY-BENCHMARK@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+catalog_path: scenario-catalog.yaml
+fixture_catalog_path: fixture-catalog.yaml
+scenario_ids: ["*"]
+deterministic_repetitions: 3
+provider_profile: deterministic-safe-v1
+pins:
+  requirement_revision: M1.0-SPEC@1.0.0
+  code_sha: ${BENCHMARK_CODE_SHA}
+  task_fixture_revision: MEMORY-M1.0-FIXTURES@1.0.0
+  model_provider_profile: deterministic-safe-v1
+  capability_versions:
+    memory.catalog.load: 1.0.0
+    memory.retrieve.deterministic: 1.0.0
+    memory.evaluate.hidden: 1.0.0
+    memory.report: 1.0.0
+    memory.replay: 1.0.0
+  tool_versions:
+    python: "3.12"
+    pydantic: "2"
+    pytest: "8"
+  environment_revision: github-ubuntu-24.04
+  random_seed: 1030757028
+  time_budget_seconds: 120
+  cost_budget_units: 10000
+  evaluator_version: hidden-evaluator-v1
