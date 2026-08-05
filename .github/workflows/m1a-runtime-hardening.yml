@@ -1,0 +1,1004 @@
+name: m1a-runtime-hardening
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/m1a-runtime-hardening.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply SPEC-first runtime hardening
+        shell: bash
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import ast
+          from pathlib import Path
+
+          ROOT = Path.cwd()
+
+          def read(path: str) -> str:
+              return (ROOT / path).read_text(encoding="utf-8")
+
+          def write(path: str, text: str) -> None:
+              target = ROOT / path
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(text, encoding="utf-8")
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{label}: expected one match, found {count}")
+              return text.replace(old, new, 1)
+
+          compatibility = '''from __future__ import annotations
+
+          import re
+          from dataclasses import dataclass
+
+          from .models import CompatibilityContext, CompatibilityDescriptor
+
+          _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$")
+          _COMPARATOR = re.compile(
+              r"^(<=|>=|<|>|==|=)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+          )
+          _WILDCARD = re.compile(r"^(0|[1-9][0-9]*)\\.(x|X|\\*|0|[1-9][0-9]*)\\.(x|X|\\*)$")
+
+
+          @dataclass(frozen=True, order=True)
+          class SemanticVersion:
+              major: int
+              minor: int
+              patch: int
+
+              @classmethod
+              def parse(cls, value: str) -> SemanticVersion | None:
+                  match = _SEMVER.fullmatch(value.strip())
+                  if match is None:
+                      return None
+                  return cls(*(int(part) for part in match.groups()))
+
+
+          def version_matches(version: str, declared_range: str) -> bool:
+              """Evaluate the deterministic, fail-closed M1A semver range language."""
+
+              current = SemanticVersion.parse(version)
+              expression = declared_range.strip()
+              if current is None or not expression:
+                  return False
+              if expression == "*":
+                  return True
+              wildcard = _WILDCARD.fullmatch(expression)
+              if wildcard is not None:
+                  major, minor, _ = wildcard.groups()
+                  if current.major != int(major):
+                      return False
+                  return minor in {"x", "X", "*"} or current.minor == int(minor)
+              if expression.startswith("^"):
+                  lower = SemanticVersion.parse(expression[1:])
+                  if lower is None:
+                      return False
+                  if lower.major > 0:
+                      upper = SemanticVersion(lower.major + 1, 0, 0)
+                  elif lower.minor > 0:
+                      upper = SemanticVersion(0, lower.minor + 1, 0)
+                  else:
+                      upper = SemanticVersion(0, 0, lower.patch + 1)
+                  return lower <= current < upper
+              if expression.startswith("~"):
+                  lower = SemanticVersion.parse(expression[1:])
+                  if lower is None:
+                      return False
+                  upper = SemanticVersion(lower.major, lower.minor + 1, 0)
+                  return lower <= current < upper
+
+              terms = tuple(term.strip() for term in expression.split(",") if term.strip())
+              if not terms:
+                  return False
+              return all(_comparator_matches(current, term) for term in terms)
+
+
+          def compatibility_matches_strict(
+              descriptor: CompatibilityDescriptor,
+              context: CompatibilityContext,
+          ) -> bool:
+              architectures = set(descriptor.project_architecture_families)
+              if "*" not in architectures and context.project_architecture_family not in architectures:
+                  return False
+              if not version_matches(context.code_version, descriptor.code_version_range):
+                  return False
+              if not version_matches(context.schema_version, descriptor.schema_version_range):
+                  return False
+              if not version_matches(
+                  context.capability_version, descriptor.capability_version_range
+              ):
+                  return False
+              if (
+                  descriptor.model_profile_constraints
+                  and context.model_profile not in descriptor.model_profile_constraints
+              ):
+                  return False
+              if (
+                  descriptor.environment_constraints
+                  and context.environment not in descriptor.environment_constraints
+              ):
+                  return False
+              if not set(descriptor.required_permissions) <= set(context.permissions):
+                  return False
+              if set(descriptor.incompatible_conditions) & set(context.active_conditions):
+                  return False
+              return True
+
+
+          def _comparator_matches(current: SemanticVersion, expression: str) -> bool:
+              match = _COMPARATOR.fullmatch(expression)
+              if match is None:
+                  exact = SemanticVersion.parse(expression)
+                  return exact is not None and current == exact
+              operator = match.group(1) or "=="
+              expected = SemanticVersion(*(int(match.group(index)) for index in (2, 3, 4)))
+              return {
+                  "==": current == expected,
+                  "=": current == expected,
+                  ">=": current >= expected,
+                  "<=": current <= expected,
+                  ">": current > expected,
+                  "<": current < expected,
+              }[operator]
+          '''
+          compatibility = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in compatibility.splitlines()
+          ) + "\n"
+          write("src/test_workflow/memory_contracts/compatibility.py", compatibility)
+
+          models = read("src/test_workflow/memory_contracts/models.py")
+          if "campaign_scope_ids" not in models:
+              models = replace_once(
+                  models,
+                  "    shared_scope_ids: tuple[str, ...] = ()\n",
+                  "    shared_scope_ids: tuple[str, ...] = ()\n"
+                  "    campaign_scope_ids: tuple[str, ...] = ()\n",
+                  "principal campaign membership",
+              )
+          write("src/test_workflow/memory_contracts/models.py", models)
+
+          policy = read("src/test_workflow/memory_contracts/policy.py")
+          if "from .compatibility import compatibility_matches_strict" not in policy:
+              policy = replace_once(
+                  policy,
+                  "from datetime import UTC, datetime\n\nfrom .models import (",
+                  "from datetime import UTC, datetime\n\n"
+                  "from .compatibility import compatibility_matches_strict\n"
+                  "from .models import (",
+                  "strict compatibility import",
+              )
+          start = policy.index("def namespace_authorized(")
+          end = policy.index("\n\ndef evaluate_permission(", start)
+          namespace_function = '''def namespace_authorized(actor: PrincipalContext, namespace: MemoryNamespace) -> bool:
+              if actor.delegator_ref is not None:
+                  if actor.delegation_expires_at is None or actor.delegation_expires_at <= datetime.now(UTC):
+                      return False
+                  if namespace.canonical not in actor.delegation_scope:
+                      return False
+              if actor.organization_id != namespace.organization_id:
+                  return False
+              if namespace.scope_kind is NamespaceScopeKind.ORGANIZATION:
+                  return actor.organization_id == namespace.scope_id
+              if namespace.scope_kind is NamespaceScopeKind.SHARED:
+                  return namespace.scope_id in actor.shared_scope_ids
+              if actor.project_id != namespace.project_id:
+                  return False
+              if namespace.scope_kind is NamespaceScopeKind.PROJECT:
+                  return namespace.scope_id == actor.project_id
+              if namespace.scope_kind is NamespaceScopeKind.CAMPAIGN:
+                  return namespace.scope_id in actor.campaign_scope_ids
+              if namespace.scope_kind is NamespaceScopeKind.AGENT:
+                  return actor.agent_id == namespace.scope_id
+              return False
+          '''
+          namespace_function = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in namespace_function.splitlines()
+          )
+          policy = policy[:start] + namespace_function + policy[end:]
+
+          compat_start = policy.index("def compatibility_matches(")
+          compat_end = policy.index("\n\ndef operation_for_transition(", compat_start)
+          compat_function = '''def compatibility_matches(
+              descriptor: CompatibilityDescriptor, context: CompatibilityContext
+          ) -> bool:
+              return compatibility_matches_strict(descriptor, context)
+          '''
+          compat_function = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in compat_function.splitlines()
+          )
+          policy = policy[:compat_start] + compat_function + policy[compat_end:]
+
+          old_signature = '''def validate_promotion(
+              *,
+              revision: MemoryRevision,
+              state: LifecycleState,
+              request: PromotionRequest,
+              permission: PermissionDecision,
+          ) -> PromotionDecision:
+          '''
+          new_signature = '''def validate_promotion(
+              *,
+              revision: MemoryRevision,
+              state: LifecycleState,
+              request: PromotionRequest,
+              permission: PermissionDecision,
+              actor_principal_ref: str | None = None,
+              evidence_refs_resolved: bool = True,
+              benchmark_refs_resolved: bool = True,
+              rollback_ref_resolved: bool = True,
+          ) -> PromotionDecision:
+          '''
+          old_signature = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_signature.splitlines()
+          )
+          new_signature = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_signature.splitlines()
+          )
+          if "actor_principal_ref: str | None" not in policy:
+              policy = replace_once(
+                  policy, old_signature, new_signature, "promotion resolver signature"
+              )
+              insertion = '''    if actor_principal_ref is not None and request.promoter_principal_ref != actor_principal_ref:
+              return PromotionDecision(
+                  decision=Decision.REJECTED,
+                  error_code=ErrorCode.PROMOTION_DENIED,
+                  reason="promotion actor does not match promoter principal",
+              )
+              if not set(request.evidence_refs) <= set(revision.provenance.evidence_refs):
+                  return PromotionDecision(
+                      decision=Decision.REJECTED,
+                      error_code=ErrorCode.PROMOTION_DENIED,
+                      reason="promotion evidence is not bound to the governed revision",
+                  )
+              if not evidence_refs_resolved or not benchmark_refs_resolved or not rollback_ref_resolved:
+                  return PromotionDecision(
+                      decision=Decision.REJECTED,
+                      error_code=ErrorCode.PROMOTION_DENIED,
+                      reason="promotion evidence, evaluator, or rollback reference is unresolved",
+                  )
+          '''
+              insertion = "\n".join(
+                  line[10:] if line.startswith("          ") else line
+                  for line in insertion.splitlines()
+              ) + "\n"
+              marker = "    if revision.memory_kind not in PROMOTABLE_KINDS:\n"
+              policy = replace_once(policy, marker, insertion + marker, "promotion prerequisites")
+          write("src/test_workflow/memory_contracts/policy.py", policy)
+
+          reference = read("src/test_workflow/memory_contracts/reference.py")
+          if "from threading import RLock" not in reference:
+              reference = replace_once(
+                  reference,
+                  "from datetime import UTC, datetime\n",
+                  "from datetime import UTC, datetime\nfrom threading import RLock\n",
+                  "reference lock import",
+              )
+          reference = reference.replace(
+              "    AclEntry,\n",
+              "    AclEffect,\n    AclEntry,\n    AclSubjectType,\n",
+              1,
+          )
+          if "resolved_evaluators" not in reference:
+              reference = replace_once(
+                  reference,
+                  "        resolved_evidence: Iterable[str] = (),\n"
+                  "        initial_acl: Iterable[AclEntry] = (),\n",
+                  "        resolved_evidence: Iterable[str] = (),\n"
+                  "        resolved_evaluators: Iterable[str] = (),\n"
+                  "        resolved_rollback_refs: Iterable[str] = (),\n"
+                  "        initial_acl: Iterable[AclEntry] = (),\n",
+                  "reference promotion resolver inputs",
+              )
+              reference = replace_once(
+                  reference,
+                  "        self._revisions: dict[str, list[MemoryRevision]] = {}\n",
+                  "        self._lock = RLock()\n"
+                  "        self._revisions: dict[str, list[MemoryRevision]] = {}\n",
+                  "reference lock state",
+              )
+              reference = replace_once(
+                  reference,
+                  "        self._resolved_evidence = set(resolved_evidence)\n",
+                  "        self._resolved_evidence = set(resolved_evidence)\n"
+                  "        self._resolved_evaluators = set(resolved_evaluators)\n"
+                  "        self._resolved_rollback_refs = set(resolved_rollback_refs)\n",
+                  "reference resolver state",
+              )
+
+          reference = replace_once(
+              reference,
+              "            return result.model_copy(update={\"decision\": Decision.IDEMPOTENT_REPLAY})\n",
+              "            return result\n",
+              "idempotency original result",
+          )
+          reference = replace_once(
+              reference,
+              "                error_code=ErrorCode.PROVENANCE_MISSING,\n",
+              "                error_code=provenance_error,\n",
+              "provenance deterministic error",
+          )
+          old_provenance = '''    def _validate_provenance(self, revision: MemoryRevision) -> ErrorCode | None:
+              for source_ref, expected_hash in revision.provenance.source_content_hashes.items():
+                  if self._resolved_sources.get(source_ref) != expected_hash:
+                      return ErrorCode.PROVENANCE_MISSING
+              if not set(revision.provenance.evidence_refs) <= self._resolved_evidence:
+                  return ErrorCode.PROVENANCE_MISSING
+              return None
+          '''
+          new_provenance = '''    def _validate_provenance(self, revision: MemoryRevision) -> ErrorCode | None:
+              for source_ref, expected_hash in revision.provenance.source_content_hashes.items():
+                  if source_ref not in self._resolved_sources:
+                      return ErrorCode.PROVENANCE_MISSING
+                  if self._resolved_sources[source_ref] != expected_hash:
+                      return ErrorCode.INTEGRITY_FAILED
+              if not set(revision.provenance.evidence_refs) <= self._resolved_evidence:
+                  return ErrorCode.PROVENANCE_MISSING
+              return None
+          '''
+          old_provenance = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_provenance.splitlines()
+          )
+          new_provenance = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_provenance.splitlines()
+          )
+          if old_provenance in reference:
+              reference = reference.replace(old_provenance, new_provenance, 1)
+
+          old_promotion_call = '''        decision = validate_promotion(
+              revision=revision,
+              state=state,
+              request=request,
+              permission=permission,
+          )
+          '''
+          new_promotion_call = '''        decision = validate_promotion(
+              revision=revision,
+              state=state,
+              request=request,
+              permission=permission,
+              actor_principal_ref=actor.principal_id,
+              evidence_refs_resolved=set(request.evidence_refs) <= self._resolved_evidence,
+              benchmark_refs_resolved=(
+                  set(request.benchmark_or_evaluator_refs) <= self._resolved_evaluators
+              ),
+              rollback_ref_resolved=(
+                  request.rollback_or_disable_ref in self._resolved_rollback_refs
+              ),
+          )
+          '''
+          old_promotion_call = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_promotion_call.splitlines()
+          )
+          new_promotion_call = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_promotion_call.splitlines()
+          )
+          if "benchmark_refs_resolved" not in reference:
+              reference = replace_once(
+                  reference,
+                  old_promotion_call,
+                  new_promotion_call,
+                  "reference promotion resolution",
+              )
+
+          old_acl = '''        self._acl.setdefault(entry.namespace.canonical, []).append(entry)
+              return MutationResult(
+                  decision=Decision.ACCEPTED,
+                  audit_event_ref=(
+                      "acl:"
+                      + canonical_sha256({"entry": entry, "correlation": correlation_id})
+                  ),
+              )
+          '''
+          new_acl = '''        subject_matches_actor = (
+              entry.subject_type is AclSubjectType.PRINCIPAL
+              and entry.subject_id == actor.principal_id
+          ) or (
+              entry.subject_type is AclSubjectType.GROUP
+              and entry.subject_id in actor.group_ids
+          ) or (
+              entry.subject_type is AclSubjectType.ROLE
+              and entry.subject_id in actor.role_ids
+          )
+              if entry.effect is AclEffect.ALLOW and subject_matches_actor:
+                  return MutationResult(
+                      decision=Decision.REJECTED,
+                      error_code=ErrorCode.ACL_DENIED,
+                  )
+              self._acl.setdefault(entry.namespace.canonical, []).append(entry)
+              audit_ref = self._record_namespace_audit(
+                  event_type="ACL_CHANGED",
+                  entry=entry,
+                  actor=actor,
+                  reason_code="ACL_RULE_APPENDED",
+                  policy_decision_ref="policy/m1a/acl",
+                  correlation_id=correlation_id,
+              )
+              return MutationResult(
+                  decision=Decision.ACCEPTED,
+                  audit_event_ref=audit_ref,
+              )
+          '''
+          old_acl = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in old_acl.splitlines()
+          )
+          new_acl = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in new_acl.splitlines()
+          )
+          if 'event_type="ACL_CHANGED"' not in reference:
+              reference = replace_once(reference, old_acl, new_acl, "ACL audit and self-grant")
+
+          if "def _record_namespace_audit(" not in reference:
+              helper = '''    def _record_namespace_audit(
+              self,
+              *,
+              event_type: str,
+              entry: AclEntry,
+              actor: PrincipalContext,
+              reason_code: str,
+              policy_decision_ref: str,
+              correlation_id: str,
+          ) -> str:
+              occurred_at = datetime.now(UTC)
+              previous = self._audits[-1].event_hash if self._audits else None
+              seed = {
+                  "type": event_type,
+                  "namespace": entry.namespace.canonical,
+                  "rule": entry.rule_id,
+                  "actor": actor.principal_id,
+                  "occurred_at": occurred_at,
+                  "correlation_id": correlation_id,
+              }
+              event_id = f"audit_{canonical_sha256(seed)}"
+              payload = {
+                  "event_id": event_id,
+                  "event_type": event_type,
+                  "memory_id": f"namespace:{entry.namespace.namespace_hash}",
+                  "revision_id": f"acl:{entry.rule_id}",
+                  "namespace": entry.namespace,
+                  "actor_principal_ref": actor.principal_id,
+                  "occurred_at": occurred_at,
+                  "reason_code": reason_code,
+                  "policy_decision_ref": policy_decision_ref,
+                  "previous_event_hash": previous,
+              }
+              event = AuditEvent(**payload, event_hash=canonical_sha256(payload))
+              self._audits.append(event)
+              return event.event_id
+
+          '''
+              helper = "\n".join(
+                  line[10:] if line.startswith("          ") else line
+                  for line in helper.splitlines()
+              )
+              marker = "    def _record_audit(\n"
+              reference = replace_once(reference, marker, helper + marker, "namespace audit helper")
+
+          if "with self._lock:" not in reference:
+              tree = ast.parse(reference)
+              cls = next(
+                  node
+                  for node in tree.body
+                  if isinstance(node, ast.ClassDef)
+                  and node.name == "DeterministicMemoryReference"
+              )
+              methods = [
+                  node
+                  for node in cls.body
+                  if isinstance(node, ast.FunctionDef)
+                  and node.name != "__init__"
+                  and not node.name.startswith("_")
+              ]
+              lines = reference.splitlines(keepends=True)
+              for node in sorted(methods, key=lambda item: item.body[0].lineno, reverse=True):
+                  start_line = node.body[0].lineno - 1
+                  end_line = node.end_lineno
+                  body = lines[start_line:end_line]
+                  lines[start_line:end_line] = [
+                      "    " + line if line.strip() else line for line in body
+                  ]
+                  lines.insert(start_line, "        with self._lock:\n")
+              reference = "".join(lines)
+          write("src/test_workflow/memory_contracts/reference.py", reference)
+
+          fixture = read("tests/memory_contract_fixtures.py")
+          if "resolved_evaluators" not in fixture:
+              fixture = replace_once(
+                  fixture,
+                  "        resolved_evidence=(\"evidence/EV-1\",),\n"
+                  "        initial_acl=make_owner_acl(namespace),\n",
+                  "        resolved_evidence=(\"evidence/EV-1\",),\n"
+                  "        resolved_evaluators=(\"benchmark/M1.0\",),\n"
+                  "        resolved_rollback_refs=(\"rollback/promotion-1\",),\n"
+                  "        initial_acl=make_owner_acl(namespace),\n",
+                  "fixture promotion resolvers",
+              )
+          write("tests/memory_contract_fixtures.py", fixture)
+
+          proof = read("src/test_workflow/memory_contracts/proof.py")
+          if "CompatibilityContext" not in proof.split("from .models import (", 1)[1].split(")", 1)[0]:
+              proof = replace_once(
+                  proof,
+                  "    AclSubjectType,\n",
+                  "    AclSubjectType,\n"
+                  "    CompatibilityContext,\n"
+                  "    CompatibilityDescriptor,\n",
+                  "proof compatibility imports",
+              )
+          if "compatibility_matches" not in proof.split("from .policy import", 1)[1].split("\n", 1)[0]:
+              proof = replace_once(
+                  proof,
+                  "from .policy import evaluate_permission, validate_promotion, validate_transition\n",
+                  "from .policy import (\n"
+                  "    compatibility_matches,\n"
+                  "    evaluate_permission,\n"
+                  "    validate_promotion,\n"
+                  "    validate_transition,\n"
+                  ")\n",
+                  "proof policy imports",
+              )
+          if "_campaign_scope_denied," not in proof:
+              proof = replace_once(
+                  proof,
+                  "        _embedded_code_rejected,\n",
+                  "        _embedded_code_rejected,\n"
+                  "        _campaign_scope_denied,\n"
+                  "        _compatibility_range_rejected,\n"
+                  "        _acl_self_grant_denied,\n"
+                  "        _unresolved_promotion_refs_denied,\n",
+                  "proof scenario registry",
+              )
+              extra = '''
+
+          def _campaign_scope_denied() -> ScenarioResult:
+              _, owner, _, _ = _fixture()
+              namespace = MemoryNamespace(
+                  organization_id="org-1",
+                  project_id="project-1",
+                  scope_kind=NamespaceScopeKind.CAMPAIGN,
+                  scope_id="campaign-1",
+              )
+              decision = evaluate_permission(
+                  actor=owner,
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              )
+              passed = decision.error_code is ErrorCode.NAMESPACE_DENIED
+              return _result(
+                  11,
+                  "Campaign requires explicit membership",
+                  passed,
+                  decision.error_code.value if decision.error_code else decision.decision.value,
+                  ErrorCode.NAMESPACE_DENIED.value,
+                  error_code=decision.error_code,
+              )
+
+
+          def _compatibility_range_rejected() -> ScenarioResult:
+              descriptor = CompatibilityDescriptor(
+                  project_architecture_families=("python-web",),
+                  code_version_range=">=1.2.0,<2.0.0",
+                  schema_version_range="^1.0.0",
+                  capability_version_range="~3.4.0",
+              )
+              compatible = CompatibilityContext(
+                  project_architecture_family="python-web",
+                  code_version="1.9.9",
+                  schema_version="1.5.0",
+                  capability_version="3.4.8",
+                  model_profile="deterministic",
+                  environment="test",
+              )
+              passed = compatibility_matches(descriptor, compatible) and not compatibility_matches(
+                  descriptor,
+                  compatible.model_copy(update={"code_version": "2.0.0"}),
+              )
+              return _result(12, "Compatibility version ranges", passed, str(passed), "True")
+
+
+          def _acl_self_grant_denied() -> ScenarioResult:
+              namespace, owner, _, acl = _fixture()
+              store = _store(acl)
+              entry = AclEntry(
+                  rule_id="self-grant",
+                  effect=AclEffect.ALLOW,
+                  subject_type=AclSubjectType.PRINCIPAL,
+                  subject_id=owner.principal_id,
+                  operations=(AccessOperation.MANAGE_ACL,),
+                  namespace=namespace,
+              )
+              result = store.append_acl_event(
+                  actor=owner,
+                  entry=entry,
+                  correlation_id="self-grant",
+              )
+              passed = result.error_code is ErrorCode.ACL_DENIED and entry not in store.list_effective_acl(
+                  namespace=namespace
+              )
+              return _result(
+                  13,
+                  "ACL self-grant denied",
+                  passed,
+                  result.error_code.value if result.error_code else result.decision.value,
+                  ErrorCode.ACL_DENIED.value,
+                  error_code=result.error_code,
+              )
+
+
+          def _unresolved_promotion_refs_denied() -> ScenarioResult:
+              namespace, owner, revision, acl = _fixture()
+              store = DeterministicMemoryReference(
+                  resolved_sources={
+                      "requirement/REQ-1@3": canonical_sha256(
+                          {"source": "approved requirement"}
+                      )
+                  },
+                  resolved_evidence=("evidence/EV-1",),
+                  initial_acl=acl,
+              )
+              store.append_revision(
+                  actor=owner,
+                  revision=revision,
+                  expected_head_revision_id=None,
+                  correlation_id="create-unresolved-promotion",
+              )
+              event = StateEvent.create(
+                  memory_id=revision.memory_id,
+                  revision_id=revision.revision_id,
+                  from_state=LifecycleState.CANDIDATE,
+                  to_state=LifecycleState.VERIFIED,
+                  reason_code="EVIDENCE_VERIFIED",
+                  actor_principal_ref=owner.principal_id,
+                  policy_decision_ref="policy/verify",
+                  occurred_at=FIXED_NOW,
+                  nonce="verify-unresolved-promotion",
+              )
+              store.append_state_event(actor=owner, event=event, correlation_id="verify")
+              result = store.promote(
+                  actor=owner,
+                  request=_promotion_request(owner, revision),
+                  correlation_id="unresolved-promotion",
+              )
+              passed = result.error_code is ErrorCode.PROMOTION_DENIED
+              return _result(
+                  14,
+                  "Unresolved promotion references denied",
+                  passed,
+                  result.error_code.value if result.error_code else result.decision.value,
+                  ErrorCode.PROMOTION_DENIED.value,
+                  error_code=result.error_code,
+              )
+          '''
+              extra = "\n".join(
+                  line[10:] if line.startswith("          ") else line
+                  for line in extra.splitlines()
+              )
+              proof = proof.replace("\n\ndef _fixture():", extra + "\n\ndef _fixture():", 1)
+
+          proof = proof.replace(
+              "unauthorized_namespace_actions=0 if results[1].passed and results[2].passed else 1,",
+              "unauthorized_namespace_actions=(\n"
+              "            0 if all(results[index].passed for index in (1, 2, 10, 12)) else 1\n"
+              "        ),",
+          )
+          proof = proof.replace(
+              "unauthorized_promotion_actions=0 if results[4].passed else 1,",
+              "unauthorized_promotion_actions=(\n"
+              "            0 if results[4].passed and results[13].passed else 1\n"
+              "        ),",
+          )
+          if "resolved_evaluators=(\"benchmark/M1.0\",)" not in proof:
+              proof = replace_once(
+                  proof,
+                  "        resolved_evidence=(\"evidence/EV-1\",),\n"
+                  "        initial_acl=acl,\n",
+                  "        resolved_evidence=(\"evidence/EV-1\",),\n"
+                  "        resolved_evaluators=(\"benchmark/M1.0\",),\n"
+                  "        resolved_rollback_refs=(\"rollback/promotion-proof\",),\n"
+                  "        initial_acl=acl,\n",
+                  "proof promotion resolvers",
+              )
+          write("src/test_workflow/memory_contracts/proof.py", proof)
+
+          policy_tests = read("tests/unit/test_memory_contract_policy.py")
+          if "    compatibility_matches,\n" not in policy_tests:
+              policy_tests = replace_once(
+                  policy_tests,
+                  "    evaluate_effective_read,\n",
+                  "    compatibility_matches,\n    evaluate_effective_read,\n",
+                  "policy test compatibility import",
+              )
+          if "test_campaign_namespace_requires_explicit_membership" not in policy_tests:
+              policy_tests += '''
+
+          def test_campaign_namespace_requires_explicit_membership() -> None:
+              namespace = MemoryNamespace(
+                  organization_id="org-1",
+                  project_id="project-1",
+                  scope_kind=NamespaceScopeKind.CAMPAIGN,
+                  scope_id="campaign-1",
+              )
+              owner = make_owner()
+              denied = evaluate_permission(
+                  actor=owner,
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              )
+              allowed = evaluate_permission(
+                  actor=owner.model_copy(update={"campaign_scope_ids": ("campaign-1",)}),
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              )
+
+              assert denied.error_code is ErrorCode.NAMESPACE_DENIED
+              assert allowed.decision is Decision.ALLOW
+
+
+          def test_delegation_scope_and_expiry_fail_closed() -> None:
+              namespace = make_namespace()
+              base = make_owner()
+              delegated = base.model_copy(
+                  update={
+                      "delegator_ref": "user-delegator",
+                      "delegation_scope": (namespace.canonical,),
+                      "delegation_expires_at": FIXED_NOW + timedelta(days=3650),
+                      "audit_event_ref": "audit/delegation",
+                  }
+              )
+              wrong_scope = delegated.model_copy(
+                  update={"delegation_scope": ("org/org-1/project/project-2/scope/PROJECT/project-2",)}
+              )
+              expired = delegated.model_copy(
+                  update={"delegation_expires_at": FIXED_NOW - timedelta(seconds=1)}
+              )
+
+              assert evaluate_permission(
+                  actor=delegated,
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              ).decision is Decision.ALLOW
+              assert evaluate_permission(
+                  actor=wrong_scope,
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              ).error_code is ErrorCode.NAMESPACE_DENIED
+              assert evaluate_permission(
+                  actor=expired,
+                  namespace=namespace,
+                  operation=AccessOperation.READ_CONTENT,
+              ).error_code is ErrorCode.NAMESPACE_DENIED
+
+
+          def test_compatibility_version_ranges_are_enforced() -> None:
+              descriptor = CompatibilityDescriptor(
+                  project_architecture_families=("python-web",),
+                  code_version_range=">=1.2.0,<2.0.0",
+                  schema_version_range="^1.0.0",
+                  capability_version_range="~3.4.0",
+              )
+              context = CompatibilityContext(
+                  project_architecture_family="python-web",
+                  code_version="1.9.9",
+                  schema_version="1.4.0",
+                  capability_version="3.4.9",
+                  model_profile="deterministic",
+                  environment="test",
+              )
+
+              assert compatibility_matches(descriptor, context)
+              assert not compatibility_matches(
+                  descriptor, context.model_copy(update={"code_version": "2.0.0"})
+              )
+              assert not compatibility_matches(
+                  descriptor, context.model_copy(update={"schema_version": "2.0.0"})
+              )
+              assert not compatibility_matches(
+                  descriptor, context.model_copy(update={"capability_version": "3.5.0"})
+              )
+          '''
+              policy_tests = "\n".join(
+                  line[10:] if line.startswith("          ") else line
+                  for line in policy_tests.splitlines()
+              ) + "\n"
+          write("tests/unit/test_memory_contract_policy.py", policy_tests)
+
+          integration = read("tests/integration/test_memory_contract_reference.py")
+          integration = integration.replace(
+              "    assert replayed.decision is Decision.IDEMPOTENT_REPLAY\n",
+              "    assert replayed == created\n"
+              "    assert replayed.decision is Decision.ACCEPTED\n",
+          )
+          if "test_source_hash_mismatch_is_integrity_failure" not in integration:
+              integration += '''
+
+          def test_source_hash_mismatch_is_integrity_failure() -> None:
+              revision = make_semantic_revision()
+              owner = make_owner()
+              store = DeterministicMemoryReference(
+                  resolved_sources={"requirement/REQ-1@3": "0" * 64},
+                  resolved_evidence=("evidence/EV-1",),
+                  initial_acl=make_owner_acl(),
+              )
+
+              result = store.append_revision(
+                  actor=owner,
+                  revision=revision,
+                  expected_head_revision_id=None,
+                  correlation_id="hash-mismatch",
+              )
+
+              assert result.decision is Decision.REJECTED
+              assert result.error_code is ErrorCode.INTEGRITY_FAILED
+              assert store.list_audit_events() == ()
+
+
+          def test_acl_self_grant_is_rejected_and_authorized_change_is_audited() -> None:
+              namespace = make_namespace()
+              owner = make_owner()
+              store = make_store()
+              self_grant = AclEntry(
+                  rule_id="self-grant-read",
+                  effect=AclEffect.ALLOW,
+                  subject_type=AclSubjectType.PRINCIPAL,
+                  subject_id=owner.principal_id,
+                  operations=(AccessOperation.READ_CONTENT,),
+                  namespace=namespace,
+              )
+              other_grant = self_grant.model_copy(
+                  update={"rule_id": "grant-reader", "subject_id": "agent-reader"}
+              )
+
+              denied = store.append_acl_event(
+                  actor=owner, entry=self_grant, correlation_id="self-grant"
+              )
+              accepted = store.append_acl_event(
+                  actor=owner, entry=other_grant, correlation_id="grant-reader"
+              )
+
+              assert denied.error_code is ErrorCode.ACL_DENIED
+              assert accepted.decision is Decision.ACCEPTED
+              assert accepted.audit_event_ref is not None
+              assert store.list_audit_events()[-1].event_type == "ACL_CHANGED"
+              assert store.verify_event_chain()
+
+
+          def test_promotion_requires_resolvable_evaluator_and_rollback_refs() -> None:
+              revision = make_semantic_revision()
+              owner = make_owner()
+              store = DeterministicMemoryReference(
+                  resolved_sources={"requirement/REQ-1@3": make_source_hash()},
+                  resolved_evidence=("evidence/EV-1",),
+                  initial_acl=make_owner_acl(),
+              )
+              store.append_revision(
+                  actor=owner,
+                  revision=revision,
+                  expected_head_revision_id=None,
+                  correlation_id="create",
+              )
+              verify_event = StateEvent.create(
+                  memory_id=revision.memory_id,
+                  revision_id=revision.revision_id,
+                  from_state=LifecycleState.CANDIDATE,
+                  to_state=LifecycleState.VERIFIED,
+                  reason_code="EVIDENCE_VERIFIED",
+                  actor_principal_ref=owner.principal_id,
+                  policy_decision_ref="policy/verify",
+                  occurred_at=FIXED_NOW,
+                  nonce="verify-unresolved",
+              )
+              store.append_state_event(
+                  actor=owner, event=verify_event, correlation_id="verify"
+              )
+
+              result = store.promote(
+                  actor=owner,
+                  request=PromotionRequest(
+                      memory_id=revision.memory_id,
+                      revision_id=revision.revision_id,
+                      declared_promotion_scope=revision.namespace,
+                      evidence_refs=("evidence/EV-1",),
+                      benchmark_or_evaluator_refs=("benchmark/M1.0",),
+                      promoter_principal_ref=owner.principal_id,
+                      policy_decision_ref="policy/promote",
+                      compatibility=None,
+                      effective_from=FIXED_NOW + timedelta(seconds=1),
+                      rollback_or_disable_ref="rollback/promotion-1",
+                  ),
+                  correlation_id="promote-unresolved",
+              )
+
+              assert result.decision is Decision.REJECTED
+              assert result.error_code is ErrorCode.PROMOTION_DENIED
+          '''
+              integration = "\n".join(
+                  line[10:] if line.startswith("          ") else line
+                  for line in integration.splitlines()
+              ) + "\n"
+          write("tests/integration/test_memory_contract_reference.py", integration)
+
+          docs = read("docs/m1a-memory-runtime-contracts.md").replace(
+              "十项确定性 Runtime Contract Proof", "十四项确定性 Runtime Contract Proof"
+          )
+          write("docs/m1a-memory-runtime-contracts.md", docs)
+          design = read("docs/testing/m1a-memory-runtime-contracts-test-design.md").replace(
+              "10 项", "14 项"
+          ).replace("十项", "十四项")
+          write("docs/testing/m1a-memory-runtime-contracts-test-design.md", design)
+
+          hardening = ROOT / ".github/workflows/m1a-runtime-hardening.yml"
+          hardening.unlink()
+
+          for path in (
+              "src/test_workflow/memory_contracts/compatibility.py",
+              "src/test_workflow/memory_contracts/models.py",
+              "src/test_workflow/memory_contracts/policy.py",
+              "src/test_workflow/memory_contracts/reference.py",
+              "src/test_workflow/memory_contracts/proof.py",
+              "tests/memory_contract_fixtures.py",
+              "tests/unit/test_memory_contract_policy.py",
+              "tests/integration/test_memory_contract_reference.py",
+          ):
+              ast.parse(read(path))
+          PY
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify hardened contracts before publishing branch commit
+        run: |
+          uv sync --extra test
+          uv run ruff check \
+            src/test_workflow/memory_contracts \
+            tests/memory_contract_fixtures.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/integration/test_memory_contract_reference.py
+          uv run pytest \
+            tests/unit/test_memory_contract_models.py \
+            tests/unit/test_memory_contract_policy.py \
+            tests/unit/test_memory_contract_ports.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_proof.py
+          rm -rf test-results/m1a-hardening-proof
+          uv run python -m test_workflow.memory_contracts.proof run \
+            --output-dir test-results/m1a-hardening-proof \
+            --code-sha "${GITHUB_SHA}"
+          uv run python -m test_workflow.memory_contracts.proof replay \
+            --output-dir test-results/m1a-hardening-proof
+
+      - name: Commit hardened implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(m1a): harden namespace compatibility and authority contracts"
+          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
