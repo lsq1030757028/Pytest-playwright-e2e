@@ -1,3 +1,4 @@
+from . import reference as _reference_module
 from .canonical import CanonicalizationError, canonical_json_bytes, canonical_sha256
 from .models import (
     AccessOperation,
@@ -53,7 +54,11 @@ from .ports import (
     MemoryRevisionPort,
     MemoryStatePort,
 )
-from .reference import DeterministicMemoryReference
+from .reference_hardened import DeterministicMemoryReference
+
+# Preserve the historical submodule import path while routing all package and
+# proof consumers through the hardened adapter.
+_reference_module.DeterministicMemoryReference = DeterministicMemoryReference
 
 __all__ = [
     "ALLOWED_TRANSITIONS",
