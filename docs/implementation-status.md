@@ -2,7 +2,7 @@
 
 > 文档角色：项目状态单一事实源  
 > 最近更新：2026-08-05  
-> 当前主干基线：`11aabf0351376830a817b5b7bf5cdecdbe8560d2`  
+> M0 基线提交：`11aabf0351376830a817b5b7bf5cdecdbe8560d2`  
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
 > 演进路线：`docs/agent-os-evolution-roadmap.md` v3.0  
