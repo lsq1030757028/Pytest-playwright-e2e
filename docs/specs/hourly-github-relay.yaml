@@ -8,24 +8,32 @@ assurance:
   dev: DEV3
   ux: UX0
   human_uat: OWNER_OPERATIONAL_ACCEPTANCE
+
+effective_protocol:
+  base_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+  addenda:
+    - ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1
+    - ADDENDUM-HOURLY-GITHUB-RELAY-CONTENTION@0.1.2
+    - ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1
+    - ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0
+  precedence:
+    more_specific_or_newer_addendum_controls: true
+    markdown_yaml_prompt_lease_contradiction: REPLAN_REQUIRED
+    silent_model_preference_resolution: forbidden
+
 scope:
   schedule:
     timezone: Asia/Shanghai
     cadence: HOURLY
-    start_alignment: NEXT_WHOLE_HOUR
+    pilot_invocation_cap: 8
+    intended_first: "2026-08-06T02:00:00+08:00"
+    intended_last: "2026-08-06T09:00:00+08:00"
   execution:
-    surface:
-      allowed:
-        - CHAT
-        - CODEX
-        - UNKNOWN
-      attestation: SELF_REPORTED
-    model_visibility:
-      unknown_value: UNKNOWN
-      guessing_forbidden: true
-    reasoning_visibility:
-      unknown_value: UNKNOWN
-      guessing_forbidden: true
+    surface_allowed: [CHAT, CODEX, UNKNOWN]
+    attestation: SELF_REPORTED
+    model_unknown_value: UNKNOWN
+    reasoning_unknown_value: UNKNOWN
+    guessing_forbidden: true
   github_writes:
     allowed:
       - READ_REPOSITORY_CONTEXT
@@ -33,7 +41,7 @@ scope:
       - UPDATE_EXISTING_AUTHORIZED_BRANCH
       - CREATE_COMMIT_WITH_RUN_TOKEN
       - CREATE_BRANCH_OR_DRAFT_PR_WHEN_AUTHORITY_REQUIRES
-      - INSPECT_OR_RERUN_CI_WHEN_TOOL_PERMITS
+      - INSPECT_OR_RERUN_CI_WHEN_PRECONDITIONS_JUSTIFY
     forbidden:
       - DIRECT_MAIN_WRITE
       - MERGE_PR
@@ -45,17 +53,23 @@ scope:
       - IRREVERSIBLE_EXTERNAL_WRITE
       - UNBOUNDED_RESOURCE_CREATION
       - ORACLE_POLICY_PERMISSION_CHANGE
+
 context_model:
-  levels:
-    - PROJECT
+  hierarchy:
+    - PROGRAM
     - CAMPAIGN
+    - WORK_ITEM
     - RUN
+  run_is_roadmap_step: false
+  run_is_work_item_completion_promise: false
   project_sources:
     - AGENTS.md
     - docs/github-development-ssot.md
     - docs/github-development-ssot.yaml
     - docs/user-communication-ssot.md
     - docs/user-communication-ssot.yaml
+    - docs/ux-assurance-ssot.md
+    - docs/ux-assurance-ssot.yaml
     - docs/specs/autonomous-execution-mandate.yaml
     - docs/implementation-status.md
     - docs/agent-os-evolution-roadmap.md
@@ -75,20 +89,34 @@ context_model:
     - decisions
     - rejected_alternatives
     - failed_attempts
-    - do_not_repeat_until
+    - retry_preconditions
     - next_valid_actions
     - completion_criteria
     - human_uat_truth
+  work_item_required_fields:
+    - id
+    - objective
+    - status
+    - completion_criteria
+    - current_checkpoint
+    - completed_evidence
+    - unresolved_questions
+    - candidate_options
+    - rejected_options
+    - next_valid_action
+    - owner_authority_required
+    - runs
   run_required_fields:
     - run_token
-    - scheduled_at
     - started_at
     - ended_at
     - surface
     - model
     - reasoning_mode
     - attestation
+    - program
     - campaign
+    - work_item
     - authority_snapshot
     - lease
     - actions
@@ -98,35 +126,82 @@ context_model:
     - ci
     - final_status
     - next_action
+
 run_token:
   format: relay-<campaign-id>-<monotonic-sequence>-<UTC-start-time>
   commit_marker: "[RELAY:<run-token>]"
   comment_marker: "<!-- scheduled-relay:<run-token> -->"
+
 lease:
-  required_before_development_write: true
-  mechanism: GITHUB_COMPARE_AND_SWAP
-  duration_minutes: 55
+  control_branch: ops/hourly-github-relay-control
+  path: .agent/relay/leases/hourly-github-relay.json
+  required_before_every_other_mutation: true
+  mechanism: GITHUB_CONTENTS_BLOB_SHA_COMPARE_AND_SWAP
+  duration_minutes: 90
+  sequence_incremented_in_acquisition_cas: true
+  holder_verification_after_acquire: true
   heartbeat_after_meaningful_transition: true
-  active_lease_behavior: BUSY_NO_DEVELOPMENT_WRITE
-  stale_lease_recovery_requires:
+  heartbeat_before_long_ci_observation: true
+  heartbeat_extends_minutes: 90
+  active_foreign_behavior: BUSY_NO_DEVELOPMENT_WRITE
+  stale_recovery_requires:
     - VERIFY_PREVIOUS_RUN_RECORD
     - VERIFY_BRANCH
     - VERIFY_PR
     - VERIFY_HEAD_SHA
-  pilot_fallback_until_files_exist: UNIQUE_START_MARKER_BEST_EFFORT_LOCK
+    - VERIFY_ACTIVITY_AFTER_HEARTBEAT
+    - VERIFY_ACTIVE_CI
+  force_update: forbidden
+
+fencing:
+  required_before_every_mutation: true
+  required_conditions:
+    - STATUS_ACTIVE
+    - HOLDER_TOKEN_MATCHES_CURRENT_RUN
+    - NOW_BEFORE_EXPIRES_AT
+    - TARGET_BRANCH_MATCHES
+  lost_lease_cause: LOST_LEASE
+  lost_lease_behavior: STOP_ALL_FURTHER_DEVELOPMENT_MUTATION
+
+branch_head_cas:
+  verify_before_every_development_commit: true
+  expected_field: target_head_sha
+  update_lease_after_self_commit: true
+  unexpected_movement_status: REPLAN_REQUIRED
+  force_push_reset_overwrite: forbidden
+
+contention:
+  busy_is_control_decision_not_live_process_proof: true
+  activity_window_minutes: 15
+  active_confirmed_requires_any:
+    - RECENT_HEARTBEAT
+    - RECENT_HOLDER_COMMENT_UPDATE
+    - TOKEN_ATTRIBUTABLE_BRANCH_OR_PR_UPDATE
+    - QUEUED_OR_RUNNING_CI_FOR_HOLDER_COMMIT
+  no_recent_evidence_class: LEASE_HELD_UNCONFIRMED
+  conflict_recovery:
+    reread_after_conflict: exactly_once
+    retry_when_reread_idle: exactly_once
+    retry_loop: forbidden
+  invalid_lease_cause: LEASE_STATE_INVALID
+  invalid_lease_status: [REPLAN_REQUIRED, BLOCKED]
+
 lifecycle:
   states:
     - WAKE
     - ATTEST_RUNTIME
     - LOCATE_AUTHORITY
+    - EVALUATE_TERMINATION
     - ACQUIRE_LEASE
+    - VERIFY_HOLDER
     - WRITE_START
     - HYDRATE_CONTEXT
     - SELECT_INCREMENT
     - WORKING
     - VERIFYING
-    - WRITE_FINAL
-    - RELEASE_LEASE
+    - PRE_FINAL
+    - RELEASE_CAS
+    - RELEASE_ATTESTED_FINAL
     - CHAT_FINAL
   final_statuses:
     - SUCCESS
@@ -138,77 +213,89 @@ lifecycle:
     - REPLAN_REQUIRED
     - MODEL_UNVERIFIED
     - OUT_OF_MANDATE
+    - RELEASE_ATTESTATION_INCOMPLETE
+    - PILOT_ACCEPTED_STOP_REQUESTED
+    - PILOT_ABORTED
+    - PROGRAM_COMPLETE
+
 github_record:
   single_comment_per_run: true
   preferred_target: AUTHORITATIVE_PR
   fallback_target: AUTHORITATIVE_ISSUE
   stages:
     START:
-      timing: BEFORE_CODE_OR_TEST_MUTATION
+      timing: AFTER_LEASE_ACQUIRE_BEFORE_CODE_TEST_OR_CI_MUTATION
       required_fields:
         - status
         - run_token
-        - scheduled_at
         - started_at
-        - surface
-        - model
-        - reasoning_mode
+        - runtime_attestation
+        - program
         - campaign
+        - work_item
         - issue
         - pr
         - branch
         - head_sha
         - lease_result
         - intended_increment
-    WORKING:
+    WORKING_VERIFYING:
       update_same_comment: true
       required_fields:
         - action
         - rationale
+        - checkpoint
         - files
         - tests
         - commits
         - ci
         - heartbeat_at
-    FINAL:
+    PRE_FINAL:
       update_same_comment: true
-      required_fields:
-        - final_status
-        - ended_at
-        - final_runtime_attestation
-        - actions
-        - files
-        - commits
-        - tests
-        - ci
-        - blocker_or_error
-        - next_valid_action
-        - lease_release_truth
+      normal_fencing_required: true
+      lease_release_field: PENDING
+      release_success_claim: forbidden
+    RELEASE_ATTESTED_FINAL:
+      update_same_comment: true
+      post_release_audit_only: true
+      allowed_changes:
+        - LEASE_RELEASE_PENDING_TO_CONFIRMED
+        - RELEASE_CONTROL_COMMIT_SHA
+        - POST_RELEASE_ATTESTATION_USED
+      business_or_development_field_change: forbidden
+      retry_on_failure: forbidden
   start_write_failure:
     behavior: STOP_ALL_FURTHER_GITHUB_WRITES_AND_REPORT_ACTUAL_ERROR_IN_CHAT
-chat_final:
-  required_every_run: true
-  silence_forbidden: true
-  first_line: "Run Token：<token>；状态：<status>"
-  required_fields:
-    - business_progress
-    - lifecycle_status
-    - actual_work
-    - files_or_none
-    - commits_or_none
-    - issue_pr_branch
-    - ci_status
-    - blocker_or_actual_error
-    - next_valid_action
-    - github_record_location
-    - github_comment_id_when_available
-    - surface
-    - model
-    - reasoning_mode
+
+finalization:
+  sequence:
+    - PRE_FINAL_WHILE_ACTIVE
+    - RELEASE_CAS_TO_IDLE
+    - RELEASE_ATTESTED_FINAL
+    - CHAT_FINAL
+  release_preserves:
+    - LAST_RUN_TOKEN_CURRENT
+    - LAST_FINAL_STATUS
+    - LAST_ENDED_AT
+    - LAST_SUMMARY
+    - LAST_RELEASE_ERROR
+  post_release_attestation_requires:
+    - STATUS_IDLE_OR_LATER_RUN_ACTIVE
+    - LAST_RUN_TOKEN_MATCHES_CURRENT_RUN
+    - SEQUENCE_NOT_LESS_THAN_CURRENT_RUN
+    - LAST_RELEASE_ERROR_NULL
+  incomplete_status: RELEASE_ATTESTATION_INCOMPLETE
+  incomplete_counts_for_pilot_acceptance: false
+
 increment_policy:
   principle: GLOBAL_UNDERSTANDING_LOCAL_EXECUTION
-  microtask_only_forbidden: true
   natural_checkpoint_required: true
+  recommended_active_work_minutes: 45
+  reserve_for:
+    - VERIFICATION
+    - GITHUB_FINAL
+    - HANDOFF
+    - LEASE_RELEASE
   priority:
     - SAFETY_OR_AUTHORITY_CONFLICT
     - REAL_CI_FAILURE
@@ -218,21 +305,74 @@ increment_policy:
     - CLOSURE_AND_RELEASE_VERIFICATION
     - NEXT_APPROVED_SPEC_STEP
   infrastructure_failure_behavior: BLOCKED_OR_WAITING_CI_NO_CODE_CHURN
-reorientation:
-  trigger_any:
-    - FIVE_RUNS_SINCE_LAST_REORIENTATION
-    - CAMPAIGN_PHASE_CHANGED
-    - AUTHORITATIVE_PR_MERGED_CLOSED_OR_SUPERSEDED
-    - HANDOFF_CONFLICTS_WITH_GITHUB_TRUTH
-    - MAJOR_ARCHITECTURE_OR_REQUIREMENT_CHANGE
-    - REPEATED_FAILED_ATTEMPTS
+  same_failed_action_requires_changed_precondition: true
+
+stagnation:
+  three_no_progress_lease_runs: REORIENT
+  six_no_progress_lease_runs: REPLAN_REQUIRED
+
+termination:
+  evaluation_order:
+    - OWNER_STOP_OR_REVOCATION
+    - PILOT_ABORTED
+    - PILOT_ACCEPTED
+    - PROGRAM_COMPLETE
+    - ACTIVE_WORK_ITEM_OR_CAMPAIGN
+    - BLOCKED_WAITING_NO_ACTION
+  pilot:
+    hard_invocation_cap: 8
+    successful_consecutive_lease_runs_required: 3
+    accepted_status: PILOT_ACCEPTED_STOP_REQUESTED
+    accepted_later_mutations: forbidden
+    abort_status: PILOT_ABORTED
+  program_complete_requires:
+    - M1_GATE_CLOSED
+    - M2_GATE_CLOSED
+    - M3_GATE_CLOSED
+    - GLOBAL_SAFETY_GATE_CLOSED
+    - STAGE_DELIVERY_TEST_AGENT_RUNTIME_BETA
+    - RELATED_GOALS_PRS_MAIN_RELEASE_LEDGER_CLEANUP_CLOSED
+    - REQUIRED_HUMAN_UAT_CLOSED
+  auto_start_m4_m5_m6: false
+
+chat_final:
+  required_every_run: true
+  silence_forbidden: true
+  first_line: "Run Token：<token or UNACQUIRED>；状态：<status>"
+  required_fields:
+    - business_progress
+    - lifecycle_status
+    - campaign
+    - work_item
+    - checkpoint
+    - actual_work
+    - files_or_none
+    - commits_or_none
+    - issue_pr_branch
+    - ci_status
+    - blocker_or_actual_error
+    - next_valid_action
+    - github_record_location
+    - lease_release_truth
+    - surface
+    - model
+    - reasoning_mode
+  busy_additional_fields:
+    - CONTENTION_CLASS
+    - HOLDER_TOKEN
+    - HEARTBEAT
+    - EXPIRY
+    - ACTIVITY_EVIDENCE_OR_UNCONFIRMED
+  must_agree_with_github_final: true
+
 idempotency:
   search_marker_before_comment_create: true
   update_existing_comment_when_marker_exists: true
   duplicate_run_token_forbidden: true
-  verify_head_before_commit: true
-  force_update_forbidden: true
+  duplicate_run_comment_forbidden: true
   partial_failure_must_be_recorded: true
+  force_update_forbidden: true
+
 pilot:
   expected_initial_authority_hint:
     issue: 43
@@ -242,27 +382,33 @@ pilot:
   production_changes: false
   release_setting_changes: false
   chat_response_every_run: true
-  github_start_and_final_every_run: true
+  github_start_and_final_every_lease_run: true
+
 acceptance:
-  consecutive_hourly_runs: 3
+  consecutive_successful_lease_runs: 3
   criteria:
-    - UNIQUE_RUN_TOKENS
-    - START_AND_FINAL_ON_CORRECT_AUTHORITY
+    - UNIQUE_MONOTONIC_RUN_TOKENS
+    - CAS_ACQUIRE_HEARTBEAT_AND_RELEASE_SUCCESS
+    - FENCING_BEFORE_MUTATION
+    - START_AND_RELEASE_ATTESTED_FINAL_CORRECT_AUTHORITY
     - NO_DUPLICATE_COMMENTS
     - CHAT_FINAL_GENERATED_EVERY_RUN
     - NO_OVERLAPPING_DEVELOPMENT_OWNERSHIP
     - COMMITS_TRACE_TO_RUN_TOKENS
-    - CAMPAIGN_RESTORED_WITHOUT_PRIOR_CHAT_HISTORY
+    - CAMPAIGN_AND_WORK_ITEM_RESTORED_WITHOUT_PRIVATE_CHAT_DEPENDENCY
     - FAILED_GATES_NOT_BYPASSED
     - RUNTIME_FIELDS_TRUTHFUL_OR_UNKNOWN
-    - TASK_DISABLEMENT_STOPS_FUTURE_WRITES
+    - NO_UNRESOLVED_LEASE_LOST_OWNERSHIP_OR_AUDIT_INCONSISTENCY
+
 promotion_requires:
+  - SEPARATE_OWNER_AUTHORITY
   - SEPARATE_APPROVED_IMPLEMENTATION_PLAN
-  - DURABLE_LEASE_FILES
+  - DURABLE_CAMPAIGN_AND_WORK_ITEM_STATE
   - SCHEMAS_AND_VALIDATION
   - TESTS
   - OPERATIONAL_MONITORING
   - NO_AUTO_MERGE_UNLESS_SEPARATELY_AUTHORIZED
+
 rollback:
   - DISABLE_SCHEDULED_TASK
   - CLOSE_OR_REVERT_PILOT_GOVERNANCE_ASSETS
