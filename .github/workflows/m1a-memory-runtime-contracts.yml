@@ -126,83 +126,35 @@ jobs:
     env:
       TARGET_SHA: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
       IMPLEMENTATION_BRANCH: agent/m1a-memory-runtime-contracts
-      GOAL_ISSUE: "43"
-      IMPLEMENTATION_PR: "44"
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ops/m1a-runtime-closure-evidence
-          fetch-depth: 0
-
-      - name: Capture and verify authoritative main-delivery evidence
+      - name: Verify authoritative main delivery state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p docs/evidence
-          gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_SHA}&per_page=100" \
-            --jq '[.workflow_runs[] | {id,name,event,head_branch,head_sha,status,conclusion,run_number,created_at,updated_at,html_url}]' \
-            > /tmp/runs-pages.jsonl
-          jq -s 'add | unique_by(.id) | sort_by(.id)' /tmp/runs-pages.jsonl > /tmp/runs.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_SHA}&per_page=100" \
+            --jq '.workflow_runs | map({id,name,event,head_branch,head_sha,status,conclusion,run_number,created_at,updated_at,html_url}) | sort_by(.id)' \
+            | tee /tmp/m1a-main-runs.json
 
-          branch_present=false
+          echo '--- merged PR ---'
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/44" \
+            --jq '{number,state,merged,merged_at,merge_commit_sha,html_url}' \
+            | tee /tmp/m1a-pr.json
+
+          echo '--- goal issue ---'
+          gh api "repos/${GITHUB_REPOSITORY}/issues/43" \
+            --jq '{number,state,state_reason,html_url}'
+
+          echo '--- implementation branch ---'
           if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${IMPLEMENTATION_BRANCH}" >/dev/null 2>&1; then
-            branch_present=true
+            echo "implementation_branch_present=true"
+            exit 1
+          else
+            echo "implementation_branch_present=false"
           fi
 
-          issue_json=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${GOAL_ISSUE}")
-          pr_json=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${IMPLEMENTATION_PR}")
-          commit_json=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TARGET_SHA}")
-
-          jq -n \
-            --arg captured_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg target_sha "${TARGET_SHA}" \
-            --argjson runs "$(cat /tmp/runs.json)" \
-            --argjson branch_present "${branch_present}" \
-            --argjson issue "${issue_json}" \
-            --argjson pr "${pr_json}" \
-            --argjson commit "${commit_json}" \
-            '{
-              captured_at: $captured_at,
-              target_sha: $target_sha,
-              commit: {sha: $commit.sha, html_url: $commit.html_url, message: $commit.commit.message},
-              workflow_runs: $runs,
-              implementation_branch_present: $branch_present,
-              goal_issue: {number: $issue.number, state: $issue.state, state_reason: $issue.state_reason, html_url: $issue.html_url},
-              implementation_pr: {number: $pr.number, state: $pr.state, merged: $pr.merged, merged_at: $pr.merged_at, merge_commit_sha: $pr.merge_commit_sha, html_url: $pr.html_url}
-            }' > docs/evidence/m1a-runtime-main-delivery-snapshot.json
-
-          jq -e '.implementation_pr.merged == true' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          jq -e '.implementation_pr.merge_commit_sha == .target_sha' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          jq -e '[.workflow_runs[] | select(.event == "push" and .head_sha == .target_sha and .status == "completed" and .conclusion == "success") | .name] | index("m1a-memory-runtime-contracts") != null' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          jq -e '[.workflow_runs[] | select(.event == "push" and .head_sha == .target_sha and .status == "completed" and .conclusion == "success") | .name] | index("test-workflow-ci") != null' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          jq -e '[.workflow_runs[] | select(.event == "push" and .head_sha == .target_sha and .status == "completed" and .conclusion == "success") | .name] | index("release-test-harness") != null' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          jq -e '.implementation_branch_present == false' docs/evidence/m1a-runtime-main-delivery-snapshot.json
-
-          {
-            echo '# M1A Runtime Main Delivery Snapshot'
-            echo
-            echo "- Target commit: \`${TARGET_SHA}\`"
-            echo "- Captured at: $(jq -r .captured_at docs/evidence/m1a-runtime-main-delivery-snapshot.json)"
-            echo "- PR #${IMPLEMENTATION_PR}: merged"
-            echo "- Implementation branch present: ${branch_present}"
-            echo
-            echo '| Run | Event | ID | Number | Status | Conclusion |'
-            echo '|---|---|---:|---:|---|---|'
-            jq -r '.workflow_runs[] | "| \(.name) | \(.event) | \(.id) | \(.run_number) | \(.status) | \(.conclusion) |"' \
-              docs/evidence/m1a-runtime-main-delivery-snapshot.json
-          } > docs/evidence/m1a-runtime-main-delivery-snapshot.md
-
-      - name: Commit evidence snapshot to probe branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/evidence/m1a-runtime-main-delivery-snapshot.json \
-                  docs/evidence/m1a-runtime-main-delivery-snapshot.md
-          git diff --cached --check
-          git commit -m "Capture M1A main delivery evidence"
-          git push origin HEAD:ops/m1a-runtime-closure-evidence
+          jq -e '.merged == true and .merge_commit_sha == "0585e357aebda650ee50ee95ff962b3ac81f6d4c"' /tmp/m1a-pr.json
+          jq -e 'map(select(.event == "push" and .head_sha == "0585e357aebda650ee50ee95ff962b3ac81f6d4c" and .status == "completed" and .conclusion == "success") | .name) | index("m1a-memory-runtime-contracts") != null' /tmp/m1a-main-runs.json
+          jq -e 'map(select(.event == "push" and .head_sha == "0585e357aebda650ee50ee95ff962b3ac81f6d4c" and .status == "completed" and .conclusion == "success") | .name) | index("test-workflow-ci") != null' /tmp/m1a-main-runs.json
+          jq -e 'map(select(.event == "push" and .head_sha == "0585e357aebda650ee50ee95ff962b3ac81f6d4c" and .status == "completed" and .conclusion == "success") | .name) | index("release-test-harness") != null' /tmp/m1a-main-runs.json
