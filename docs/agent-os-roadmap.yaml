@@ -1,9 +1,24 @@
 project: AI Test Harness
-roadmap_version: 3.0
-updated_at: 2026-08-05T10:20:00+08:00
+roadmap_version: 3.1
+updated_at: 2026-08-05T11:45:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
+
+active_work:
+  goal_issue: 20
+  module: M1.0
+  phase: SPEC_BASELINE
+  status: ACTIVE_WHEN_MERGED
+  spec_id: SPEC-M1.0-MEMORY-BENCHMARK
+  spec_version: 1.0.0
+  spec_paths:
+    - docs/specs/m1.0-memory-benchmark-threat-model-spec.md
+    - docs/specs/m1.0-memory-benchmark-threat-model.yaml
+  scenario_catalog: benchmarks/memory/m1.0/scenario-catalog.yaml
+  test_design: docs/testing/m1.0-memory-benchmark-threat-model-test-design.md
+  next_after_spec: M1.0_BENCHMARK_HARNESS
+  runtime_assurance: DEV3
 
 principles:
   - memory_before_multi_agent
@@ -12,6 +27,7 @@ principles:
   - simulator_before_real_device_scale
   - single_agent_stability_before_parallel_efficiency
   - deterministic_safety_gates
+  - spec_before_implementation
 
 stage_delivery_gate:
   required_milestones: [M1, M2, M3]
@@ -43,6 +59,15 @@ milestones:
     title: Memory and controlled self-evolution
     status: NEXT
     depends_on: [M0]
+    module_status:
+      M1.0_SPEC: ACTIVE_WHEN_MERGED
+      M1.0_BENCHMARK_HARNESS: NEXT_AFTER_SPEC
+      M1A: PLANNED
+      M1B: PLANNED
+      M1C: PLANNED
+      M1D: PLANNED
+      M1E: PLANNED
+      M1F: PLANNED
     modules:
       - M1.0 Memory benchmark and threat model
       - M1A Memory contracts and namespaces
@@ -58,13 +83,26 @@ milestones:
       - stale_memory
       - conflicting_memory
       - memory_poisoning
+      - benchmark_contamination
+      - cross_project_leakage
       - shared_memory_acl
+      - assumption_to_fact
+      - oracle_contamination
       - promotion_and_rollback
+      - revoke_and_forget
+      - retrieval_budget_flooding
+      - deterministic_retrieval_replay
+      - provenance_tampering
+      - concurrent_revision_conflict
     gates:
       provenance_percent: 100
       unauthorized_memory_write: 0
+      unauthorized_protected_scope_read: 0
       assumption_to_fact_or_oracle_leakage: 0
+      unauthorized_oracle_policy_permission_change: 0
       critical_false_green: 0
+      replayable_critical_evidence_percent: 100
+      promoted_asset_without_working_rollback: 0
       minimum_improvement_any:
         correctness_percent_points: 15
         human_intervention_reduction_percent: 20
