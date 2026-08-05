@@ -29,6 +29,7 @@ jobs:
             "agent/todomvc-mutation-proof"
             "agent/todomvc-target-adapter"
             "docs/final-delivery-ledger"
+            "docs/agent-os-evolution-roadmap"
             "chore/final-branch-cleanup"
           )
 
