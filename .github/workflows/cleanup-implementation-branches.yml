@@ -1,0 +1,57 @@
+name: cleanup-implementation-branches
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete superseded implementation branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            "agent/deterministic-mock-control-plane"
+            "agent/harness-contracts"
+            "agent/harness-existing-adapters"
+            "agent/harness-orchestrator"
+            "agent/harness-policy-budget"
+            "agent/harness-registry-store"
+            "agent/test-agent-complete"
+            "agent/todomvc-mutation-proof"
+            "agent/todomvc-target-adapter"
+            "agent/m1-0-memory-benchmark-harness"
+            "agent/ux0-synthetic-user-shadow-runner"
+            "agent/ux1-todomvc-mutation-proof-runner"
+            "docs/final-delivery-ledger"
+            "docs/agent-os-evolution-roadmap"
+            "docs/github-development-ssot"
+            "docs/m1-0-memory-benchmark-final-ledger"
+            "docs/m1a-memory-contracts-final-ledger"
+            "docs/ux0-shadow-final-ledger"
+            "docs/ux1-mutation-final-ledger"
+            "policy/user-communication-ssot"
+            "spec/m1-0-memory-benchmark-threat-model"
+            "spec/m1a-memory-contracts-namespaces"
+            "spec/autonomous-execution-mandate"
+            "spec/ux0-synthetic-user-agent"
+            "spec/ux1-todomvc-mutation-proof"
+            "chore/final-branch-cleanup"
+          )
+
+          for branch in "${branches[@]}"; do
+            if gh api "repos/${GH_REPO}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${branch}"
+              echo "deleted ${branch}"
+            else
+              echo "already absent ${branch}"
+            fi
+          done
