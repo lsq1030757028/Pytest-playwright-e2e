@@ -4,6 +4,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC_PATH = ROOT / "docs/specs/m1a-memory-contracts-namespaces.yaml"
+APPROVAL_PATH = ROOT / "docs/specs/m1a-memory-contracts-namespaces-approval.yaml"
 EXAMPLES_PATH = ROOT / "tests/assets/memory/m1a/canonical-examples.yaml"
 ROADMAP_PATH = ROOT / "docs/agent-os-roadmap.yaml"
 
@@ -316,15 +317,23 @@ def test_canonical_examples_cover_kinds_negative_paths_transitions_and_acl() -> 
     }
 
 
-def test_m1a_is_spec_only_and_m1_memory_gate_remains_open() -> None:
+def test_m1a_spec_is_approved_closed_and_runtime_is_next() -> None:
     status = (ROOT / "docs/implementation-status.md").read_text(encoding="utf-8")
     roadmap = load_yaml(ROADMAP_PATH)
+    approval = load_yaml(APPROVAL_PATH)
 
-    assert "M1A Memory Contracts & Namespaces" in status
-    assert "SPEC_DRAFT" in status
+    assert "M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED" in status
+    assert "M1A Runtime Contracts：NEXT / DEV3" in status
+    assert "M1B Store & Progressive Retrieval：BLOCKED" in status
     assert "M1 Memory Gate：0 / 1" in status
-    assert roadmap["next_execution_sequence"][0] == "M1A"
+    assert approval["status"] == "APPROVED"
+    assert approval["spec_ref"] == "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0"
+    assert approval["runtime_authorization"]["m1a_runtime_contracts_may_begin"] is True
+    assert approval["runtime_authorization"]["m1b_store_and_retrieval_remains_blocked"] is True
+    assert roadmap["next_execution_sequence"][0] == "M1A_RUNTIME_CONTRACTS"
     m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
-    assert m1["active_module"] == "M1A"
-    assert m1["module_status"]["M1A"] == "SPEC_DRAFT"
+    assert m1["active_module"] == "M1A_RUNTIME_CONTRACTS"
+    assert m1["module_status"]["M1A"] == "SPEC_MERGED_CLOSED"
+    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == "NEXT"
+    assert m1["module_status"]["M1B"] == "BLOCKED"
     assert m1["module_status"]["M1.0"] == "MERGED"

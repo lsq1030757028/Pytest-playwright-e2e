@@ -1,0 +1,84 @@
+module_id: m1a-memory-contracts-and-namespaces-spec
+title: Governed Agent Memory contracts and namespace semantics
+status: CLOSED
+phase: SPEC
+profile: DEV3
+ux_profile: UX0
+goal_issue: 28
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+pull_request: 41
+merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
+business_outcome:
+  - session_history_is_separate_from_governed_long_term_memory
+  - five_memory_kinds_have_distinct_safety_rules
+  - project_agent_and_shared_memory_are_isolated_by_default
+  - relevance_and_embedding_similarity_cannot_bypass_authorization
+  - memory_provenance_revision_and_transformation_history_are_auditable
+  - candidate_memory_cannot_become_protected_authority
+  - stale_concurrent_updates_create_conflicts_instead_of_silent_overwrite
+  - expired_revoked_and_forgotten_content_is_not_effectively_retrievable
+  - storage_backends_must_implement_the_same_vendor_neutral_contract
+assets:
+  normative_spec:
+    - docs/specs/m1a-memory-contracts-namespaces-spec.md
+    - docs/specs/m1a-memory-contracts-namespaces.yaml
+    - docs/specs/m1a-memory-contracts-namespaces-approval.yaml
+  test_design:
+    - docs/testing/m1a-memory-contracts-namespaces-test-design.md
+  fixtures:
+    - tests/assets/memory/m1a/canonical-examples.yaml
+  tests:
+    - tests/unit/test_m1a_memory_contracts_spec.py
+    - tests/unit/test_agent_os_roadmap.py
+    - tests/unit/test_m1a_memory_delivery_status.py
+  workflow:
+    - .github/workflows/m1a-memory-contracts-spec.yml
+verification:
+  pr_spec_gate:
+    run_id: 31006481889
+    result: SUCCESS
+  pr_full_quality:
+    run_id: 31006482580
+    result: SUCCESS
+  main_spec_gate:
+    run_id: 31006798787
+    result: SUCCESS
+    artifact_id: 8930644975
+    artifact_digest: sha256:7f0489a0b461b54d1f18cfd7f9bb66a46c721c76a16c1e45b0404d9d7816e804
+  main_full_quality:
+    run_id: 31006798834
+    result: SUCCESS
+  release:
+    run_id: 31006798767
+    result: SUCCESS
+    python_distribution_artifact: 8930645632
+    python_distribution_digest: sha256:84803f865bcbe09372b0aaacfb9a9c33222547355bc8f22e00ee4e83d246c04c
+    docker_build_record: 8930679753
+    docker_build_record_digest: sha256:512718f679f4d02a96a154d68222927b1d601c5995cfcbc311617ce27a56f470
+  cleanup:
+    run_id: 31006798731
+    result: SUCCESS
+    spec_branch_deleted: true
+  review_threads: 0
+protected_boundaries:
+  runtime_store_implemented: false
+  memory_gate_closed: false
+  stage_delivery_ready: false
+  human_uat_required_for_user_facing_changes: true
+  production_data_or_secret_access: false
+  oracle_policy_permission_changes: false
+next_state:
+  module: M1A_RUNTIME_CONTRACTS
+  status: NEXT
+  profile: DEV3
+  purpose: implement and verify executable domain contracts without choosing a storage vendor
+  completion_standard:
+    - immutable_identity_revision_and_hash_contracts_execute
+    - namespace_and_acl_checks_fail_closed
+    - lifecycle_and_promotion_transitions_are_enforced
+    - cas_idempotency_revoke_expire_and_forget_are_verified
+    - vendor_neutral_ports_are_executable_and_replayable
+  m1b_status: BLOCKED_UNTIL_M1A_RUNTIME_CONTRACTS_VERIFIED
+  m1_memory_gate: OPEN
