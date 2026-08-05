@@ -21,7 +21,7 @@ def _git(checkout: Path, *args: str) -> str:
         text=True,
         capture_output=True,
     )
-    return completed.stdout.strip()
+    return completed.stdout.rstrip()
 
 
 def changed_files(checkout: Path) -> tuple[str, ...]:
