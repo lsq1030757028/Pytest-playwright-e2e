@@ -1,6 +1,6 @@
 # M1A Governed Memory Runtime Contracts
 
-> 状态：`IMPLEMENTING`  
+> 状态：`MERGED / CLOSED`  
 > Goal：Issue #43  
 > SPEC：`SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0`  
 > Approval：`APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0`  
@@ -19,9 +19,7 @@
 - 过期、撤销和遗忘后的内容不能继续有效读取；
 - Procedural 与 Skill Memory 不能成为无限制代码执行通道。
 
-## 当前实现边界
-
-已实现的运行时组件：
+## 已交付实现
 
 ```text
 Frozen Domain Models
@@ -38,7 +36,7 @@ Frozen Domain Models
 → Proof / Manifest / Independent Replay
 ```
 
-内存参考适配器只用于证明契约，不是 M1B 生产 Store。当前模块不选择数据库、Embedding、Ranking、索引或分布式一致性方案。
+内存参考适配器只用于证明契约，不是 M1B 生产 Store。本模块没有选择数据库、Embedding、Ranking、索引或分布式一致性方案。
 
 ## 安全不变量
 
@@ -57,18 +55,42 @@ Frozen Domain Models
 - Forget 删除有效内容，仅保留不含原文的 Tombstone；
 - Audit Event 不保存 Memory 内容，并形成可验证链。
 
-## 证据
+## 最终证据
 
-专用 GitHub Action 执行：
+```text
+Goal：Issue #43
+Implementation PR：#44
+Merge Commit：0585e357aebda650ee50ee95ff962b3ac81f6d4c
+PR M1A Runtime Gate：31018116312 — SUCCESS
+PR Full Repository CI：31018117595 — SUCCESS
+PR UX0 Shadow：31018115286 — SUCCESS
+PR UX1 Mutation Proof：31018115295 — SUCCESS
+Main M1A Runtime Gate：31018460853 — SUCCESS
+Main Full Repository CI：31018460602 — SUCCESS
+Main UX0 Shadow：31018460951 — SUCCESS
+Main UX1 Mutation Proof：31018460698 — SUCCESS
+Release：31018460644 — SUCCESS
+Cleanup：31018460853 / 31018460929 — SUCCESS
+Focused Tests：29 / 29 PASS
+Deterministic Proof：15 / 15 PASS
+Critical False Green：0
+Unauthorized Namespace Actions：0
+Unauthorized Promotion Actions：0
+Review Threads：0
+Implementation Branch：DELETED
+```
 
-- 领域模型、Hash、Namespace、ACL、Lifecycle、Promotion 与 Compatibility Unit/Contract；
-- 参考适配器真实 write/read/transition/query/conflict/revoke/forget Integration；
-- 十五项确定性 Runtime Contract Proof；
-- Artifact Manifest、独立 Replay 与 Tamper 拒绝；
-- 全仓库回归。
+Artifact Manifest、独立 Replay、Tamper 拒绝、Python Distribution 与 GHCR Build 均已验证，详细证据见 `docs/m1a-memory-runtime-contracts-delivery-ledger.yaml`。
 
-## 完成边界
+## 真实边界与下一模块
 
-达到 `CLOSED` 还需要：专用门禁和全量 CI 通过、Review Thread 为 0、合并到 `main`、Python/GHCR 发布成功、证据台账更新和实现分支清理。
+M1A Runtime Contracts 已达到 `CLOSED`，因此 **M1B Store & Progressive Retrieval SPEC** 解锁并成为下一主模块。
 
-完成后只会解锁 **M1B Store & Progressive Retrieval SPEC**；不会关闭 M1 Memory Gate，也不会把阶段产品标记为 Ready。
+仍然成立：
+
+- 当前没有生产 Memory Store；
+- 尚未选定数据库、向量检索、Embedding、Ranking 或索引方案；
+- M1 Memory Gate 仍为 OPEN；
+- 阶段产品交付仍为 NOT_READY；
+- 用户可见变化仍需要 Human UAT；
+- M1B 实现必须等待自己的 SPEC 审批与合并。
