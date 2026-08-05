@@ -1,9 +1,9 @@
 name: Apply M1A hardening patch
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/m1a-memory-runtime-contracts
+      - main
     paths:
       - ".github/workflows/apply-m1a-hardening.yml"
 
@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: agent/m1a-memory-runtime-contracts
           fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v6
