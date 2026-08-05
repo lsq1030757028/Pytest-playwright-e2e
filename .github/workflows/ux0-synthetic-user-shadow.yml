@@ -48,6 +48,9 @@ jobs:
       - name: Install Chromium
         run: uv run playwright install --with-deps chromium
 
+      - name: Prepare evidence directory
+        run: mkdir -p test-results
+
       - name: Lint Synthetic User runtime
         run: >-
           uv run ruff check
@@ -57,10 +60,9 @@ jobs:
           tests/integration/test_ux_shadow_runner_integration.py
 
       - name: Unit and contract evidence
-        run: |
-          mkdir -p test-results
-          uv run pytest tests/unit/test_ux_shadow_runtime.py \
-            --junitxml=test-results/junit-ux-shadow-unit.xml
+        run: >-
+          uv run pytest tests/unit/test_ux_shadow_runtime.py
+          --junitxml=test-results/junit-ux-shadow-unit.xml
 
       - name: Validate CLI campaign contract
         run: uv run test-workflow ux validate benchmarks/ux/ux0/campaign.yaml
