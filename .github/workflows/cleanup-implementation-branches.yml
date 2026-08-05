@@ -1,0 +1,42 @@
+name: cleanup-implementation-branches
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete superseded implementation branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            "agent/deterministic-mock-control-plane"
+            "agent/harness-contracts"
+            "agent/harness-existing-adapters"
+            "agent/harness-orchestrator"
+            "agent/harness-policy-budget"
+            "agent/harness-registry-store"
+            "agent/test-agent-complete"
+            "agent/todomvc-mutation-proof"
+            "agent/todomvc-target-adapter"
+            "docs/final-delivery-ledger"
+            "chore/final-branch-cleanup"
+          )
+
+          for branch in "${branches[@]}"; do
+            if gh api "repos/${GH_REPO}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${branch}"
+              echo "deleted ${branch}"
+            else
+              echo "already absent ${branch}"
+            fi
+          done
