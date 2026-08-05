@@ -107,6 +107,16 @@ def test_ux1_campaign_loads_five_pinned_mutations(
         loaded.mutation_catalog.target.revision
         == loaded.ux_campaign.plan.pins.target_revision
     )
+    assert all(
+        item.mutable_git_blob_sha1
+        == loaded.mutation_catalog.target.mutable_file.git_blob_sha1
+        for item in loaded.selected_mutations
+    )
+    assert all(
+        item.required_unmodified_files
+        == loaded.mutation_catalog.target.required_unmodified_files
+        for item in loaded.selected_mutations
+    )
 
 
 def test_sandbox_applies_and_restores_exact_bytes(tmp_path: Path) -> None:
