@@ -1,11 +1,11 @@
 project: AI Test Harness
-roadmap_version: 3.2
-updated_at: 2026-08-05T14:00:00+08:00
+roadmap_version: 3.3
+updated_at: 2026-08-05T20:45:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
-active_module: M1A
-active_phase: SPEC_DRAFT
+active_module: M1A_RUNTIME_CONTRACTS
+active_phase: IMPLEMENTATION_NEXT
 
 principles:
   - memory_before_multi_agent
@@ -55,18 +55,20 @@ milestones:
     title: Memory and controlled self-evolution
     status: IN_PROGRESS
     depends_on: [M0]
-    active_module: M1A
+    active_module: M1A_RUNTIME_CONTRACTS
     module_status:
       M1.0: MERGED
-      M1A: SPEC_DRAFT
-      M1B: PLANNED
+      M1A: SPEC_MERGED_CLOSED
+      M1A_RUNTIME_CONTRACTS: NEXT
+      M1B: BLOCKED
       M1C: PLANNED
       M1D: PLANNED
       M1E: PLANNED
       M1F: PLANNED
     modules:
       - M1.0 Memory benchmark and threat model
-      - M1A Memory contracts and namespaces
+      - M1A Memory contracts and namespaces SPEC
+      - M1A Runtime contracts
       - M1B Memory store and progressive retrieval
       - M1C Hot-path and background memory formation
       - M1D Shared memory governance
@@ -83,6 +85,20 @@ milestones:
         campaign_runs: 60
         critical_false_green: 0
         semantic_digest: sha256:001fd1b17d903983a0dae4fd6b7b3c9f492fa663a45d0073c6d1c3b761af254b
+      M1A_SPEC:
+        spec: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+        approval: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+        goal_issue: 28
+        pull_request: 41
+        merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
+        pr_spec_gate_run: 31006481889
+        pr_full_quality_run: 31006482580
+        main_spec_gate_run: 31006798787
+        main_quality_run: 31006798834
+        release_run: 31006798767
+        cleanup_run: 31006798731
+        critical_false_green: 0
+        review_threads: 0
     test_assets:
       - memory_off_vs_on
       - repeated_task
@@ -92,6 +108,9 @@ milestones:
       - memory_poisoning
       - shared_memory_acl
       - promotion_and_rollback
+      - m1a_canonical_memory_examples
+      - m1a_illegal_transition_cases
+      - m1a_namespace_and_acl_cases
     gates:
       status: OPEN
       provenance_percent: 100
@@ -105,9 +124,18 @@ milestones:
     current_spec:
       id: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES
       version: 1.0.0
-      status: CANDIDATE
+      status: APPROVED
       goal_issue: 28
-      implementation_blocked_until_spec_merged: true
+      approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+      merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
+      implementation_blocked_until_spec_merged: false
+    active_execution:
+      id: M1A_RUNTIME_CONTRACTS
+      status: NEXT
+      assurance: DEV3
+      ux_assurance: UX0
+      objective: implement executable governed-memory domain contracts without selecting a storage vendor
+      m1b_blocked_until_verified: true
 
   - id: M2
     title: Cross-model generalization and safe degradation
@@ -208,7 +236,7 @@ milestones:
       - Infrastructure sandbox
 
 next_execution_sequence:
-  - M1A
+  - M1A_RUNTIME_CONTRACTS
   - M1B
   - M1C
   - M1D
