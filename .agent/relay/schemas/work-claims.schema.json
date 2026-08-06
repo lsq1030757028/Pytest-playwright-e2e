@@ -76,17 +76,38 @@
       }
     },
     "recoveredClaim": {
-      "allOf": [
-        {"$ref": "#/$defs/claim"},
-        {
-          "type": "object",
-          "required": ["recovered_at"],
-          "properties": {
-            "state": {"const": "STALE_RECOVERED"},
-            "recovered_at": {"$ref": "#/$defs/timestamp"}
-          }
-        }
-      ]
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_item_id",
+        "claim_token",
+        "surface",
+        "state",
+        "exclusive_domain",
+        "target_branch",
+        "target_pr",
+        "expected_head_sha",
+        "started_at",
+        "heartbeat_at",
+        "expires_at",
+        "last_checkpoint",
+        "recovered_at"
+      ],
+      "properties": {
+        "work_item_id": {"type": "string", "minLength": 1},
+        "claim_token": {"type": "string", "minLength": 1},
+        "surface": {"enum": ["HUMAN_CONTROL", "RELAY_RUNTIME"]},
+        "state": {"const": "STALE_RECOVERED"},
+        "exclusive_domain": {"type": "string", "minLength": 1},
+        "target_branch": {"type": "string", "minLength": 1},
+        "target_pr": {"type": ["integer", "null"], "minimum": 1},
+        "expected_head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "started_at": {"$ref": "#/$defs/timestamp"},
+        "heartbeat_at": {"$ref": "#/$defs/timestamp"},
+        "expires_at": {"$ref": "#/$defs/timestamp"},
+        "last_checkpoint": {"type": "string", "minLength": 1},
+        "recovered_at": {"$ref": "#/$defs/timestamp"}
+      }
     },
     "integrationEntry": {
       "type": "object",
