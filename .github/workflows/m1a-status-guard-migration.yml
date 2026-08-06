@@ -24,34 +24,45 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin \
-            ops/hourly-github-relay-control:refs/remotes/origin/ops/hourly-github-relay-control
-          git show \
-            origin/ops/hourly-github-relay-control:.agent/relay/work-claims.json \
-            > /tmp/work-claims.json
-          python - <<'PY'
+          actual_head="$(git rev-parse HEAD)"
+          matched=false
+          for attempt in $(seq 1 12); do
+            git fetch --force origin \
+              ops/hourly-github-relay-control:refs/remotes/origin/ops/hourly-github-relay-control
+            git show \
+              origin/ops/hourly-github-relay-control:.agent/relay/work-claims.json \
+              > /tmp/work-claims.json
+            if ACTUAL_HEAD="${actual_head}" python - <<'PY'
           import json
-          import subprocess
+          import os
+          import sys
           from pathlib import Path
 
           claims = json.loads(Path('/tmp/work-claims.json').read_text(encoding='utf-8'))
-          claim = claims['claims']['M1A-RUNTIME-CONTRACTS-CLOSE']
-          actual_head = subprocess.check_output(
-              ['git', 'rev-parse', 'HEAD'], text=True
-          ).strip()
-          assert claims['enabled'] is True
-          assert claim['claim_token'] == (
-              'claim-m1a-runtime-contracts-close-human-4-20260806T132500Z'
+          claim = claims.get('claims', {}).get('M1A-RUNTIME-CONTRACTS-CLOSE', {})
+          expected = {
+              'claim_token': 'claim-m1a-runtime-contracts-close-human-4-20260806T132500Z',
+              'surface': 'HUMAN_CONTROL',
+              'state': 'INTEGRATING',
+              'target_branch': 'docs/m1a-runtime-contracts-final-ledger-clean',
+              'target_pr': 64,
+              'expected_head_sha': os.environ['ACTUAL_HEAD'],
+          }
+          valid = claims.get('enabled') is True and all(
+              claim.get(key) == value for key, value in expected.items()
           )
-          assert claim['surface'] == 'HUMAN_CONTROL'
-          assert claim['state'] == 'INTEGRATING'
-          assert claim['target_branch'] == (
-              'docs/m1a-runtime-contracts-final-ledger-clean'
-          )
-          assert claim['target_pr'] == 64
-          assert claim['expected_head_sha'] == actual_head
-          assert actual_head == '941a26cd0de1604be5a0a8b70628eaeefba2064f'
+          sys.exit(0 if valid else 1)
           PY
+            then
+              matched=true
+              break
+            fi
+            sleep 5
+          done
+          if [[ "${matched}" != "true" ]]; then
+            echo "Claim registry did not fence current branch Head ${actual_head}" >&2
+            exit 1
+          fi
 
       - name: Replace only confirmed stale status guards
         shell: bash
@@ -141,8 +152,7 @@ jobs:
                   text = text.replace(old, new, 1)
               path.write_text(text, encoding='utf-8')
 
-          helper = Path('.github/workflows/m1a-status-guard-migration.yml')
-          helper.unlink()
+          Path('.github/workflows/m1a-status-guard-migration.yml').unlink()
           PY
 
       - name: Validate migrated guards
