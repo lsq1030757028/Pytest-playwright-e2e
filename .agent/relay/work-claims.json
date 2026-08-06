@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 27,
+  "revision": 28,
   "claim_sequence": 5,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
@@ -27,11 +27,11 @@
       "exclusive_domain": "ux-benchmark",
       "target_branch": "spec/ux-fp-fn-benchmark",
       "target_pr": 63,
-      "expected_head_sha": "a6053560031606357b0ecb5038901e4e90143c9d",
+      "expected_head_sha": "d1426d943fdc057123c41174fd595bd4423e16dd",
       "started_at": "2026-08-06T14:03:00Z",
-      "heartbeat_at": "2026-08-06T14:52:00Z",
-      "expires_at": "2026-08-06T16:52:00Z",
-      "last_checkpoint": "ZERO_CANONICAL_FP_WORDING_REPAIRED_FINAL_HEAD_CI_RUNNING"
+      "heartbeat_at": "2026-08-06T14:57:00Z",
+      "expires_at": "2026-08-06T16:57:00Z",
+      "last_checkpoint": "EXACT_ZERO_CANONICAL_FP_THRESHOLD_PHRASE_REPAIRED_CI_RUNNING"
     }
   },
   "recovered_claims": [],
