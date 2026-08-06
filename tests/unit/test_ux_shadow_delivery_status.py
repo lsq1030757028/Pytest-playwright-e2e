@@ -36,10 +36,11 @@ def test_ux_status_truthfully_records_closed_runtime_and_ux1_spec() -> None:
     assert "Human UAT：`REQUIRED`" in ux_status
 
     assert "UX0 Synthetic User Runtime：MERGED / CLOSED" in project_status
-    assert "TodoMVC UX Mutation Proof：SPEC_DRAFT" in project_status
-    assert "UX Mutation Proof Runner：NOT_IMPLEMENTED" in project_status
+    assert "TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED" in project_status
+    assert "UX Mutation Proof Runner：MERGED / CLOSED" in project_status
     assert "UX Gate Mode：SHADOW / NONBLOCKING" in project_status
-    assert "M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT" in project_status
+    assert "M1A Runtime Contracts：MERGED / CLOSED" in project_status
+    assert "M1B Store & Progressive Retrieval：NEXT / SPEC" in project_status
     assert "M1 Memory Gate：0 / 1" in project_status
     assert "Stage Delivery：NOT_READY" in project_status
 

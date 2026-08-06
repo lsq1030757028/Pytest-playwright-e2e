@@ -1,11 +1,11 @@
 project: AI Test Harness
-roadmap_version: 3.3
-updated_at: 2026-08-05T20:45:00+08:00
+roadmap_version: 3.5
+updated_at: 2026-08-06T22:35:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
-active_module: M1A_RUNTIME_CONTRACTS
-active_phase: IMPLEMENTATION_NEXT
+active_module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+active_phase: SPEC_NEXT
 
 principles:
   - memory_before_multi_agent
@@ -55,12 +55,12 @@ milestones:
     title: Memory and controlled self-evolution
     status: IN_PROGRESS
     depends_on: [M0]
-    active_module: M1A_RUNTIME_CONTRACTS
+    active_module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
     module_status:
-      M1.0: MERGED
+      M1.0: MERGED_CLOSED
       M1A: SPEC_MERGED_CLOSED
-      M1A_RUNTIME_CONTRACTS: NEXT
-      M1B: BLOCKED
+      M1A_RUNTIME_CONTRACTS: MERGED_CLOSED
+      M1B: SPEC_NEXT
       M1C: PLANNED
       M1D: PLANNED
       M1E: PLANNED
@@ -99,6 +99,32 @@ milestones:
         cleanup_run: 31006798731
         critical_false_green: 0
         review_threads: 0
+      M1A_RUNTIME_CONTRACTS:
+        spec: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+        approval: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+        goal_issue: 43
+        pull_request: 44
+        merge_commit: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
+        remediation_pull_request: 45
+        remediation_merge_commit: ef681c3b679305d7b88d17f776926dc25b76e49f
+        integration_secret_scan_repair_pull_request: 61
+        final_main_head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+        main_secret_scan_run: 31108779724
+        main_codeql_run: 31108779549
+        m1b_goal_issue: 62
+        pr_runtime_gate_run: 31107607723
+        pr_full_quality_run: 31107611134
+        main_runtime_gate_run: 31108111384
+        main_quality_run: 31108781025
+        release_run: 31108779552
+        cleanup_run: 31108781076
+        focused_tests: 29
+        proof_scenarios: 15
+        critical_false_green: 0
+        unauthorized_namespace_actions: 0
+        unauthorized_promotion_actions: 0
+        review_threads: 0
+        implementation_branch_deleted: true
     test_assets:
       - memory_off_vs_on
       - repeated_task
@@ -111,6 +137,8 @@ milestones:
       - m1a_canonical_memory_examples
       - m1a_illegal_transition_cases
       - m1a_namespace_and_acl_cases
+      - m1a_runtime_contract_proof
+      - m1a_reference_adapter_replay
     gates:
       status: OPEN
       provenance_percent: 100
@@ -121,21 +149,23 @@ milestones:
         correctness_percent_points: 15
         human_intervention_reduction_percent: 20
         token_or_cost_reduction_percent: 20
-    current_spec:
+    governing_spec:
       id: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES
       version: 1.0.0
       status: APPROVED
       goal_issue: 28
       approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
       merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
-      implementation_blocked_until_spec_merged: false
     active_execution:
-      id: M1A_RUNTIME_CONTRACTS
+      id: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+      goal_issue: 62
       status: NEXT
+      phase: SPEC
       assurance: DEV3
       ux_assurance: UX0
-      objective: implement executable governed-memory domain contracts without selecting a storage vendor
-      m1b_blocked_until_verified: true
+      objective: define a production Memory Store and progressive retrieval contract that preserves M1A identity authority lifecycle conflict and forget semantics
+      implementation_blocked_until_spec_approved: true
+      production_backend_selected: false
 
   - id: M2
     title: Cross-model generalization and safe degradation
@@ -236,8 +266,8 @@ milestones:
       - Infrastructure sandbox
 
 next_execution_sequence:
-  - M1A_RUNTIME_CONTRACTS
-  - M1B
+  - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+  - M1B_IMPLEMENTATION
   - M1C
   - M1D
   - M1E

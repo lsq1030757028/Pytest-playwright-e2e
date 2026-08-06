@@ -39,7 +39,8 @@ def test_live_status_records_merged_closed_runtime() -> None:
     assert "TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED" in project_status
     assert "UX Mutation Proof Runner：MERGED / CLOSED" in project_status
     assert "Five-mutation Campaign：5 / 5 KILLED" in project_status
-    assert "M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT" in project_status
+    assert "M1A Runtime Contracts：MERGED / CLOSED" in project_status
+    assert "M1B Store & Progressive Retrieval：NEXT / SPEC" in project_status
     assert "M1 Memory Gate：0 / 1" in project_status
     assert "Stage Delivery：NOT_READY" in project_status
 

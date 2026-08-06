@@ -323,17 +323,23 @@ def test_m1a_spec_is_approved_closed_and_runtime_is_next() -> None:
     approval = load_yaml(APPROVAL_PATH)
 
     assert "M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED" in status
-    assert "M1A Runtime Contracts：NEXT / DEV3" in status
-    assert "M1B Store & Progressive Retrieval：BLOCKED" in status
+    assert "M1A Runtime Contracts：MERGED / CLOSED" in status
+    assert "M1B Store & Progressive Retrieval：NEXT / SPEC" in status
     assert "M1 Memory Gate：0 / 1" in status
     assert approval["status"] == "APPROVED"
     assert approval["spec_ref"] == "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0"
     assert approval["runtime_authorization"]["m1a_runtime_contracts_may_begin"] is True
     assert approval["runtime_authorization"]["m1b_store_and_retrieval_remains_blocked"] is True
-    assert roadmap["next_execution_sequence"][0] == "M1A_RUNTIME_CONTRACTS"
+    assert roadmap["next_execution_sequence"][0] == (
+        "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    )
     m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
-    assert m1["active_module"] == "M1A_RUNTIME_CONTRACTS"
+    assert m1["active_module"] == (
+        "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    )
     assert m1["module_status"]["M1A"] == "SPEC_MERGED_CLOSED"
-    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == "NEXT"
-    assert m1["module_status"]["M1B"] == "BLOCKED"
-    assert m1["module_status"]["M1.0"] == "MERGED"
+    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == (
+        "MERGED_CLOSED"
+    )
+    assert m1["module_status"]["M1B"] == "SPEC_NEXT"
+    assert m1["module_status"]["M1.0"] == "MERGED_CLOSED"

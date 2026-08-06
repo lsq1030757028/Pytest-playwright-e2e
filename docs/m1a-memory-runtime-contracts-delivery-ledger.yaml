@@ -1,0 +1,146 @@
+module_id: m1a-governed-memory-runtime-contracts
+title: Governed Memory runtime contracts
+status: CLOSED
+phase: IMPLEMENTATION
+profile: DEV3
+ux_profile: UX0
+goal_issue: 43
+spec_ref: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
+mandate_ref: MANDATE-AUTONOMY-M1-M3@1.0.0
+pull_request: 44
+merge_commit: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
+business_outcome:
+- governed_memory_identity_and_hashing_are_executable_and_storage_independent
+- project_campaign_agent_organization_and_shared_namespaces_fail_closed
+- delegation_scope_and_expiry_are_enforced
+- explicit_deny_overrides_allow_and_relevance_never_grants_authority
+- revisions_and_nested_provenance_payloads_are_immutable_and_append_only
+- candidate_promotion_requires_actor_evidence_benchmark_and_revision_binding
+- stale_writes_create_explicit_conflicts_and_never_silently_replace_head
+- same_idempotency_key_with_different_payload_is_rejected
+- expired_revoked_and_forgotten_memory_is_absent_from_effective_reads
+- procedural_and_skill_memory_must_pass_version_permission_and_environment_compatibility
+- six_vendor_neutral_port_families_are_executable
+- deterministic_reference_behavior_is_replayable_and_tamper_evident
+assets:
+  runtime_contracts:
+  - src/test_workflow/memory_contracts/models.py
+  - src/test_workflow/memory_contracts/canonical.py
+  - src/test_workflow/memory_contracts/policy.py
+  - src/test_workflow/memory_contracts/ports.py
+  - src/test_workflow/memory_contracts/reference.py
+  - src/test_workflow/memory_contracts/proof.py
+  documentation:
+  - docs/m1a-memory-runtime-contracts.md
+  - docs/testing/m1a-memory-runtime-contracts-test-design.md
+  tests:
+  - tests/unit/test_memory_contract_models.py
+  - tests/unit/test_memory_contract_policy.py
+  - tests/unit/test_memory_contract_ports.py
+  - tests/integration/test_memory_contract_reference.py
+  - tests/integration/test_memory_contract_proof.py
+  workflow:
+  - .github/workflows/m1a-memory-runtime-contracts.yml
+verification:
+  pr_runtime_gate:
+    run_id: 31107607723
+    result: SUCCESS
+    head: 0fa4147ac639b36a33427b10a5a7eafb85049246
+  pr_full_quality:
+    run_id: 31107611134
+    result: SUCCESS
+    head: 0fa4147ac639b36a33427b10a5a7eafb85049246
+  pr_ux0_shadow:
+    run_id: 31018115286
+    result: SUCCESS
+  pr_ux1_mutation_proof:
+    run_id: 31018115295
+    result: SUCCESS
+  main_runtime_gate:
+    run_id: 31108111384
+    result: SUCCESS
+    head: ef681c3b679305d7b88d17f776926dc25b76e49f
+  main_full_quality:
+    run_id: 31108781025
+    result: SUCCESS
+    head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+  main_ux0_shadow:
+    run_id: 31018460951
+    result: SUCCESS
+  main_ux1_mutation_proof:
+    run_id: 31018460698
+    result: SUCCESS
+  release:
+    run_id: 31108779552
+    result: SUCCESS
+    head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+    python_distribution_artifact: 8970728772
+    python_distribution_digest: sha256:4cba37b10f909bbb6d6123c75dbb140cfd652064bfecda63a010fb7cd2fd0d35
+    docker_build_record: 8970756802
+    docker_build_record_digest: sha256:140cabd09cb6c5c983d77c22ad846a753db8b05595c6294115d80eb2d48ec0c3
+  cleanup:
+    repository_cleanup_run_id: 31108781076
+    result: SUCCESS
+    implementation_branch_deleted: true
+    remediation_branch_registered: true
+    security_repair_branch_registered: true
+  authoritative_delivery_probe:
+    run_id: 31019141491
+    result: SUCCESS
+    verified_merge_main_ci_release_and_branch_cleanup: true
+  review_threads: 0
+  focused_tests:
+    total: 29
+    passed: 29
+  deterministic_proof_scenarios:
+    total: 15
+    passed: 15
+  critical_false_green: 0
+  unauthorized_namespace_actions: 0
+  unauthorized_promotion_actions: 0
+  stale_write_overwrites: 0
+  forgotten_content_reads: 0
+  independent_replay: PASS
+  tamper_rejection: PASS
+  pr_secret_scan:
+    run_id: 31107608110
+    result: SUCCESS
+  pr_codeql:
+    run_id: 31107607912
+    result: SUCCESS
+  main_secret_scan:
+    run_id: 31108779724
+    result: SUCCESS
+    head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+  main_codeql:
+    run_id: 31108779549
+    result: SUCCESS
+    head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+protected_boundaries:
+  production_store_implemented: false
+  database_or_vector_backend_selected: false
+  autonomous_memory_promotion_enabled: false
+  memory_gate_closed: false
+  stage_delivery_ready: false
+  human_uat_required_for_user_facing_changes: true
+  production_data_or_secret_access: false
+  oracle_policy_permission_changes: false
+next_state:
+  module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+  status: NEXT
+  phase: SPEC
+  profile: DEV3
+  purpose: define the production Memory Store and progressive retrieval contract without
+    weakening M1A identity authority lifecycle or forget semantics
+  implementation_blocked_until_spec_approved: true
+  m1_memory_gate: OPEN
+  stage_delivery: NOT_READY
+  goal_issue: 62
+closure_chain:
+  base_implementation_pr: 44
+  base_merge_commit: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
+  closure_remediation_pr: 45
+  closure_remediation_merge_commit: ef681c3b679305d7b88d17f776926dc25b76e49f
+  integration_secret_scan_repair_pr: 61
+  final_main_head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
