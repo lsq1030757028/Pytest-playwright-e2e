@@ -1,1 +1,5 @@
+# Exact false-positive fingerprints for Relay Lease identifiers. These are public run IDs, not credentials.
 8831cb4bf1d55d6a692c3c89acdddb8dec6e893f:.agent/relay/leases/hourly-github-relay.json:generic-api-key:7
+0316cd885615109a46548020251d7ef8de8a73de:.agent/relay/leases/hourly-github-relay.json:generic-api-key:19
+# Exact historical fingerprint for a synthetic integration-token schema fixture; no credential was present.
+035cc4ad95f63b5c19800792e507544efac568cd:tests/unit/test_relay_claim_schemas.py:generic-api-key:96
