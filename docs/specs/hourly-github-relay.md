@@ -16,13 +16,14 @@ This base SPEC is interpreted together with the versioned addenda in the same PR
 - `ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1`;
 - `ADDENDUM-HOURLY-GITHUB-RELAY-CONTENTION@0.1.2`;
 - `ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1`;
-- `ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0`.
+- `ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0`;
+- `ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0`.
 
 When an addendum is more specific or newer than a statement in this base document, the addendum controls. The machine-readable YAML files must express the same effective rules. A contradiction between Markdown, YAML, the scheduled-task entrypoint and the operational Lease is `REPLAN_REQUIRED`; it must not be silently resolved by model preference.
 
 ## 2. Purpose and unit model
 
-The Relay lets a temporary scheduled AI restore durable development state from GitHub, advance the current authorized work and leave consistent Chat and GitHub evidence.
+The Relay lets a temporary scheduled AI restore durable development state from GitHub, advance the current authorized work and leave consistent runtime and GitHub evidence.
 
 The effective unit hierarchy is:
 
@@ -65,7 +66,7 @@ The Pilot must not:
 
 ## 4. Durable context
 
-GitHub is the durable state and audit plane. Chat is the primary reading channel but is not authoritative state.
+GitHub is the durable state and audit plane. Chat history is not authoritative state and is not a supported handoff channel.
 
 Every Run restores:
 
@@ -90,6 +91,8 @@ Recommended Campaign assets after a separately approved implementation include:
 ```
 
 A Work Item handoff preserves objective, status, completion criteria, current checkpoint, completed evidence, unresolved questions, candidate and rejected options, next valid action and Run history.
+
+The Human Control Session and Relay Runtime Session exchange durable context only through GitHub. A missing Goal, decision or checkpoint must be externalized before a scheduled Run mutates the repository.
 
 ## 5. Pilot schedule and termination
 
@@ -244,9 +247,9 @@ Every development Commit created by a Run contains:
 
 Search for the Run marker before creating a comment. Never duplicate a Run record or Run Token. Preserve partial Commit/PR evidence after failure. Never force-update a branch.
 
-## 12. Mandatory Chat result
+## 12. Runtime receipt
 
-Every invocation returns a Chinese final response, including `BUSY`, `NO_ACTION`, `WAITING_CI`, `BLOCKED` and terminal states.
+Every invocation returns a Chinese receipt, including `BUSY`, `NO_ACTION`, `WAITING_CI`, `BLOCKED` and terminal states.
 
 First line:
 
@@ -254,9 +257,15 @@ First line:
 Run Token：<token or UNACQUIRED>；状态：<status>
 ```
 
-Include business progress, lifecycle truth, Campaign and Work Item checkpoint, actual actions, files and Commits or `无`, Issue/PR/branch, CI, blocker/error, next valid action, GitHub Run-record location, runtime attestation and Lease release truth. BUSY responses also include contention class, holder token, heartbeat, expiry and activity evidence or `UNCONFIRMED`.
+For an isolated Relay Runtime Session, the normal second line is:
 
-Chat and GitHub FINAL must agree.
+```text
+GitHub：<authoritative PR or Issue>；Checkpoint：<short checkpoint>；下一动作：<short next action>
+```
+
+The complete actions, files, Commits, tests, CI, blocker, audit and Lease truth live in the authoritative GitHub Run record. The runtime receipt normally remains under 500 Chinese characters and must not duplicate the full audit. When a GitHub write or receipt-critical platform action fails, include the actual platform error required for recovery.
+
+A human collaboration conversation must not receive scheduled Relay replies. If it does, fail closed as `SESSION_ISOLATION_FAILED` and disable the scheduled task.
 
 ## 13. Pilot acceptance and promotion
 
@@ -265,7 +274,7 @@ The Pilot is accepted only after three consecutive successful lease-acquiring Ru
 - unique monotonic Run Tokens;
 - CAS acquisition, fencing, heartbeat and release success;
 - correct START and release-attested FINAL with no duplicate comments;
-- generated Chat final responses;
+- generated runtime receipts;
 - no overlapping ownership;
 - all created Commits traceable to Run Tokens;
 - Campaign restoration without private prior-chat dependency;
@@ -274,3 +283,29 @@ The Pilot is accepted only after three consecutive successful lease-acquiring Ru
 - no unresolved Lease, lost-ownership or audit inconsistency.
 
 Promotion beyond the Pilot requires separate Owner authority and an approved implementation plan for durable Campaign/Work-Item state, schemas, tests and operational monitoring. This SPEC does not authorize auto-merge or an M5 completion claim.
+
+## 14. Conversation isolation and production migration
+
+The Relay uses two separate ChatGPT conversations:
+
+```text
+HUMAN_CONTROL
+  interactive design, decisions, change requests and direct work
+
+RELAY_RUNTIME
+  scheduled execution only and bounded receipts
+```
+
+They share GitHub SSOT and the same Lease, but they never share a conversation as the scheduled-task target.
+
+A production task is enable-eligible only when:
+
+- it was created from a dedicated Relay Runtime conversation;
+- the human collaboration conversation receives no scheduled reply;
+- the prompt declares `session_class: RELAY_RUNTIME` and `durable_context: GITHUB_ONLY`;
+- one read-only binding probe proves the receipt location and GitHub record;
+- unknown or ambiguous binding fails closed.
+
+The previously created production task associated with the human collaboration conversation remains disabled. The available task tool does not expose a target-conversation migration field, so a new isolated task requires one Owner UI action in the dedicated Relay Runtime conversation. This is an operational binding action, not approval to bypass GitHub Gates.
+
+The full normative rules, migration sequence, failure modes, prompt budget and acceptance criteria are defined by `ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0`.
