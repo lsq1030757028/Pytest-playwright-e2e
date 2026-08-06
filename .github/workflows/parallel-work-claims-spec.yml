@@ -1,6 +1,6 @@
 name: Parallel Work Claims SPEC
 
-on:
+"on":
   pull_request:
     paths:
       - "docs/specs/parallel-work-claims.md"
@@ -36,6 +36,6 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install test dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -e ".[test]"
       - name: Validate parallel work claim assets
         run: pytest -q tests/unit/test_parallel_work_claims_spec.py
