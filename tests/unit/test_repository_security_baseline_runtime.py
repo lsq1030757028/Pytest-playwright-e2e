@@ -86,7 +86,7 @@ def test_gitleaks_install_and_scan_are_pinned_redacted_and_fail_closed() -> None
     assert "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in installer
     assert "sha256sum --check --status" in installer
     assert "curl" in installer
-    assert "| sh" not in installer
+    assert re.search(r"curl[^\n]*\|\s*(?:ba)?sh\b", installer) is None
     assert '--log-opts="--all"' in runner
     assert "--redact=100" in runner
     assert "--exit-code=42" in runner
