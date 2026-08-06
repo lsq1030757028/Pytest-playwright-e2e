@@ -2,22 +2,22 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 45,
+  "revision": 46,
   "claim_sequence": 6,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
       "claim_token": "claim-ux-fp-fn-benchmark-spec-5-20260806T140300Z",
       "surface": "RELAY_RUNTIME",
-      "state": "INTEGRATION_WAITING",
+      "state": "INTEGRATING",
       "exclusive_domain": "ux-benchmark",
       "target_branch": "spec/ux-fp-fn-benchmark",
       "target_pr": 63,
       "expected_head_sha": "d1426d943fdc057123c41174fd595bd4423e16dd",
       "started_at": "2026-08-06T14:03:00Z",
-      "heartbeat_at": "2026-08-06T15:15:00Z",
-      "expires_at": "2026-08-06T17:15:00Z",
-      "last_checkpoint": "FINAL_HEAD_REVERIFIED_WAITING_FOR_INTEGRATION_LEASE"
+      "heartbeat_at": "2026-08-06T15:58:00Z",
+      "expires_at": "2026-08-06T17:58:00Z",
+      "last_checkpoint": "INTEGRATION_LEASE_ACQUIRED_ZERO_FILE_OVERLAP_MAIN_SYNC_NEXT"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
       "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
@@ -42,7 +42,7 @@
       "enqueued_at": "2026-08-06T14:59:00Z",
       "security_or_correctness_repair": false,
       "dependency_unblocking": false,
-      "state": "INTEGRATION_WAITING"
+      "state": "INTEGRATING"
     }
   ]
 }
