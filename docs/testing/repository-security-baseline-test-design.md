@@ -18,7 +18,7 @@ This document designs implementation evidence. It does not add or execute the se
 | Obligation | Oracle |
 |---|---|
 | Full-history credential detection | a non-functional synthetic canary committed in an earlier commit of an ephemeral repository is detected even when absent from the final tree |
-| Secret-output safety | the full canary value never appears in captured stdout, stderr, annotations, artifacts, or PR comments |
+| Secret-output safety | the complete canary value never appears in captured stdout, stderr, annotations, artifacts, or PR comments |
 | Real repository history | the selected scanner reports zero unresolved findings for the final implementation revision and reachable history, or every finding has recorded remediation and independent re-scan |
 | Fork safety | untrusted pull-request code cannot access repository Secrets or a write-capable token |
 | Action provenance | every newly introduced third-party Action is pinned to an immutable commit SHA |
