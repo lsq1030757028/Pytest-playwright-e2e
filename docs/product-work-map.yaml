@@ -1,0 +1,422 @@
+map_id: PRODUCT-WORK-MAP-M1-M3
+version: 0.1.0
+status: CANDIDATE
+roadmap: docs/agent-os-roadmap.yaml
+authority_issue: 55
+scope: [M1, M2, M3]
+product_m4_claim: false
+selection_defaults:
+  order: [priority_desc, work_item_id_asc]
+  claimable_states: [READY]
+  active_states: [CLAIMED, IN_PROGRESS, EVIDENCE_READY, INTEGRATION_WAITING, INTEGRATING]
+  dependency_closed_states: [CLOSED]
+  unknown_authority_action: BLOCKED
+  unknown_scope_action: REPLAN_REQUIRED
+integration_groups:
+  RELAY_FOUNDATION: {verification: relay_protocol_and_conversation_isolation}
+  M1_FOUNDATION: {verification: governed_memory_contracts}
+  M1_MEMORY: {verification: memory_end_to_end}
+  UX_ASSURANCE: {verification: false_positive_false_negative_and_mutation}
+  M2_GENERALIZATION: {verification: cross_model_safe_degradation}
+  M3_GENERALIZATION: {verification: cross_project_and_device}
+  STAGE_DELIVERY: {verification: m1_m2_m3_and_global_safety}
+domain_incompatibilities:
+  integration-main: [release-status]
+  release-status: [integration-main]
+work_items:
+  - work_item_id: RELAY-CONVERSATION-ISOLATION-CLOSE
+    milestone: M1
+    outcome: close and merge the dedicated Relay Runtime conversation isolation design
+    phase: CLOSURE
+    state: IN_PROGRESS
+    priority: 100
+    dependencies: []
+    authority_issue: 49
+    required_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+    target_branch: spec/hourly-github-relay
+    target_pr: 51
+    exclusive_domain: relay-control-plane
+    observation_domains: [integration-main]
+    scope: {paths: [docs/specs/hourly-github-relay], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: RELAY_FOUNDATION
+    completion_checks: [binding_probe_passed, final_head_ci_green, review_threads_zero, merged_and_main_verified]
+    rollback: disable_relay_task_and_preserve_github_audit
+  - work_item_id: PARALLEL-WORK-CLAIMS-SPEC
+    milestone: M1
+    outcome: approve atomic Work Item claiming and serialized integration rules
+    phase: SPEC
+    state: CLOSED
+    priority: 110
+    dependencies: []
+    authority_issue: 55
+    required_spec: self
+    target_branch: spec/parallel-work-claims
+    target_pr: 56
+    exclusive_domain: parallel-delivery-control
+    observation_domains: [relay-control-plane, integration-main]
+    scope: {paths: [docs/specs/parallel-work-claims, docs/product-work-map, tests/unit/test_parallel_work_claims_spec.py], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: RELAY_FOUNDATION
+    completion_checks: [spec_assets_valid, threat_and_test_design_complete, final_head_ci_green, review_threads_zero, spec_merged]
+    rollback: close_spec_pr_and_continue_global_lease_mode
+  - work_item_id: PARALLEL-WORK-CLAIMS-IMPLEMENTATION
+    milestone: M1
+    outcome: implement the operational claim registry and integration queue
+    phase: IMPLEMENTATION
+    state: CLOSED
+    priority: 105
+    dependencies: [PARALLEL-WORK-CLAIMS-SPEC]
+    authority_issue: 55
+    required_spec: SPEC-PARALLEL-WORK-CLAIMS@0.1.0
+    target_branch: agent/parallel-work-claims
+    target_pr: 57
+    exclusive_domain: parallel-delivery-control
+    observation_domains: [integration-main]
+    scope: {paths: [.agent/relay/work-claims.json, .agent/relay/leases/integration.json, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: RELAY_FOUNDATION
+    completion_checks: [deterministic_selection, concurrent_distinct_claims, conflicting_claim_rejected, stale_recovery_safe, per_mutation_fencing, bounded_acceptance_probe]
+    rollback: disable_claim_allocator_and_restore_global_lease_mode
+  - work_item_id: M1A-RUNTIME-CONTRACTS-CLOSE
+    milestone: M1
+    outcome: close executable governed-memory domain contracts
+    phase: CLOSURE
+    state: READY
+    priority: 100
+    dependencies: []
+    authority_issue: 43
+    required_spec: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+    target_branch: agent/m1a-runtime-contract-remediation
+    target_pr: 45
+    exclusive_domain: memory-runtime-contracts
+    observation_domains: [integration-main]
+    scope: {paths: [src/ai_test_harness/memory, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M1_FOUNDATION
+    completion_checks: [final_head_m1a_gate_green, final_head_full_ci_green, review_threads_zero, merged_main_release_cleanup_verified]
+    rollback: preserve_pr_and_return_to_replan_required
+  - work_item_id: UX-FP-FN-BENCHMARK-SPEC
+    milestone: M1
+    outcome: define trustworthy false-positive and false-negative UX benchmark evidence
+    phase: SPEC
+    state: READY
+    priority: 80
+    dependencies: []
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: ux-benchmark
+    observation_domains: [integration-main]
+    scope: {paths: [docs/specs, tests, .github/workflows], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX2}
+    integration_group: UX_ASSURANCE
+    completion_checks: [goal_created, spec_approved, benchmark_oracles_and_mutations_defined]
+    rollback: close_candidate_spec_without_gate_promotion
+  - work_item_id: M1B-STORE-RETRIEVAL-SPEC
+    milestone: M1
+    outcome: define deterministic memory storage and progressive retrieval
+    phase: SPEC
+    state: BLOCKED
+    priority: 90
+    dependencies: [M1A-RUNTIME-CONTRACTS-CLOSE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: memory-store-retrieval
+    observation_domains: [memory-runtime-contracts, integration-main]
+    scope: {paths: [docs/specs, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M1_MEMORY
+    completion_checks: [goal_created, spec_approved, retrieval_budget_and_replay_defined]
+    rollback: close_candidate_spec_and_keep_m1b_blocked
+  - work_item_id: M1C-MEMORY-FORMATION
+    milestone: M1
+    outcome: form candidate memories through hot-path and background consolidation
+    phase: SPEC
+    state: BLOCKED
+    priority: 70
+    dependencies: [M1B-STORE-RETRIEVAL-SPEC]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: memory-formation
+    observation_domains: [memory-store-retrieval, integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M1_MEMORY
+    completion_checks: [spec_then_implementation, candidate_only_write_path, replay_and_poisoning_evidence]
+    rollback: retire_unapproved_candidates
+  - work_item_id: M1D-SHARED-MEMORY-GOVERNANCE
+    milestone: M1
+    outcome: govern shared memory visibility, isolation and poisoning review
+    phase: SPEC
+    state: BLOCKED
+    priority: 65
+    dependencies: [M1C-MEMORY-FORMATION]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: shared-memory-governance
+    observation_domains: [memory-formation, integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M1_MEMORY
+    completion_checks: [acl_isolation, poisoning_quarantine, audit_and_replay]
+    rollback: detach_shared_memory_and_preserve_audit
+  - work_item_id: M1E-CONTROLLED-EVOLUTION
+    milestone: M1
+    outcome: evaluate and promote reversible procedure and skill candidates
+    phase: SPEC
+    state: BLOCKED
+    priority: 60
+    dependencies: [M1D-SHARED-MEMORY-GOVERNANCE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: controlled-evolution
+    observation_domains: [shared-memory-governance, integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M1_MEMORY
+    completion_checks: [hidden_benchmark, replay_mutation, canary_and_rollback]
+    rollback: rollback_candidate_and_restore_baseline
+  - work_item_id: M1F-MEMORY-GATE
+    milestone: M1
+    outcome: prove the complete memory gate without safety regression
+    phase: INTEGRATION
+    state: BLOCKED
+    priority: 55
+    dependencies: [M1E-CONTROLLED-EVOLUTION]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: integration-main
+    observation_domains: [release-status]
+    scope: {paths: [docs, tests, .github/workflows], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX2}
+    integration_group: M1_MEMORY
+    completion_checks: [memory_gate_pass, critical_false_green_zero, replayability_100_percent]
+    rollback: keep_m1_gate_open
+  - work_item_id: M2A-MODEL-CAPABILITY-PROFILE
+    milestone: M2
+    outcome: define measurable strong, medium, weak and deterministic model capabilities
+    phase: SPEC
+    state: BLOCKED
+    priority: 50
+    dependencies: [M1F-MEMORY-GATE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: model-generalization
+    observation_domains: [integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M2_GENERALIZATION
+    completion_checks: [profile_contracts, reproducible_tiers, no_model_name_lock_in]
+    rollback: keep_m2_blocked
+  - work_item_id: M2B-OUTPUT-NORMALIZATION
+    milestone: M2
+    outcome: normalize model outputs under one governed contract
+    phase: SPEC
+    state: BLOCKED
+    priority: 45
+    dependencies: [M2A-MODEL-CAPABILITY-PROFILE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: model-output-contract
+    observation_domains: [model-generalization, integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M2_GENERALIZATION
+    completion_checks: [contract_normalization, malformed_output_rejection, replay]
+    rollback: retain_provider_specific_adapters
+  - work_item_id: M2C-WEAK-MODEL-LADDER
+    milestone: M2
+    outcome: safely complete, request context, escalate or stop under weak models
+    phase: SPEC
+    state: BLOCKED
+    priority: 45
+    dependencies: [M2A-MODEL-CAPABILITY-PROFILE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: weak-model-ladder
+    observation_domains: [model-generalization, integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M2_GENERALIZATION
+    completion_checks: [safe_degradation, escalation, false_green_zero]
+    rollback: force_strong_model_or_human_required
+  - work_item_id: M2D-CROSS-MODEL-BENCHMARK
+    milestone: M2
+    outcome: compare correctness and safe degradation across model tiers
+    phase: EVIDENCE
+    state: BLOCKED
+    priority: 40
+    dependencies: [M2B-OUTPUT-NORMALIZATION, M2C-WEAK-MODEL-LADDER]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: model-benchmark
+    observation_domains: [model-output-contract, weak-model-ladder, integration-main]
+    scope: {paths: [tests, docs, .github/workflows], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M2_GENERALIZATION
+    completion_checks: [three_runs_per_task, tier_thresholds, critical_false_green_zero]
+    rollback: keep_m2_gate_open
+  - work_item_id: M2E-ROUTING-ESCALATION
+    milestone: M2
+    outcome: route and escalate models using benchmark-backed policy
+    phase: IMPLEMENTATION
+    state: BLOCKED
+    priority: 35
+    dependencies: [M2D-CROSS-MODEL-BENCHMARK]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: model-routing
+    observation_domains: [model-benchmark, integration-main]
+    scope: {paths: [src, tests, docs], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX0}
+    integration_group: M2_GENERALIZATION
+    completion_checks: [routing_replay, escalation_correctness, rollback]
+    rollback: deterministic_safe_provider_selection
+  - work_item_id: M3A-PROJECT-ARCHITECTURE-CONTRACTS
+    milestone: M3
+    outcome: define how new projects and architectures enter the Harness
+    phase: SPEC
+    state: BLOCKED
+    priority: 30
+    dependencies: [M2E-ROUTING-ESCALATION]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: project-generalization
+    observation_domains: [integration-main]
+    scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX2}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [project_contract, adapter_contract, environment_and_evidence_contract]
+    rollback: keep_m3_targets_isolated
+  - work_item_id: M3B-COMPLEX-WEB-MATRIX
+    milestone: M3
+    outcome: prove two complex web projects across business and architecture differences
+    phase: IMPLEMENTATION
+    state: BLOCKED
+    priority: 25
+    dependencies: [M3A-PROJECT-ARCHITECTURE-CONTRACTS]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: complex-web-matrix
+    observation_domains: [project-generalization, integration-main]
+    scope: {paths: [targets, tests, docs], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX3}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [two_projects, replay_bundles, human_uat_ready]
+    rollback: isolate_failed_target
+  - work_item_id: M3C-MOBILE-ADAPTERS-DEVICES
+    milestone: M3
+    outcome: prove mobile adapters with emulator and bounded real-device evidence
+    phase: IMPLEMENTATION
+    state: BLOCKED
+    priority: 25
+    dependencies: [M3A-PROJECT-ARCHITECTURE-CONTRACTS]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: mobile-device-matrix
+    observation_domains: [project-generalization, integration-main]
+    scope: {paths: [targets, src, tests, docs], shared_mutable_external_boundary: true}
+    assurance: {development: DEV3, ux: UX3}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [emulator_first, android_real_device, lease_reset_quarantine]
+    rollback: quarantine_device_and_use_emulator
+  - work_item_id: M3D-MINI-PROGRAM-ADAPTER
+    milestone: M3
+    outcome: prove one mini-program target through a governed adapter
+    phase: IMPLEMENTATION
+    state: BLOCKED
+    priority: 24
+    dependencies: [M3A-PROJECT-ARCHITECTURE-CONTRACTS]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: mini-program-matrix
+    observation_domains: [project-generalization, integration-main]
+    scope: {paths: [targets, src, tests, docs], shared_mutable_external_boundary: false}
+    assurance: {development: DEV3, ux: UX3}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [adapter_contract, replay_bundle, bounded_environment]
+    rollback: detach_target_adapter
+  - work_item_id: M3E-EMBEDDED-IOT-ADAPTER
+    milestone: M3
+    outcome: prove one embedded or IoT target with bounded device control
+    phase: IMPLEMENTATION
+    state: BLOCKED
+    priority: 24
+    dependencies: [M3A-PROJECT-ARCHITECTURE-CONTRACTS]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: embedded-iot-matrix
+    observation_domains: [project-generalization, integration-main]
+    scope: {paths: [targets, src, tests, docs], shared_mutable_external_boundary: true}
+    assurance: {development: DEV3, ux: UX2}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [simulator_first, bounded_board, reset_and_recovery]
+    rollback: quarantine_board_and_restore_simulator
+  - work_item_id: M3F-CROSS-PROJECT-GATE
+    milestone: M3
+    outcome: prove the complete cross-project and device matrix
+    phase: INTEGRATION
+    state: BLOCKED
+    priority: 20
+    dependencies: [M3B-COMPLEX-WEB-MATRIX, M3C-MOBILE-ADAPTERS-DEVICES, M3D-MINI-PROGRAM-ADAPTER, M3E-EMBEDDED-IOT-ADAPTER]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: integration-main
+    observation_domains: [release-status]
+    scope: {paths: [docs, tests, .github/workflows], shared_mutable_external_boundary: true}
+    assurance: {development: DEV3, ux: UX3}
+    integration_group: M3_GENERALIZATION
+    completion_checks: [minimum_matrix, replay_per_project, device_conflict_zero]
+    rollback: keep_m3_gate_open
+  - work_item_id: STAGE-DELIVERY-INTEGRATION
+    milestone: M3
+    outcome: verify M1, M2, M3 and global safety before stage delivery
+    phase: INTEGRATION
+    state: BLOCKED
+    priority: 10
+    dependencies: [M1F-MEMORY-GATE, M2E-ROUTING-ESCALATION, M3F-CROSS-PROJECT-GATE]
+    authority_issue: null
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: release-status
+    observation_domains: [integration-main]
+    scope: {paths: [docs, tests, .github/workflows], shared_mutable_external_boundary: true}
+    assurance: {development: DEV3, ux: UX3}
+    integration_group: STAGE_DELIVERY
+    completion_checks: [m1_gate_pass, m2_gate_pass, m3_gate_pass, global_safety_pass, human_uat_recorded]
+    rollback: keep_stage_delivery_not_ready

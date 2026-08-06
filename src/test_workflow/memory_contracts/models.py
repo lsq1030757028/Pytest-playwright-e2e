@@ -201,14 +201,16 @@ class PrincipalContext(FrozenModel):
     def validate_identity(self) -> PrincipalContext:
         if not self.authenticated:
             raise ValueError("principal must be authenticated")
-        delegated = self.delegator_ref is not None
-        required = (
+        delegation_fields = (
+            self.delegator_ref is not None,
             bool(self.delegation_scope),
             self.delegation_expires_at is not None,
             self.audit_event_ref is not None,
         )
-        if delegated != all(required):
-            raise ValueError("delegated identity requires scope, expiry, and audit event")
+        if any(delegation_fields) and not all(delegation_fields):
+            raise ValueError(
+                "delegated identity requires delegator, scope, expiry, and audit event"
+            )
         if self.delegation_expires_at is not None:
             _require_aware(self.delegation_expires_at, "delegation_expires_at")
         return self

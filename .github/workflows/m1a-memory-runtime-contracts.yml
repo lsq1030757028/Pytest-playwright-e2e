@@ -9,6 +9,7 @@ on:
       - "tests/integration/test_memory_contract_*.py"
       - "docs/m1a-memory-runtime-contracts.md"
       - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
+      - "docs/testing/m1a-memory-runtime-contract-security-repair-test-design.md"
       - ".github/workflows/m1a-memory-runtime-contracts.yml"
   push:
     branches: [main]
@@ -19,6 +20,7 @@ on:
       - "tests/integration/test_memory_contract_*.py"
       - "docs/m1a-memory-runtime-contracts.md"
       - "docs/testing/m1a-memory-runtime-contracts-test-design.md"
+      - "docs/testing/m1a-memory-runtime-contract-security-repair-test-design.md"
       - ".github/workflows/m1a-memory-runtime-contracts.yml"
   workflow_dispatch:
 
@@ -52,6 +54,7 @@ jobs:
             tests/unit/test_memory_contract_policy.py \
             tests/unit/test_memory_contract_ports.py \
             tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_security_regression.py \
             tests/integration/test_memory_contract_proof.py
 
       - name: Unit and contract validation
@@ -66,6 +69,7 @@ jobs:
         run: |
           uv run pytest \
             tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_security_regression.py \
             --junitxml=test-results/m1a-memory-runtime/junit-reference-integration.xml
 
       - name: Replay and tamper integration
@@ -99,19 +103,24 @@ jobs:
     needs: runtime-contract-proof
     runs-on: ubuntu-latest
     steps:
-      - name: Delete merged M1A runtime implementation branch
+      - name: Delete merged M1A runtime implementation branches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          IMPLEMENTATION_BRANCH: agent/m1a-memory-runtime-contracts
         shell: bash
         run: |
           set -euo pipefail
-          if gh api "repos/${GH_REPO}/git/ref/heads/${IMPLEMENTATION_BRANCH}" \
-            >/dev/null 2>&1; then
-            gh api --method DELETE \
-              "repos/${GH_REPO}/git/refs/heads/${IMPLEMENTATION_BRANCH}"
-            echo "deleted ${IMPLEMENTATION_BRANCH}"
-          else
-            echo "already absent ${IMPLEMENTATION_BRANCH}"
-          fi
+          for implementation_branch in \
+            agent/m1a-memory-runtime-contracts \
+            agent/m1a-runtime-contract-remediation \
+            agent/m1a-runtime-contract-security-repair
+          do
+            if gh api "repos/${GH_REPO}/git/ref/heads/${implementation_branch}" \
+              >/dev/null 2>&1; then
+              gh api --method DELETE \
+                "repos/${GH_REPO}/git/refs/heads/${implementation_branch}"
+              echo "deleted ${implementation_branch}"
+            else
+              echo "already absent ${implementation_branch}"
+            fi
+          done
