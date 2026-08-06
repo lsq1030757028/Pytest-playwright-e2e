@@ -5,9 +5,9 @@
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
 > 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
-> 已关闭主模块：`M1A MEMORY_CONTRACTS_AND_NAMESPACES_SPEC`  
-> 当前主模块：`M1A RUNTIME_CONTRACTS`  
-> 当前主模块阶段：`IMPLEMENTATION_NEXT`  
+> 已关闭主模块：`M1A RUNTIME_CONTRACTS`  
+> 当前主模块：`M1B STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC`  
+> 当前主模块阶段：`SPEC_NEXT`  
 > 并行跨切面：`UX Assurance Plane`  
 > 下一 UX 模块：`UX2 FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK_SPEC`  
 > UX Gate：`SHADOW_NONBLOCKING`  
@@ -22,8 +22,8 @@
 M0 Harness Baseline：MERGED
 M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED
-M1A Runtime Contracts：NEXT / DEV3
-M1B Store & Progressive Retrieval：BLOCKED
+M1A Runtime Contracts：MERGED / CLOSED
+M1B Store & Progressive Retrieval：NEXT / SPEC
 TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
 UX Mutation Proof Runner：MERGED / CLOSED
 Five-mutation Campaign：5 / 5 KILLED
@@ -34,16 +34,9 @@ M1 Memory Gate：0 / 1
 Stage Delivery：NOT_READY
 ```
 
-历史阶段记录（非当前状态，保留用于审计）：
+当前项目已经具备需求到测试执行、证据、诊断、回归、重放和发布的基础闭环，也具备真实 Playwright 用户体验 Shadow 验证、UX Mutation 证明，以及可执行的治理型 Memory 领域契约。
 
-```text
-M1A Memory Contracts & Namespaces：SPEC_DRAFT_NEXT
-TodoMVC UX Mutation Proof：SPEC_DRAFT
-UX Mutation Proof Runner：NOT_IMPLEMENTED
-UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
-```
-
-当前项目已经具备需求到测试执行、证据、诊断、回归、重放和发布的基础闭环，也具备真实 Playwright 用户体验 Shadow 验证与 UX Mutation 证明。项目仍未达到阶段产品交付标准，因为 Memory 运行时、跨模型泛化和跨项目架构能力尚未完成。
+项目仍未达到阶段产品交付标准：当前没有生产 Memory Store，尚未验证渐进式检索、跨模型泛化和跨项目架构能力，M1 Memory Gate 仍保持 OPEN。
 
 ---
 
@@ -53,13 +46,14 @@ UX Mutation Proof Runner：VERIFIED / MERGE_PENDING
 flowchart LR
     A[✅ M0 Harness Baseline]
     --> B[✅ M1.0 Memory Benchmark]
-    --> C[✅ M1A Memory SPEC<br/>MERGED / CLOSED]
-    --> D[🟡 M1A Runtime Contracts<br/>NEXT]
-    --> E[🔒 M1B Store / Retrieval<br/>BLOCKED]
-    --> F[⬜ M1C Formation]
-    --> G[⬜ M1D Shared Governance]
-    --> H[⬜ M1E Controlled Evolution]
-    --> I[⬜ M1F Memory Gate]
+    --> C[✅ M1A Memory SPEC]
+    --> D[✅ M1A Runtime Contracts]
+    --> E[🟡 M1B Store / Retrieval SPEC]
+    --> F[⬜ M1B Implementation]
+    --> G[⬜ M1C Formation]
+    --> H[⬜ M1D Shared Governance]
+    --> I[⬜ M1E Controlled Evolution]
+    --> J[⬜ M1F Memory Gate]
 
     B --> U1[✅ UX0 Shadow Runtime]
     U1 --> U2[✅ UX1 Mutation Proof]
@@ -68,7 +62,7 @@ flowchart LR
     U4 --> U5[⬜ Blocking Policy Candidate]
 ```
 
-Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，不改变 M1A Runtime Contracts 的当前执行优先级。
+Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，不改变 M1B SPEC 的当前执行优先级。
 
 ---
 
@@ -84,39 +78,78 @@ Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，
 
 ### M1A Memory Contracts & Namespaces SPEC
 
-业务上已经明确：
+已明确五类 Memory、Namespace、ACL、Provenance、Revision、Lifecycle、Promotion、CAS、Conflict、Forget、Compatibility 和厂商无关 Port 的规范边界。
 
-- 会话历史不能自动变成长记忆；
-- Working、Semantic、Episodic、Procedural、Skill 五类记忆拥有不同安全约束；
-- 项目、Agent 与共享记忆默认隔离，相关性和向量相似度不能绕过权限；
-- 所有长期记忆必须保留来源、证据、Revision、Hash 和转换链路；
-- Candidate Memory 不能直接成为 Fact、Oracle、Policy、Permission 或无限制执行能力；
-- 并发更新使用 CAS，陈旧写入产生显式冲突，禁止静默覆盖；
-- 过期、撤销和遗忘后的内容不能继续有效检索；
-- 文件、SQLite、PostgreSQL、Redis、文档、图或向量后端必须遵守同一业务契约。
+### M1A Runtime Contracts
+
+已把上述规范变成可执行代码与证据：
+
+- 稳定 Canonical JSON、Memory ID、Revision ID 与 SHA-256；
+- Revision 和嵌套 Provenance JSON 不可原地修改，Revision 只允许 Append；
+- Project、Campaign、Agent、Organization、Shared Namespace 精确隔离；
+- 委派范围和过期时间强制执行；
+- ACL 默认拒绝、DENY 优先，相关性和向量相似度不能授权；
+- Candidate、Verified、Promoted、Conflicting、Quarantined、Superseded、Revoked、Expired、Forgotten 状态机；
+- Promotion 必须绑定真实 Actor、Evidence、Benchmark 和 Revision Provenance；
+- CAS、Idempotency、显式 Conflict 和禁止最后写入静默覆盖；
+- 过期、撤销、遗忘后的内容不会进入有效读取；
+- Procedural / Skill 必须通过代码、Schema、Capability、权限和环境兼容性检查；
+- 六类厂商无关 Port 与确定性内存参考适配器；
+- Artifact Manifest、15 项确定性 Proof、独立 Replay 和 Tamper 拒绝。
 
 最终交付事实：
 
 ```text
-Goal：Issue #28 — CLOSED
-SPEC PR：#41 — MERGED
-Merge Commit：4cc4beb99fa9e45509ea1be240b0c2edebbe6137
-PR M1A SPEC Gate：31006481889 — SUCCESS
-PR Full Quality：31006482580 — SUCCESS
-Main M1A SPEC Gate：31006798787 — SUCCESS
-Main Full Quality：31006798834 — SUCCESS
-Release：31006798767 — SUCCESS
-Cleanup：31006798731 — SUCCESS
-Review Threads：0
-SPEC Branch：DELETED
+Goal：Issue #43 — CLOSED
+Base Implementation PR：#44 — MERGED (`0585e357aebda650ee50ee95ff962b3ac81f6d4c`)
+Closure Remediation PR：#45 — MERGED (`ef681c3b679305d7b88d17f776926dc25b76e49f`)
+Integration Secret-scan Repair PR：#61 — MERGED (`bd673cb1cab3edc6d16eca2aded4dcfe4bd45957`)
+PR M1A Runtime Gate：31107607723 — SUCCESS
+PR Full Quality：31107611134 — SUCCESS
+PR Secret Scan：31107608110 — SUCCESS
+PR CodeQL：31107607912 — SUCCESS
+Main M1A Runtime Gate：31108111384 — SUCCESS
+Final Main Full Quality：31108781025 — SUCCESS
+Final Main Secret Scan：31108779724 — SUCCESS
+Final Main CodeQL：31108779549 — SUCCESS
+Release：31108779552 — SUCCESS
+Cleanup：31108781076 — SUCCESS
+Python Distribution Artifact：8970728772 (`sha256:4cba37b10f909bbb6d6123c75dbb140cfd652064bfecda63a010fb7cd2fd0d35`)
+GHCR Build Record：8970756802 (`sha256:140cabd09cb6c5c983d77c22ad846a753db8b05595c6294115d80eb2d48ec0c3`)
+Focused Tests：29 / 29 PASS
+Deterministic Proof：15 / 15 PASS
 Critical False Green：0
+Unauthorized Namespace Actions：0
+Unauthorized Promotion Actions：0
+Review Threads：0
+M1B Goal：Issue #62
 ```
 
-该 SPEC 已关闭，但 M1A Runtime Contracts 尚未实现，因此 M1B Store & Retrieval 继续保持阻塞，M1 Memory Gate 仍为 0 / 1。
+M1A Runtime Contracts 已满足实现、CI、Review、Merge、Release、证据与 Cleanup 条件。M1A 已由本台账正式关闭；M1B Goal #62 已解锁进入 SPEC。
 
 ---
 
-## 4. UX Assurance 当前事实
+## 4. 当前主模块：M1B Store & Progressive Retrieval SPEC
+
+M1B 现在只进入 SPEC 阶段，尚未进入实现，也没有选定数据库、向量引擎、Embedding、Ranking 或索引方案。
+
+SPEC 必须定义：
+
+- 哪些 M1A Port 由生产 Store 实现，哪些仍保持纯领域逻辑；
+- 事务边界、Append-only Revision、Head CAS、Conflict 与 Idempotency 的持久化语义；
+- Project、Campaign、Agent、Organization、Shared Namespace 的物理与逻辑隔离；
+- Hot / Warm / Cold 渐进式检索阶梯和每级预算；
+- ACL、Lifecycle、Retention、Compatibility 在检索前的 Fail-closed 顺序；
+- Keyword、Metadata、Vector、Graph 等召回信号如何组合，但绝不能授予权限；
+- 删除、撤销、过期、遗忘和 Tombstone 的一致性、审计与恢复边界；
+- 故障、超时、索引陈旧、部分不可用和回滚策略；
+- Benchmark、迁移、Replay、Tamper、性能和安全验收标准。
+
+M1B 实现继续被阻塞，直到该 SPEC 完成 Review、Approval、Merge 和 Evidence Gate。
+
+---
+
+## 5. UX Assurance 当前事实
 
 UX0 Synthetic User Runtime：MERGED / CLOSED。它能够通过真实 Playwright Journey 生成体验证据，但 Release Effect 固定为 `NONBLOCKING_SHADOW`，不能替代 Human UAT。
 
@@ -134,22 +167,6 @@ FILTER_ROUTE_STATE_DRIFT
 
 ---
 
-## 5. 当前主模块：M1A Runtime Contracts
-
-下一步把已批准的 Memory 规范变成可执行的领域契约，但仍不选择数据库或向量检索方案。
-
-目标能力：
-
-- 稳定生成并校验 Memory ID、Revision ID 和内容 Hash；
-- 执行 Namespace 与 ACL 的默认拒绝、DENY 优先和共享范围规则；
-- 执行 Lifecycle、Promotion、Revoke、Expire、Forget 状态转换；
-- 执行 CAS、Idempotency 和 Conflict 规则；
-- 提供可测试、可重放、厂商无关的 Store / Query Port 接口。
-
-完成标准：上述规则全部具备可执行实现、负向与对抗测试、独立证据和可回滚交付；完成前不得进入 M1B Store & Retrieval。
-
----
-
 ## 6. 当前自治与安全边界
 
 `MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 范围内的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
@@ -163,8 +180,8 @@ Synthetic User / UX Mutation 额外禁止：真实客户账号、敏感属性和
 ## 7. 近期执行顺序
 
 ```text
-1. M1A Runtime Contracts implementation / verification / closure
-2. M1B Store & Progressive Retrieval SPEC
+1. M1B Store & Progressive Retrieval SPEC
+2. M1B implementation / verification / closure
 3. UX False-positive / False-negative Benchmark SPEC
 4. M1C Memory Formation
 ```

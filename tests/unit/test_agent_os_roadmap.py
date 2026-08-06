@@ -15,8 +15,8 @@ def test_current_state_is_foundation_not_stage_delivery() -> None:
     assert roadmap["current_state"] == "FOUNDATION_BASELINE"
     assert roadmap["stage_delivery_status"] == "NOT_READY"
     assert roadmap["next_milestone"] == "M1"
-    assert roadmap["active_module"] == "M1A_RUNTIME_CONTRACTS"
-    assert roadmap["active_phase"] == "IMPLEMENTATION_NEXT"
+    assert roadmap["active_module"] == "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    assert roadmap["active_phase"] == "SPEC_NEXT"
 
 
 def test_first_stage_delivery_requires_memory_model_and_project_gates() -> None:
@@ -59,29 +59,40 @@ def test_milestone_order_and_statuses_are_unambiguous() -> None:
     }
 
 
-def test_m1_tracks_closed_spec_and_next_runtime_truthfully() -> None:
+def test_m1_tracks_closed_runtime_and_next_m1b_spec_truthfully() -> None:
     roadmap = load_roadmap()
     m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
 
-    assert m1["active_module"] == "M1A_RUNTIME_CONTRACTS"
-    assert m1["module_status"]["M1.0"] == "MERGED"
+    assert m1["active_module"] == "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    assert m1["module_status"]["M1.0"] == "MERGED_CLOSED"
     assert m1["module_status"]["M1A"] == "SPEC_MERGED_CLOSED"
-    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == "NEXT"
-    assert m1["module_status"]["M1B"] == "BLOCKED"
-    assert m1["current_spec"] == {
-        "id": "SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES",
-        "version": "1.0.0",
-        "status": "APPROVED",
-        "goal_issue": 28,
-        "approval_ref": (
-            "APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0"
-        ),
-        "merge_commit": "4cc4beb99fa9e45509ea1be240b0c2edebbe6137",
-        "implementation_blocked_until_spec_merged": False,
-    }
-    assert m1["active_execution"]["status"] == "NEXT"
-    assert m1["active_execution"]["m1b_blocked_until_verified"] is True
-    assert roadmap["next_execution_sequence"][0] == "M1A_RUNTIME_CONTRACTS"
+    assert m1["module_status"]["M1A_RUNTIME_CONTRACTS"] == "MERGED_CLOSED"
+    assert m1["module_status"]["M1B"] == "SPEC_NEXT"
+    runtime = m1["completed_evidence"]["M1A_RUNTIME_CONTRACTS"]
+    assert runtime["goal_issue"] == 43
+    assert runtime["pull_request"] == 44
+    assert runtime["merge_commit"] == "0585e357aebda650ee50ee95ff962b3ac81f6d4c"
+    assert runtime["main_runtime_gate_run"] == 31108111384
+    assert runtime["main_quality_run"] == 31108781025
+    assert runtime["release_run"] == 31108779552
+    assert runtime["critical_false_green"] == 0
+    assert runtime["review_threads"] == 0
+    assert runtime["implementation_branch_deleted"] is True
+    assert runtime["remediation_pull_request"] == 45
+    assert runtime["remediation_merge_commit"] == "ef681c3b679305d7b88d17f776926dc25b76e49f"
+    assert runtime["integration_secret_scan_repair_pull_request"] == 61
+    assert runtime["final_main_head"] == "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957"
+    assert runtime["main_secret_scan_run"] == 31108779724
+    assert runtime["main_codeql_run"] == 31108779549
+    assert runtime["cleanup_run"] == 31108781076
+    assert runtime["m1b_goal_issue"] == 62
+    assert m1["active_execution"]["phase"] == "SPEC"
+    assert m1["active_execution"]["goal_issue"] == 62
+    assert m1["active_execution"]["implementation_blocked_until_spec_approved"] is True
+    assert m1["active_execution"]["production_backend_selected"] is False
+    assert roadmap["next_execution_sequence"][0] == (
+        "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    )
     assert m1["gates"]["status"] == "OPEN"
 
 
