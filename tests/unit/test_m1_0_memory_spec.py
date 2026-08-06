@@ -209,12 +209,11 @@ def test_spec_aligns_with_active_roadmap_and_development_ssot() -> None:
     assert roadmap["current_state"] == "FOUNDATION_BASELINE"
     assert roadmap["stage_delivery_status"] == "NOT_READY"
     assert roadmap["next_milestone"] == "M1"
-    assert roadmap["next_execution_sequence"][0] in {
-        "M1A",
-        "M1A_RUNTIME_CONTRACTS",
-    }
+    assert roadmap["next_execution_sequence"][0] == (
+        "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
+    )
     m1 = next(item for item in roadmap["milestones"] if item["id"] == "M1")
-    assert m1["module_status"]["M1.0"] == "MERGED"
+    assert m1["module_status"]["M1.0"] == "MERGED_CLOSED"
     assert m1["completed_evidence"]["M1.0"]["critical_false_green"] == 0
     assert spec["implementation_sequence"][0] == "M1.0_SPEC"
     assert development_ssot["assurance_profiles"]["DEV3"]["agent_may_downgrade"] is False
