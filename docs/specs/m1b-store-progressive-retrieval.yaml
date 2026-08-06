@@ -1,0 +1,511 @@
+spec_id: SPEC-M1B-STORE-PROGRESSIVE-RETRIEVAL
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 62
+work_item_id: M1B-STORE-RETRIEVAL-SPEC
+parent_campaign_issue: 59
+top_level_campaign_issue: 65
+milestone: M1
+beta_slice_support: BETA-D
+blocks_beta_a: false
+authority:
+  mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+  m1a_spec: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+  m1a_goal_issue: 43
+  m1a_status: CLOSED
+assurance:
+  development: DEV3
+  ux: UX0
+product_claim: SPEC_ONLY
+normative_vendor_selection:
+  database: UNSELECTED
+  vector_engine: UNSELECTED
+  embedding_provider: UNSELECTED
+  graph_engine: UNSELECTED
+  cache: UNSELECTED
+  cloud: UNSELECTED
+vendor_neutrality:
+  physical_adapter_may_vary: true
+  logical_memory_id_stable_across_migration: true
+  canonical_content_hash_stable_across_migration: true
+  relevance_provider_is_not_authority: true
+m1a_contracts_preserved:
+  ports:
+    - MemoryRevisionPort
+    - MemoryStatePort
+    - MemoryAclPort
+    - MemoryQueryPort
+    - MemoryAuditPort
+    - MemoryMaintenancePort
+  invariants:
+    - immutable_revision
+    - append_only_state_acl_audit_events
+    - authenticated_principal
+    - namespace_before_relevance
+    - acl_before_content_release
+    - provenance_and_content_hash
+    - head_compare_and_swap
+    - idempotency_bound_to_authenticated_request
+    - retention_revoke_expire_forget
+    - candidate_never_becomes_oracle
+store_authority:
+  primary_store_authoritative: true
+  indexes_are_derived: true
+  caches_are_derived: true
+  search_scores_are_non_authoritative: true
+  content_release_requires_primary_revalidation: true
+  index_or_cache_cannot_resurrect_invalid_memory: true
+physical_isolation:
+  partition_key_fields:
+    - organization_id
+    - project_id_or_dash
+    - scope_kind
+    - scope_id
+  authorized_partition_handles_before_search: true
+  global_cross_project_search: false
+  shared_scope_requires_membership_and_acl: true
+  unauthorized_candidate_counts_visible: false
+  unauthorized_similarity_visible: false
+transaction_contract:
+  all_or_nothing: true
+  append_revision:
+    - idempotency_reservation
+    - immutable_revision_append
+    - head_compare_and_swap
+    - audit_event_append
+    - index_outbox_append
+  state_transition:
+    - state_event_append
+    - effective_state_sequence_advance
+    - audit_event_append
+    - invalidation_outbox_append
+  acl_change:
+    - acl_event_append
+    - acl_epoch_advance
+    - audit_event_append
+    - invalidation_outbox_append
+  forget:
+    - durable_tombstone_append
+    - content_release_barrier_advance
+    - head_and_content_inaccessibility
+    - audit_event_append
+    - invalidation_outbox_append
+  acknowledgement_requires_commit: true
+  partial_commit_result: INVALID_TRANSACTION
+consistency:
+  per_logical_memory_write: SERIALIZABLE_OR_EQUIVALENT
+  compare_and_append_conflict: EXPLICIT_CONFLICT
+  query_view: PRIMARY_VALIDATED_SNAPSHOT
+  read_your_writes: true
+  monotonic_head_reads: true
+  index_delivery: AT_LEAST_ONCE_IDEMPOTENT
+  outbox_sequence_per_namespace: MONOTONIC
+  cache_fill_after_primary_validation: true
+  clock_source: UTC_AWARE_INJECTABLE
+retrieval_request:
+  required_fields:
+    - request_id
+    - actor_context
+    - exact_authorized_namespaces
+    - read_mode
+    - objective_ref
+    - objective_digest
+    - authority_refs
+    - compatibility_context
+    - retrieval_profile_ref
+    - budget_profile_ref
+    - now
+  optional_fields:
+    - exact_memory_refs
+    - memory_kinds
+    - metadata_filters
+    - keyword_terms
+    - graph_seed_refs
+    - vector_query_ref
+    - minimum_coverage_obligations
+  forbidden_fields:
+    - wildcard_cross_project_namespace
+    - raw_unversioned_embedding
+    - model_declared_permission
+    - relevance_override_of_authority
+filter_pipeline:
+  order:
+    - authenticate_principal
+    - resolve_exact_namespace_handles
+    - evaluate_acl
+    - resolve_head_and_effective_lifecycle
+    - apply_retention_and_forget_barrier
+    - validate_provenance_and_integrity
+    - apply_compatibility
+    - enforce_query_budget
+    - discover_and_rank_relevance
+    - primary_revalidate_selected_refs
+    - release_content
+  filter_before_ranking:
+    namespace: true
+    acl: true
+    lifecycle: true
+    retention: true
+    compatibility: true
+  fail_closed_on_unknown_authority: true
+  fail_closed_on_unknown_lifecycle: true
+lifecycle_release_policy:
+  ADVISORY:
+    allowed: [CANDIDATE, VERIFIED, PROMOTED]
+    candidate_must_be_labeled: true
+  EVIDENCE_BEARING:
+    allowed: [VERIFIED, PROMOTED]
+    provenance_required: true
+  PRODUCTION_RETRIEVAL:
+    allowed: [PROMOTED]
+    promotion_and_compatibility_required: true
+  always_excluded:
+    - CONFLICTING
+    - QUARANTINED
+    - SUPERSEDED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+progressive_stages:
+  HOT:
+    order: 1
+    purpose: exact_refs_current_campaign_recent_verified_and_promoted
+    channels: [EXACT_REF, METADATA, KEYWORD]
+    candidate_limit: 24
+    release_limit: 6
+    token_limit: 2000
+    latency_budget_ms: 250
+    escalation_requires: unmet_coverage_or_insufficient_evidence
+  WARM:
+    order: 2
+    purpose: broader_authorized_project_and_shared_recall
+    channels: [EXACT_REF, METADATA, KEYWORD, VECTOR, GRAPH]
+    candidate_limit: 96
+    release_limit: 12
+    token_limit: 6000
+    latency_budget_ms: 1000
+    escalation_requires: explicit_cold_reason_and_remaining_budget
+  COLD:
+    order: 3
+    purpose: archived_history_parent_chains_and_old_episodes
+    channels: [EXACT_REF, METADATA, KEYWORD, VECTOR, GRAPH, ARCHIVE]
+    candidate_limit: 256
+    release_limit: 20
+    token_limit: 12000
+    latency_budget_ms: 3000
+    escalation_requires: none
+  budgets_are_cumulative: true
+  no_automatic_stage_skip: true
+  stop_when:
+    - required_exact_refs_resolved
+    - coverage_obligations_met
+    - next_stage_budget_unavailable
+    - authority_or_policy_block
+    - deterministic_stop_rule_matches
+recall_channels:
+  EXACT_REF:
+    authority: NON_AUTHORITY_LOCATOR
+    required_recall_percent: 100
+  METADATA:
+    authority: NON_AUTHORITY_SIGNAL
+    deterministic_sort: true
+  KEYWORD:
+    authority: NON_AUTHORITY_SIGNAL
+    tokenizer_profile_version_required: true
+  VECTOR:
+    authority: NON_AUTHORITY_SIGNAL
+    optional: true
+    embedding_profile_version_required: true
+    raw_query_or_embedding_persistence_default: false
+  GRAPH:
+    authority: NON_AUTHORITY_SIGNAL
+    optional: true
+    edge_type_allowlist_required: true
+  ARCHIVE:
+    authority: NON_AUTHORITY_SIGNAL
+    cold_only: true
+fusion:
+  algorithm: WEIGHTED_RECIPROCAL_RANK_FUSION
+  version: 1.0.0
+  reciprocal_rank_constant: 60
+  default_weights:
+    EXACT_REF: 100
+    METADATA: 4
+    KEYWORD: 3
+    VECTOR: 2
+    GRAPH: 1
+    ARCHIVE: 1
+  exact_ref_precedence_requires_authorization: true
+  missing_channel_contributes_zero: true
+  score_rounding_decimal_places: 12
+  deterministic_tie_breakers:
+    - exact_ref_match_desc
+    - source_channel_count_desc
+    - lifecycle_priority_desc
+    - created_at_desc
+    - namespace_canonical_asc
+    - memory_ref_asc
+  score_may_override_filter: false
+  score_may_create_oracle_authority: false
+budget_profiles:
+  DEFAULT:
+    total_latency_ms: 3000
+    total_token_limit: 12000
+    total_release_limit: 20
+    total_candidate_limit: 256
+    maximum_stage: COLD
+    maximum_channel_retries: 1
+  HOT_ONLY:
+    total_latency_ms: 250
+    total_token_limit: 2000
+    total_release_limit: 6
+    total_candidate_limit: 24
+    maximum_stage: HOT
+    maximum_channel_retries: 0
+  STRICT_EVIDENCE:
+    total_latency_ms: 2000
+    total_token_limit: 8000
+    total_release_limit: 12
+    total_candidate_limit: 128
+    maximum_stage: WARM
+    maximum_channel_retries: 0
+retrieval_plan:
+  required_fields:
+    - plan_id
+    - request_digest
+    - actor_and_authority_digest
+    - namespace_handles
+    - filter_profile_version
+    - channel_profile_versions
+    - fusion_profile_version
+    - stage_and_budget_plan
+    - stop_rules
+    - index_snapshot_refs
+    - primary_snapshot_ref
+    - cursor_binding_digest
+retrieval_result:
+  required_fields:
+    - request_id
+    - plan_ref
+    - result_status
+    - stage_reached
+    - released_memory_refs
+    - released_revision_hashes
+    - release_reasons
+    - omitted_layer_reasons
+    - budget_consumption
+    - source_channel_contributions
+    - primary_snapshot_ref
+    - index_snapshot_refs
+    - filter_profile_version
+    - fusion_profile_version
+    - evidence_bundle_ref
+  result_status:
+    - COMPLETE
+    - COMPLETE_WITH_LIMITS
+    - DEGRADED
+    - INSUFFICIENT_EVIDENCE
+    - BLOCKED
+  unauthorized_filtered_counts_exposed: false
+cursor_contract:
+  opaque: true
+  integrity_protected: true
+  bound_fields:
+    - actor_identity_digest
+    - authorized_namespace_digest
+    - request_digest
+    - read_mode
+    - filter_profile_version
+    - fusion_profile_version
+    - primary_snapshot_ref
+    - index_snapshot_refs
+    - stage
+    - channel_cursors
+    - last_sort_key
+    - acl_epoch
+    - forget_barrier_epoch
+  actor_or_query_change_result: CURSOR_INVALID
+  expired_or_tampered_result: CURSOR_INVALID
+  raw_content_in_cursor: false
+derived_index_contract:
+  candidate_payload: REFERENCE_AND_NON_SENSITIVE_FEATURES_ONLY
+  plaintext_content_default: false
+  namespace_partition_required: true
+  sequence_and_source_revision_required: true
+  rebuild_replayable: true
+  stale_candidate_requires_primary_revalidation: true
+  orphan_candidate_result: FILTERED
+  duplicate_event_result: IDEMPOTENT
+  poison_or_tamper_result: QUARANTINE_INDEX_PARTITION
+cache_contract:
+  cache_key_includes:
+    - actor_authority_digest
+    - namespace_digest
+    - read_mode
+    - request_digest
+    - filter_profile_version
+    - fusion_profile_version
+    - primary_snapshot_ref
+    - acl_epoch
+    - lifecycle_epoch
+    - forget_barrier_epoch
+  cache_content_after_primary_validation_only: true
+  stale_or_unknown_epoch_result: MISS
+  cache_failure_result: BYPASS
+  cache_may_outlive_forget_barrier: false
+invalidation_and_forget:
+  revoke_expire_forget_advance_barrier: true
+  every_query_checks_current_barrier: true
+  forget_acknowledgement_requires:
+    - durable_tombstone
+    - primary_content_inaccessible
+    - invalidation_outbox_durable
+    - cache_barrier_advanced
+    - index_barrier_advanced
+    - audit_event_committed
+  asynchronous_physical_cleanup_allowed_after_barrier: true
+  content_release_after_forget_ack: false
+  backup_restore_requires_tombstone_replay_before_reads: true
+  index_rebuild_requires_tombstone_and_state_stream_first: true
+  verification_surfaces:
+    - primary_store
+    - keyword_index
+    - vector_index
+    - graph_index
+    - cache
+    - archive
+    - replay_bundle
+degraded_modes:
+  PRIMARY_STORE_UNAVAILABLE:
+    content_release: BLOCKED
+    allowed_output: metadata_free_error_and_retry_after
+  INDEX_UNAVAILABLE:
+    action: authorized_partition_primary_fallback
+    maximum_stage: HOT
+    result_status: DEGRADED
+  VECTOR_UNAVAILABLE:
+    action: omit_vector_and_continue
+    result_status: DEGRADED
+  GRAPH_UNAVAILABLE:
+    action: omit_graph_and_continue
+    result_status: DEGRADED
+  KEYWORD_UNAVAILABLE:
+    action: metadata_and_exact_only
+    result_status: DEGRADED
+  CACHE_UNAVAILABLE:
+    action: bypass_cache
+    result_status: COMPLETE_WITH_LIMITS
+  INDEX_STALE:
+    action: primary_revalidate_every_candidate
+    result_status: DEGRADED
+  ACL_OR_FORGET_EPOCH_UNKNOWN:
+    content_release: BLOCKED
+  TIME_BUDGET_EXHAUSTED:
+    content_release: only_already_primary_validated_results
+    result_status: COMPLETE_WITH_LIMITS
+  retry_policy:
+    maximum_per_channel: 1
+    no_retry_after_authority_failure: true
+    no_retry_storm: true
+observability:
+  required_metrics:
+    - query_latency_by_stage
+    - candidate_and_release_counts_after_authorization
+    - channel_latency_and_error
+    - primary_revalidation_rejection
+    - stale_index_lag
+    - cache_hit_after_epoch_validation
+    - retrieval_false_positive
+    - retrieval_false_negative
+    - exact_ref_recall
+    - token_budget_consumption
+    - degraded_mode_count
+    - forget_barrier_latency
+  prohibited_metrics:
+    - unauthorized_namespace_candidate_count
+    - unauthorized_similarity_score
+    - raw_secret_or_personal_content
+  structured_events:
+    - RETRIEVAL_PLANNED
+    - STAGE_STARTED
+    - CHANNEL_COMPLETED
+    - CANDIDATE_FILTERED
+    - CONTENT_RELEASED
+    - DEGRADED_MODE_ENTERED
+    - RETRIEVAL_COMPLETED
+    - INDEX_INVALIDATION_APPLIED
+    - FORGET_BARRIER_VERIFIED
+replay_evidence:
+  required:
+    - request_and_authority_digest
+    - primary_snapshot_ref
+    - index_snapshot_refs
+    - filter_fusion_and_channel_profile_versions
+    - stage_budget_and_stop_decisions
+    - candidate_reference_sets_after_authorization
+    - per_candidate_filter_and_release_decision
+    - channel_ranks_and_fusion_score
+    - released_revision_hashes
+    - cursor_digest
+    - degraded_mode_and_omission_reasons
+    - result_manifest_hash
+  raw_unauthorized_content_forbidden: true
+  deterministic_replay_required: true
+benchmark:
+  ground_truth_hidden_from_actor: true
+  scenario_families:
+    - exact_ref_and_head
+    - namespace_and_acl_isolation
+    - lifecycle_retention_and_compatibility
+    - keyword_recall
+    - vector_recall
+    - graph_recall
+    - fusion_and_ties
+    - stale_index_and_cache
+    - revoke_expire_forget
+    - poisoning_and_tamper
+    - outage_and_degraded_mode
+    - cursor_and_pagination
+    - latency_token_and_result_budget
+    - migration_and_rebuild
+  thresholds:
+    critical_unauthorized_release_count: 0
+    forgotten_content_release_count: 0
+    exact_ref_recall_percent: 100
+    required_authority_memory_recall_percent: 100
+    noncritical_labeled_recall_percent_minimum: 95
+    noncritical_labeled_precision_percent_minimum: 90
+    replay_equivalence_percent: 100
+    deterministic_order_percent: 100
+    p95_default_latency_ms_maximum: 3000
+    p95_hot_latency_ms_maximum: 250
+  minimum_repetitions:
+    deterministic: 3
+    stochastic_provider_profile: 5
+migration_and_rollback:
+  preserve_memory_revision_and_event_identity: true
+  preserve_canonical_hash: true
+  shadow_read_before_cutover: true
+  dual_write_requires_idempotent_outbox: true
+  backfill_hash_and_count_manifest: true
+  tombstone_and_acl_before_content: true
+  no_read_cutover_before_replay_and_diff_green: true
+  rollback_restores_previous_read_path: true
+  rollback_cannot_resurrect_forgotten_content: true
+  destructive_migration_forbidden: true
+implementation_gate:
+  implementation_allowed_after_spec_merge: true
+  implementation_work_item_separate: true
+  first_reference_profile_may_select_vendor: true
+  selected_vendor_is_not_domain_authority: true
+  m1c_memory_formation_out_of_scope: true
+  shared_memory_coordination_out_of_scope: true
+  autonomous_promotion_out_of_scope: true
+acceptance:
+  dedicated_spec_gate_green: true
+  full_ci_green: true
+  secret_scan_green: true
+  codeql_green: true
+  review_threads: 0
+  blockers: 0
+  runtime_implementation_absent: true

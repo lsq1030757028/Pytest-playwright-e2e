@@ -1,0 +1,45 @@
+name: m1b-store-progressive-retrieval-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/m1b-store-progressive-retrieval-spec.md"
+      - "docs/specs/m1b-store-progressive-retrieval.yaml"
+      - "docs/security/m1b-store-progressive-retrieval-threat-model.md"
+      - "docs/testing/m1b-store-progressive-retrieval-test-design.md"
+      - "tests/unit/test_m1b_store_progressive_retrieval_spec.py"
+      - ".github/workflows/m1b-store-progressive-retrieval-spec.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/m1b-store-progressive-retrieval-spec.md"
+      - "docs/specs/m1b-store-progressive-retrieval.yaml"
+      - "docs/security/m1b-store-progressive-retrieval-threat-model.md"
+      - "docs/testing/m1b-store-progressive-retrieval-test-design.md"
+      - "tests/unit/test_m1b_store_progressive_retrieval_spec.py"
+      - ".github/workflows/m1b-store-progressive-retrieval-spec.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-m1b-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint focused M1B SPEC checks
+        run: |
+          uv run ruff check tests/unit/test_m1b_store_progressive_retrieval_spec.py
+
+      - name: Validate M1B Store and Progressive Retrieval SPEC
+        run: |
+          uv run pytest tests/unit/test_m1b_store_progressive_retrieval_spec.py -q
