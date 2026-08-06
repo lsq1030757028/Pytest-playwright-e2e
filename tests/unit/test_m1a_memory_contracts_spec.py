@@ -342,4 +342,4 @@ def test_m1a_spec_is_approved_closed_and_runtime_is_next() -> None:
         "MERGED_CLOSED"
     )
     assert m1["module_status"]["M1B"] == "SPEC_NEXT"
-    assert m1["module_status"]["M1.0"] == "MERGED"
+    assert m1["module_status"]["M1.0"] == "MERGED_CLOSED"
