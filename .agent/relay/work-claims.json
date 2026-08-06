@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 13,
-  "claim_sequence": 4,
+  "revision": 14,
+  "claim_sequence": 5,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
       "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
@@ -18,6 +18,20 @@
       "heartbeat_at": "2026-08-06T13:58:00Z",
       "expires_at": "2026-08-06T15:58:00Z",
       "last_checkpoint": "POST_MERGE_SECRET_GATE_FALSE_POSITIVE_REPAIR_PR_61_OPEN"
+    },
+    "UX-FP-FN-BENCHMARK-SPEC": {
+      "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
+      "claim_token": "claim-ux-fp-fn-benchmark-spec-5-20260806T140300Z",
+      "surface": "RELAY_RUNTIME",
+      "state": "CLAIMED",
+      "exclusive_domain": "ux-benchmark",
+      "target_branch": "spec/ux-fp-fn-benchmark",
+      "target_pr": null,
+      "expected_head_sha": "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957",
+      "started_at": "2026-08-06T14:03:00Z",
+      "heartbeat_at": "2026-08-06T14:03:00Z",
+      "expires_at": "2026-08-06T16:03:00Z",
+      "last_checkpoint": "AUTHORITY_RESOLVED_READY_FOR_SPEC_BRANCH_AND_DRAFT_PR"
     }
   },
   "recovered_claims": [],
