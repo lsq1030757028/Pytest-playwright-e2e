@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
-  "enabled": false,
-  "revision": 5,
+  "enabled": true,
+  "revision": 6,
   "claim_sequence": 2,
   "claims": {},
   "recovered_claims": [],
