@@ -159,7 +159,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uvx ruff@0.16.1 check \
+          python -m pip install --disable-pip-version-check --quiet ruff==0.16.1
+          python -m ruff check \
             tests/unit/test_m1a_memory_contracts_spec.py \
             tests/unit/test_ux_shadow_delivery_status.py \
             tests/unit/test_ux1_todomvc_mutation_spec.py \
