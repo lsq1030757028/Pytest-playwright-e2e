@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 2,
-  "claim_sequence": 1,
+  "revision": 3,
+  "claim_sequence": 2,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
       "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
@@ -14,9 +14,23 @@
       "target_branch": "agent/m1a-runtime-contract-remediation",
       "target_pr": 45,
       "expected_head_sha": "3a04029584a728c4a0e612a5bd347321e6b37c9c",
-      "started_at": "2026-08-06T11:55:00Z",
-      "heartbeat_at": "2026-08-06T11:55:00Z",
-      "expires_at": "2026-08-06T12:25:00Z",
+      "started_at": "2026-08-06T11:47:00Z",
+      "heartbeat_at": "2026-08-06T11:47:00Z",
+      "expires_at": "2026-08-06T12:17:00Z",
+      "last_checkpoint": "ACCEPTANCE_ONLY_NO_DEVELOPMENT_WRITES"
+    },
+    "RELAY-CONVERSATION-ISOLATION-CLOSE": {
+      "work_item_id": "RELAY-CONVERSATION-ISOLATION-CLOSE",
+      "claim_token": "c-b-2",
+      "surface": "RELAY_RUNTIME",
+      "state": "CLAIMED",
+      "exclusive_domain": "relay-control-plane",
+      "target_branch": "spec/hourly-github-relay",
+      "target_pr": 51,
+      "expected_head_sha": "7ad44bf455703a4ceec211e5ef4070e9d07edd69",
+      "started_at": "2026-08-06T11:47:00Z",
+      "heartbeat_at": "2026-08-06T11:47:00Z",
+      "expires_at": "2026-08-06T12:17:00Z",
       "last_checkpoint": "ACCEPTANCE_ONLY_NO_DEVELOPMENT_WRITES"
     }
   },
