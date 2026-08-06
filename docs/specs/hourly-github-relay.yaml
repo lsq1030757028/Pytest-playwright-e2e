@@ -16,6 +16,7 @@ effective_protocol:
     - ADDENDUM-HOURLY-GITHUB-RELAY-CONTENTION@0.1.2
     - ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1
     - ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0
+    - ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0
   precedence:
     more_specific_or_newer_addendum_controls: true
     markdown_yaml_prompt_lease_contradiction: REPLAN_REQUIRED
@@ -26,8 +27,7 @@ scope:
     timezone: Asia/Shanghai
     cadence: HOURLY
     pilot_invocation_cap: 8
-    intended_first: "2026-08-06T02:00:00+08:00"
-    intended_last: "2026-08-06T09:00:00+08:00"
+    production_safety_fuse_runs: 720
   execution:
     surface_allowed: [CHAT, CODEX, UNKNOWN]
     attestation: SELF_REPORTED
@@ -44,8 +44,6 @@ scope:
       - INSPECT_OR_RERUN_CI_WHEN_PRECONDITIONS_JUSTIFY
     forbidden:
       - DIRECT_MAIN_WRITE
-      - MERGE_PR
-      - ENABLE_AUTO_MERGE
       - BYPASS_FAILED_GATE
       - PRODUCTION_DATA_WRITE
       - PERSONAL_DATA_WRITE
@@ -62,6 +60,8 @@ context_model:
     - RUN
   run_is_roadmap_step: false
   run_is_work_item_completion_promise: false
+  chat_history_authoritative: false
+  durable_handoff_channel: GITHUB_ONLY
   project_sources:
     - AGENTS.md
     - docs/github-development-ssot.md
@@ -126,6 +126,44 @@ context_model:
     - ci
     - final_status
     - next_action
+
+conversation_isolation:
+  addendum: ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0
+  architecture:
+    human_control_session:
+      scheduled_task_binding: forbidden
+      responsibilities:
+        - ARCHITECTURE_DISCUSSION
+        - OWNER_DECISIONS
+        - CHANGE_REQUESTS
+        - INTERACTIVE_IMPLEMENTATION
+        - REVIEW_GITHUB_EVIDENCE
+    relay_runtime_session:
+      dedicated_conversation_required: true
+      human_design_discussion: forbidden
+      prior_chat_prose_as_authority: forbidden
+      durable_context: GITHUB_ONLY
+      output_role: BOUNDED_RECEIPT
+  binding_gate:
+    accepted_only_when:
+      - TASK_CREATED_FROM_DEDICATED_RELAY_RUNTIME_SESSION
+      - SESSION_NOT_USED_FOR_NORMAL_COLLABORATION
+      - HUMAN_CONTROL_SESSION_RECEIVES_NO_SCHEDULED_REPLY
+      - PROMPT_DECLARES_SESSION_CLASS_RELAY_RUNTIME
+      - PROMPT_DECLARES_DURABLE_CONTEXT_GITHUB_ONLY
+    unknown_or_ambiguous_binding: DISABLE_TASK
+    retarget_assumption: forbidden
+  migration:
+    - DISABLE_OLD_TASK
+    - CREATE_DEDICATED_RELAY_RUNTIME_SESSION
+    - CREATE_NEW_TASK_FROM_THAT_SESSION
+    - RUN_READ_ONLY_BINDING_PROBE
+    - VERIFY_GITHUB_RECORD
+    - VERIFY_RUNTIME_RECEIPT_LOCATION
+    - ENABLE_PRODUCTION_WRITES
+  current_human_session_task_state: DISABLED
+  target_conversation_parameter_available: false
+  owner_ui_action_required: true
 
 run_token:
   format: relay-<campaign-id>-<monotonic-sequence>-<UTC-start-time>
@@ -214,6 +252,10 @@ lifecycle:
     - MODEL_UNVERIFIED
     - OUT_OF_MANDATE
     - RELEASE_ATTESTATION_INCOMPLETE
+    - SESSION_ISOLATION_FAILED
+    - SESSION_BINDING_UNKNOWN
+    - CONTEXT_NOT_DURABLE
+    - CHAT_RECEIPT_FAILED
     - PILOT_ACCEPTED_STOP_REQUESTED
     - PILOT_ABORTED
     - PROGRAM_COMPLETE
@@ -338,31 +380,14 @@ termination:
 chat_final:
   required_every_run: true
   silence_forbidden: true
+  human_control_session_scheduled_reply: forbidden
+  runtime_session_role: BOUNDED_RECEIPT
+  suggested_max_chinese_characters: 500
   first_line: "Run Token：<token or UNACQUIRED>；状态：<status>"
-  required_fields:
-    - business_progress
-    - lifecycle_status
-    - campaign
-    - work_item
-    - checkpoint
-    - actual_work
-    - files_or_none
-    - commits_or_none
-    - issue_pr_branch
-    - ci_status
-    - blocker_or_actual_error
-    - next_valid_action
-    - github_record_location
-    - lease_release_truth
-    - surface
-    - model
-    - reasoning_mode
-  busy_additional_fields:
-    - CONTENTION_CLASS
-    - HOLDER_TOKEN
-    - HEARTBEAT
-    - EXPIRY
-    - ACTIVITY_EVIDENCE_OR_UNCONFIRMED
+  normal_second_line: "GitHub：<authoritative PR or Issue>；Checkpoint：<short checkpoint>；下一动作：<short next action>"
+  complete_audit_location: GITHUB_RUN_RECORD
+  full_platform_error_when_github_write_failed: required
+  duplicate_full_github_audit: forbidden
   must_agree_with_github_final: true
 
 idempotency:
@@ -392,13 +417,16 @@ acceptance:
     - FENCING_BEFORE_MUTATION
     - START_AND_RELEASE_ATTESTED_FINAL_CORRECT_AUTHORITY
     - NO_DUPLICATE_COMMENTS
-    - CHAT_FINAL_GENERATED_EVERY_RUN
+    - RUNTIME_RECEIPT_GENERATED_EVERY_RUN
     - NO_OVERLAPPING_DEVELOPMENT_OWNERSHIP
     - COMMITS_TRACE_TO_RUN_TOKENS
     - CAMPAIGN_AND_WORK_ITEM_RESTORED_WITHOUT_PRIVATE_CHAT_DEPENDENCY
     - FAILED_GATES_NOT_BYPASSED
     - RUNTIME_FIELDS_TRUTHFUL_OR_UNKNOWN
     - NO_UNRESOLVED_LEASE_LOST_OWNERSHIP_OR_AUDIT_INCONSISTENCY
+    - NO_SCHEDULED_RESULT_IN_HUMAN_CONTROL_SESSION_DURING_BINDING_PROBE
+    - BOUNDED_RECEIPT_IN_DEDICATED_RUNTIME_SESSION
+    - DISABLING_TASK_STOPS_SCHEDULED_GITHUB_WRITES
 
 promotion_requires:
   - SEPARATE_OWNER_AUTHORITY
@@ -407,9 +435,12 @@ promotion_requires:
   - SCHEMAS_AND_VALIDATION
   - TESTS
   - OPERATIONAL_MONITORING
+  - DEDICATED_RELAY_RUNTIME_SESSION
+  - PASSED_READ_ONLY_BINDING_PROBE
   - NO_AUTO_MERGE_UNLESS_SEPARATELY_AUTHORIZED
 
 rollback:
   - DISABLE_SCHEDULED_TASK
   - CLOSE_OR_REVERT_PILOT_GOVERNANCE_ASSETS
   - PRESERVE_AUDIT_HISTORY
+  - CONTINUE_INTERACTIVE_WORK_THROUGH_HUMAN_CONTROL_SESSION_AND_SHARED_LEASE
