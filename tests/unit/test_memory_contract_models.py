@@ -10,6 +10,8 @@ from test_workflow.memory_contracts import (
     MemoryNamespace,
     MemoryRevision,
     NamespaceScopeKind,
+    PrincipalContext,
+    PrincipalType,
     Provenance,
     RetentionPolicy,
     TransformationKind,
@@ -171,4 +173,32 @@ def test_working_memory_requires_ttl_even_with_campaign_close() -> None:
             created_by="agent-owner",
             idempotency_key="idem-working-campaign",
             created_at=FIXED_NOW,
+        )
+
+
+@pytest.mark.parametrize(
+    "delegation_fields",
+    (
+        {"delegator_ref": "user-delegator"},
+        {"delegation_scope": (make_namespace().canonical,)},
+        {"delegation_expires_at": FIXED_NOW + timedelta(hours=1)},
+        {"audit_event_ref": "audit/delegation"},
+        {
+            "delegation_scope": (make_namespace().canonical,),
+            "delegation_expires_at": FIXED_NOW + timedelta(hours=1),
+            "audit_event_ref": "audit/delegation",
+        },
+    ),
+)
+def test_partial_delegation_identity_is_rejected(
+    delegation_fields: dict,
+) -> None:
+    with pytest.raises(ValidationError, match="delegated identity requires"):
+        PrincipalContext(
+            principal_id="agent-delegated",
+            principal_type=PrincipalType.AGENT,
+            organization_id="org-1",
+            project_id="project-1",
+            agent_id="agent-delegated",
+            **delegation_fields,
         )
