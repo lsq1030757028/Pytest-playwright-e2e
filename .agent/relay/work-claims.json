@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 42,
-  "claim_sequence": 5,
+  "revision": 43,
+  "claim_sequence": 6,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
       "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
@@ -32,6 +32,20 @@
       "heartbeat_at": "2026-08-06T15:15:00Z",
       "expires_at": "2026-08-06T17:15:00Z",
       "last_checkpoint": "FINAL_HEAD_REVERIFIED_WAITING_FOR_M1A_INTEGRATION_RELEASE"
+    },
+    "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
+      "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
+      "claim_token": "claim-test-agent-runtime-beta-architecture-spec-6-20260806T152700Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "CLAIMED",
+      "exclusive_domain": "beta-product-architecture",
+      "target_branch": "spec/test-agent-runtime-beta",
+      "target_pr": null,
+      "expected_head_sha": "168477a988f4b91d9f51cc44df4512d08dcbfb2b",
+      "started_at": "2026-08-06T15:27:00Z",
+      "heartbeat_at": "2026-08-06T15:27:00Z",
+      "expires_at": "2026-08-06T17:27:00Z",
+      "last_checkpoint": "CLAIMED_FROM_GOAL_66_FOR_VERTICAL_BETA_SPEC"
     }
   },
   "recovered_claims": [],
