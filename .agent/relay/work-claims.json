@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 48,
-  "claim_sequence": 6,
+  "revision": 49,
+  "claim_sequence": 7,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -15,8 +15,8 @@
       "target_pr": 63,
       "expected_head_sha": "59bb81a6c82af992e9951117200d3202733cddd8",
       "started_at": "2026-08-06T14:03:00Z",
-      "heartbeat_at": "2026-08-06T16:08:00Z",
-      "expires_at": "2026-08-06T18:08:00Z",
+      "heartbeat_at": "2026-08-06T16:12:00Z",
+      "expires_at": "2026-08-06T18:12:00Z",
       "last_checkpoint": "CURRENT_MAIN_SYNCED_ZERO_OVERLAP_FINAL_GATES_RUNNING"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
@@ -29,9 +29,23 @@
       "target_pr": 67,
       "expected_head_sha": "6d1770b408e5231a9ef917beba72b9e015c3d31d",
       "started_at": "2026-08-06T15:27:00Z",
-      "heartbeat_at": "2026-08-06T16:08:00Z",
-      "expires_at": "2026-08-06T18:08:00Z",
+      "heartbeat_at": "2026-08-06T16:12:00Z",
+      "expires_at": "2026-08-06T18:12:00Z",
       "last_checkpoint": "OWNER_RETRIGGERED_FULL_CI_AND_CODEQL_AFTER_RUNNER_ONLY_FAILURES"
+    },
+    "M1B-STORE-RETRIEVAL-SPEC": {
+      "work_item_id": "M1B-STORE-RETRIEVAL-SPEC",
+      "claim_token": "claim-m1b-store-retrieval-spec-7-20260806T161200Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "CLAIMED",
+      "exclusive_domain": "memory-store-retrieval",
+      "target_branch": "spec/m1b-store-progressive-retrieval",
+      "target_pr": null,
+      "expected_head_sha": "168477a988f4b91d9f51cc44df4512d08dcbfb2b",
+      "started_at": "2026-08-06T16:12:00Z",
+      "heartbeat_at": "2026-08-06T16:12:00Z",
+      "expires_at": "2026-08-06T18:12:00Z",
+      "last_checkpoint": "CLAIMED_AFTER_M1A_CLOSED_GOAL_62_SPEC_FIRST"
     }
   },
   "recovered_claims": [],
