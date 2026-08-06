@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install repository and ledger dependencies
-        run: python -m pip install --disable-pip-version-check -e . pyyaml pytest
+        run: python -m pip install --disable-pip-version-check -e . pyyaml pytest playwright
 
       - name: Execute the existing deterministic refresh script
         shell: bash
