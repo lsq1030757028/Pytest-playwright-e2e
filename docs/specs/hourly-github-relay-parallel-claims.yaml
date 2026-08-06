@@ -1,0 +1,113 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+foundation:
+  issue: 55
+  merged_prs: [56, 57]
+status: OWNER_ACCEPTED_ACTIVATION_GATED
+supersedes:
+  repository_wide_development_ownership: true
+  earlier_concurrency_addendum_sections: [2, 3, 4, 6, 7, 8, 9, 10, 11, 12]
+control_state:
+  product_work_map: main:docs/product-work-map.yaml
+  claims: ops/hourly-github-relay-control:.agent/relay/work-claims.json
+  integration_lease: ops/hourly-github-relay-control:.agent/relay/leases/integration.json
+  compatibility_lease: ops/hourly-github-relay-control:.agent/relay/leases/hourly-github-relay.json
+  durable_handoff: GITHUB_ONLY
+wake:
+  sequence:
+    - READ_SSOT_AND_WORK_MAP
+    - READ_COMPATIBILITY_LEASE
+    - READ_CLAIM_REGISTRY
+    - READ_INTEGRATION_LEASE
+    - RESUME_OWN_ACTIVE_CLAIM_OR_RECOVER_STALE
+    - SELECT_HIGHEST_PRIORITY_ELIGIBLE_ITEM
+    - ALLOCATE_BY_REGISTRY_REVISION_CAS
+    - REREAD_AND_VERIFY_CLAIM
+  registry_disabled_status: PARALLEL_CLAIMS_DISABLED
+  no_candidate_status: NO_CLAIMABLE_WORK
+selection:
+  state: READY
+  dependencies_must_be_closed: true
+  authority_issue_required: true
+  approved_spec_required: true
+  order: [priority_desc, work_item_id_asc]
+conflicts:
+  reject_same:
+    - WORK_ITEM
+    - EXCLUSIVE_DOMAIN
+    - TARGET_BRANCH
+    - TARGET_PR
+  reject_declared_incompatible_domains: true
+  competing_branch_or_pr_to_evade_conflict: forbidden
+identity:
+  claim_token_scope: MULTI_RUN_WORK_ITEM_OWNERSHIP
+  run_token_format: relay-<work-item-id>-r<registry-revision>-<UTC-start-time>
+  commit_marker: "[RELAY:<run-token>]"
+  github_record_contains: [claim_token, run_token]
+fencing:
+  required_before_every_mutation: true
+  conditions:
+    - REGISTRY_ENABLED
+    - CLAIM_TOKEN_MATCH
+    - CLAIM_STATE_ACTIVE
+    - NOW_BEFORE_CLAIM_EXPIRY
+    - EXCLUSIVE_DOMAIN_MATCH
+    - TARGET_BRANCH_MATCH
+    - TARGET_PR_MATCH
+    - ACTUAL_HEAD_EQUALS_EXPECTED_HEAD
+  after_self_commit: UPDATE_EXPECTED_HEAD_BY_REGISTRY_CAS
+  unexpected_change: [LOST_CLAIM, REPLAN_REQUIRED]
+  force_push_reset_overwrite: forbidden
+compatibility_lease:
+  ordinary_module_work_acquires: false
+  active_meaning: EXCLUSIVE_MAINTENANCE_OR_EMERGENCY_STOP
+  active_behavior:
+    - NO_NEW_CLAIM
+    - NO_NEW_DEVELOPMENT_MUTATION
+  malformed_behavior: FAIL_CLOSED
+checkpoint:
+  incomplete_work_keeps_claim: true
+  before_run_end:
+    - UPDATE_SAME_RUN_COMMENT_PRE_FINAL
+    - RECORD_EVIDENCE_AND_UNRESOLVED_STATE
+    - HEARTBEAT_AND_EXTEND_CLAIM
+    - VERIFY_BRANCH_AND_EXPECTED_HEAD
+    - EMIT_BOUNDED_RUNTIME_RECEIPT
+  next_run_resumes_same_claim: true
+  blocked_release_requires_durable_reentry_condition: true
+integration:
+  only_state: EVIDENCE_READY
+  queue_order:
+    - SECURITY_OR_CORRECTNESS_REPAIR
+    - DEPENDENCY_UNBLOCKING
+    - ENQUEUED_AT
+  serialized_lease_required_for:
+    - MERGE
+    - MAIN_UPDATE
+    - RELEASE_EVIDENCE
+    - FINAL_PROJECT_STATUS_CLOSURE
+  module_claim_authorizes_merge: false
+session_isolation:
+  human_control_scheduled_binding: forbidden
+  relay_runtime_dedicated: true
+  prior_chat_authoritative: false
+  receipt_in_human_session: SESSION_ISOLATION_FAILED
+activation:
+  required:
+    - PR_56_AND_57_MERGED_AND_MAIN_VERIFIED
+    - PARALLEL_CLAIM_ADDENDUM_MERGED
+    - PRODUCT_WORK_MAP_FOUNDATION_STATE_CURRENT
+    - SCHEDULED_TASK_PAUSED_DURING_MIGRATION
+    - ONE_BOUNDED_SCHEDULED_CLAIM_PROBE_PASSED
+    - RECEIPT_ONLY_IN_RELAY_RUNTIME_SESSION
+    - PROBE_STATE_CLEARED_OR_INTENDED_CLAIM_PRESERVED
+  registry_enabled_before_probe: false
+rollback:
+  - DISABLE_SCHEDULED_TASK
+  - DISABLE_CLAIM_REGISTRY
+  - PRESERVE_AUDIT_HISTORY
+  - CLEAR_ACCEPTANCE_ONLY_CLAIMS_AFTER_EVIDENCE
+  - RETURN_INTEGRATION_LEASE_TO_IDLE_WHEN_SAFELY_OWNED
+  - USE_COMPATIBILITY_LEASE_FOR_EXCLUSIVE_REPAIR
+  - NO_FORCE_PUSH_OR_EVIDENCE_DELETION
