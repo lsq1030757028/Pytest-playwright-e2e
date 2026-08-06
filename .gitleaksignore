@@ -1,2 +1,3 @@
-# Exact false-positive fingerprint for the documented claim ID pattern introduced by SPEC-PARALLEL-WORK-CLAIMS@0.1.0.
-11e6535fab4ab087deb98b6fb9ceb63b359c5961:docs/specs/parallel-work-claims.yaml:generic-api-key:58
+# Exact false-positive fingerprints for Relay Lease identifiers. These are public run IDs, not credentials.
+8831cb4bf1d55d6a692c3c89acdddb8dec6e893f:.agent/relay/leases/hourly-github-relay.json:generic-api-key:7
+0316cd885615109a46548020251d7ef8de8a73de:.agent/relay/leases/hourly-github-relay.json:generic-api-key:19
