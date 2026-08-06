@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 22,
+  "revision": 23,
   "claim_sequence": 5,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
@@ -13,11 +13,11 @@
       "exclusive_domain": "memory-runtime-contracts",
       "target_branch": "docs/m1a-runtime-contracts-final-ledger",
       "target_pr": 48,
-      "expected_head_sha": "a3fb39311a22f3aed950ffc6f5d9af76dd4fee7f",
+      "expected_head_sha": "2608e536d48cde5c3bbbde946969d260e9b2a240",
       "started_at": "2026-08-06T13:25:00Z",
-      "heartbeat_at": "2026-08-06T14:30:00Z",
-      "expires_at": "2026-08-06T16:30:00Z",
-      "last_checkpoint": "DIRECT_FINAL_LEDGER_REFRESH_AFTER_HELPER_PRE_RUN_FAILURE"
+      "heartbeat_at": "2026-08-06T14:41:00Z",
+      "expires_at": "2026-08-06T16:41:00Z",
+      "last_checkpoint": "FINALIZER_RUNNING_WITH_REPOSITORY_DEPENDENCIES"
     },
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
