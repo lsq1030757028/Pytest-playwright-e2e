@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public versioned governance identifier for the parallel work claims SPEC"
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''docs/specs/parallel-work-claims\.(md|yaml)''',
+  '''tests/unit/test_parallel_work_claims_spec\.py''',
+]
+regexes = [
+  '''OWNER-AUTH-PARALLEL-WORK-CLAIMS-M1-M3@1\.0\.0''',
+]
