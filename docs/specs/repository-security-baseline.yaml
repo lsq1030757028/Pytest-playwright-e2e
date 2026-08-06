@@ -1,0 +1,213 @@
+spec_id: SPEC-REPOSITORY-SECURITY-BASELINE
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 52
+phase: SPEC_DRAFT
+assurance:
+  dev: DEV3
+  ux: UX0
+  user_facing_effect: false
+  human_uat_required: false
+authority:
+  type: repository_owner_direct_instruction
+  durable_record: issue_52
+  mandate_reference: MANDATE-AUTONOMY-M1-M3@1.0.0
+  mandate_used_for_scope_expansion: false
+
+objective:
+  protect_public_repository_from:
+    - credential_leakage
+    - vulnerable_code_paths
+    - dependency_drift
+    - unsafe_github_actions_execution
+    - unaudited_vulnerability_disclosure
+
+current_baseline:
+  repository_visibility: public
+  github_actions_real_steps_verified: true
+  dependabot_asset_present: .github/dependabot.yml
+  account_level_push_protection_owner_evidence: true
+  repository_secret_scanning_connector_verified: false
+  missing_on_main:
+    - codeql_workflow
+    - full_history_secret_scan_workflow
+    - SECURITY.md
+
+scope:
+  included:
+    - codeql_analysis
+    - full_history_secret_scanning
+    - dependabot_coverage_validation_and_hardening
+    - vulnerability_disclosure_policy
+    - least_privilege_workflow_permissions
+    - fork_and_pull_request_trust_boundaries
+    - security_evidence_false_positive_rollback_and_recovery
+    - stable_security_checks_for_later_ruleset_enforcement
+  excluded:
+    - codex_security
+    - real_secret_acquisition_disclosure_storage_or_rotation
+    - production_or_personal_data
+    - automatic_public_git_history_rewrite
+    - oracle_or_experience_oracle_change
+    - policy_floor_reduction
+    - permission_widening
+    - direct_main_write
+    - automatic_ruleset_or_branch_protection_change_without_permission
+    - M4_M5_M6
+
+implementation_phase:
+  separate_pr_required: true
+  starts_only_after_spec_merged_to_main: true
+  planned_assets:
+    - .github/workflows/security-codeql.yml
+    - .github/workflows/security-secrets.yml
+    - .github/dependabot.yml
+    - SECURITY.md
+    - optional_narrow_scanner_configuration
+    - security_validation_tests
+
+codeql:
+  triggers:
+    - pull_request
+    - default_branch_push
+  supported_languages_only: true
+  immutable_action_pins_required: true
+  least_privilege_permissions_required: true
+  security_events_write_only_where_required_and_safe: true
+  untrusted_fork_receives_repository_secrets: false
+  untrusted_fork_receives_write_token: false
+  sarif_upload_only_from_allowed_context: true
+
+secret_scan:
+  complete_reachable_history_required: true
+  maintained_scanner_required: true
+  candidate_scanners:
+    - gitleaks
+    - trufflehog
+  implementation_selection_criteria:
+    - deterministic_offline_execution
+    - full_history_support
+    - log_redaction
+    - immutable_supply_chain_pin
+    - licensing
+    - maintenance
+    - false_positive_control
+  print_full_secret_value: false
+  confirmed_finding_action: FAIL_CLOSED
+  allowed_evidence_fields:
+    - file_path
+    - commit_identity
+    - detector_rule_id
+    - redacted_fingerprint
+    - remediation_state
+  suppression:
+    narrow_rule_required: true
+    reviewer_rationale_required: true
+    adjacent_real_pattern_regression_required: true
+
+code_dependency_automation:
+  preserve_existing_dependabot: true
+  required_ecosystems:
+    - python_active_ecosystem
+    - github_actions
+  bounded_schedule_required: true
+  bounded_open_pr_count_required: true
+  normal_ci_review_security_release_gates_required: true
+  auto_merge_enabled_by_this_spec: false
+
+vulnerability_disclosure:
+  asset: SECURITY.md
+  required_fields:
+    - supported_versions_or_status
+    - private_reporting_channel
+    - coordinated_disclosure_request
+    - acknowledgement_and_triage_targets
+    - no_real_customer_data_or_credentials
+    - no_destructive_proof
+    - public_disclosure_and_credit_expectations
+
+trust_boundaries:
+  - untrusted_fork_to_github_hosted_runner
+  - workflow_to_third_party_action_or_binary
+  - scanner_output_to_logs_artifacts_and_comments
+  - dependabot_pr_to_merge_path
+  - github_settings_to_repository_evidence
+  - public_history_to_incident_response
+
+required_invariants:
+  real_secret_value_in_logs_or_artifacts: 0
+  untrusted_pr_receives_repository_secret: 0
+  untrusted_pr_receives_write_token: 0
+  unpinned_third_party_action_in_new_security_workflows: 0
+  confirmed_secret_finding_silently_ignored: 0
+  security_assertion_removed_only_for_green: 0
+  external_setting_claimed_without_evidence: 0
+  direct_main_write: 0
+  unresolved_critical_security_finding_at_merge: 0
+  critical_false_green: 0
+
+failure_modes:
+  - shallow_checkout_misses_historical_secret
+  - verbose_tooling_echoes_secret_value
+  - untrusted_fork_cannot_safely_upload_sarif
+  - excessive_github_token_permissions
+  - mutable_action_tag_supply_chain_drift
+  - broad_false_positive_allowlist
+  - dependabot_bypasses_normal_review
+  - public_visibility_misreported_as_all_security_features_enabled
+  - leaked_credential_removed_but_not_revoked
+  - flaky_or_slow_scan_is_bypassed_instead_of_redesigned
+
+test_obligations:
+  - spec_and_machine_policy_validation
+  - least_privilege_and_immutable_pin_static_validation
+  - real_codeql_analysis_and_sarif_success
+  - ephemeral_nonfunctional_secret_canary_detected_without_full_value_output
+  - real_full_history_scan_zero_unresolved_findings
+  - benign_false_positive_fixture_without_broad_suppression
+  - fork_event_token_and_secret_isolation_review
+  - dependabot_syntax_ecosystem_cadence_and_limit_validation
+  - SECURITY_md_required_field_validation
+  - full_repository_ci_green
+  - review_threads_blockers_critical_findings_and_false_greens_zero
+
+evidence:
+  authoritative: github_actions
+  raw_secret_or_environment_upload: forbidden
+  redacted_decision_relevant_metadata_only: true
+  green_scan_scope_limited_to_configured_detectors_and_revision: true
+
+deployment:
+  stages:
+    - implementation_branch_and_pr
+    - final_head_deterministic_green
+    - dev3_review_and_existing_gates
+    - merge
+    - main_verification
+    - owner_or_authorized_integration_ruleset_enforcement
+  connector_can_change_rulesets_or_branch_protection: false
+
+rollback:
+  - revert_implementation_pr
+  - preserve_failure_and_suppression_evidence
+  - active_credential_requires_revoke_or_rotate_not_rollback_only
+  - scanner_disable_or_replacement_requires_recorded_change_event
+  - compromised_action_or_binary_requires_verified_pin_or_workflow_disable
+
+merge_eligibility:
+  - goal_and_owner_authority_accurate
+  - dev3_ux0_classification_accepted
+  - markdown_yaml_threat_model_and_test_design_consistent
+  - repository_ci_green
+  - review_threads_and_blockers_zero
+  - no_runtime_security_workflow_hidden_in_spec_phase
+  - rollback_and_external_owner_boundaries_explicit
+
+closure:
+  spec_merge_closes_goal: false
+  requires:
+    - implementation_verified_and_merged
+    - main_security_checks_verified
+    - status_and_ledger_updated
+    - temporary_branches_cleaned
+    - required_external_owner_steps_recorded
