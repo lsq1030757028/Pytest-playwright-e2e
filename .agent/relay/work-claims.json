@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 29,
+  "revision": 30,
   "claim_sequence": 5,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
@@ -11,13 +11,13 @@
       "surface": "HUMAN_CONTROL",
       "state": "INTEGRATING",
       "exclusive_domain": "memory-runtime-contracts",
-      "target_branch": "docs/m1a-runtime-contracts-final-ledger",
-      "target_pr": 48,
-      "expected_head_sha": "a7762d5d1586c0caf079df9bf0f7175c175ba3a8",
+      "target_branch": "docs/m1a-runtime-contracts-final-ledger-clean",
+      "target_pr": 64,
+      "expected_head_sha": "46a40d9c1bda490bc0cf6e04f0051c94e2d4e0e5",
       "started_at": "2026-08-06T13:25:00Z",
-      "heartbeat_at": "2026-08-06T14:56:00Z",
-      "expires_at": "2026-08-06T16:56:00Z",
-      "last_checkpoint": "FINAL_LEDGER_9_OF_9_PASS_CLEAN_PR_MIGRATION_REQUIRED"
+      "heartbeat_at": "2026-08-06T14:44:00Z",
+      "expires_at": "2026-08-06T16:44:00Z",
+      "last_checkpoint": "CLEAN_PR_64_CLAIM_MIGRATED_FIXING_RUFF_LINE"
     },
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -42,7 +42,7 @@
       "enqueued_at": "2026-08-06T13:53:00Z",
       "security_or_correctness_repair": true,
       "dependency_unblocking": true,
-      "state": "INTEGRATION_WAITING"
+      "state": "INTEGRATING"
     },
     {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
