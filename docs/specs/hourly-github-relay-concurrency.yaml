@@ -1,0 +1,174 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+status: CANDIDATE_PILOT_APPROVED
+control_plane:
+  branch: ops/hourly-github-relay-control
+  lease_path: .agent/relay/leases/hourly-github-relay.json
+  merge_to_main: forbidden
+  lock_mechanism: GITHUB_CONTENTS_COMPARE_AND_SWAP
+lease:
+  required_before:
+    - START_COMMENT
+    - DEVELOPMENT_BRANCH_WRITE
+    - TEST_MUTATION
+    - CI_RERUN
+  acquisition:
+    - RESOLVE_CAMPAIGN
+    - FETCH_LEASE_AND_BLOB_SHA
+    - CHECK_ACTIVE_AND_EXPIRY
+    - INCREMENT_SEQUENCE_IN_SAME_CAS
+    - UPDATE_WITH_EXACT_BLOB_SHA
+    - REREAD_AND_VERIFY_HOLDER_TOKEN
+    - ON_CONFLICT_EXIT_BUSY
+  duration_minutes: 90
+  sequence:
+    monotonic: true
+    incremented_atomically_on_acquire: true
+    token_format: relay-<campaign-id>-<sequence>-<UTC-start-time>
+  heartbeat:
+    after_meaningful_transition: true
+    before_long_ci_wait: true
+    extends_duration_minutes: 90
+  release:
+    final_status: IDLE
+    preserve_last_run_summary: true
+  force_update: forbidden
+fencing:
+  required_before_every_mutation: true
+  reread_lease: true
+  required_conditions:
+    - STATUS_ACTIVE
+    - HOLDER_TOKEN_MATCHES_CURRENT_RUN
+    - NOW_BEFORE_EXPIRES_AT
+    - TARGET_BRANCH_MATCHES
+  lost_lease_behavior:
+    - STOP_ALL_FURTHER_MUTATION
+    - REPORT_LOST_LEASE
+    - FINAL_STATUS_BUSY_OR_REPLAN_REQUIRED_OR_BLOCKED
+  fenced_actions:
+    - FILE_WRITE
+    - CAMPAIGN_STATE_WRITE
+    - COMMIT_CREATE
+    - BRANCH_REF_UPDATE
+    - PR_METADATA_UPDATE
+    - RUN_COMMENT_UPDATE
+    - CI_RERUN
+    - HEARTBEAT
+    - LEASE_RELEASE
+branch_head_cas:
+  verify_before_commit: true
+  expected_field: target_head_sha
+  self_commit_updates_expected_head: true
+  unexpected_movement_status: REPLAN_REQUIRED
+  force_push: forbidden
+  reset_or_overwrite: forbidden
+busy:
+  development_writes: forbidden
+  ci_rerun_owned_by_active_run: forbidden
+  competing_branch_or_pr: forbidden
+  active_campaign_comment_write: forbidden
+  chat_final: required
+  report_fields:
+    - ACTIVE_RUN_TOKEN
+    - CAMPAIGN
+    - TARGET
+    - HEARTBEAT_AT
+    - EXPIRES_AT
+  optional_record_target: ISSUE_49
+stale_recovery:
+  expiry_alone_sufficient: false
+  verify:
+    - PREVIOUS_RUN_TOKEN
+    - PREVIOUS_GITHUB_RECORD
+    - TARGET_PR
+    - TARGET_BRANCH
+    - TARGET_HEAD_SHA
+    - ACTIVITY_AFTER_HEARTBEAT
+    - ACTIVE_CI_FOR_PREVIOUS_COMMIT
+  no_force_push: true
+  no_reset: true
+  no_delete: true
+  start_annotation: STALE_LEASE_RECOVERED
+surfaces:
+  chat_and_codex_equal_priority: true
+  relay_compatible_manual_sessions_use_same_lease: true
+pipeline:
+  pilot_mode: SINGLE_HOURLY_ORCHESTRATOR
+  phase_selection: STATE_DRIVEN_NOT_TIMER_DRIVEN
+  modes:
+    - REORIENT
+    - PLAN
+    - IMPLEMENT
+    - VERIFY
+    - WAIT
+    - CLOSE
+  separate_stage_tasks_initially_forbidden: true
+  reason:
+    - REDUCE_CONTEXT_REHYDRATION
+    - REDUCE_RACE_CONDITIONS
+    - PRESERVE_CAMPAIGN_COHERENCE
+  future_specialists_require:
+    - SAME_CAMPAIGN_LEASE
+    - EXPLICIT_INPUT_STATE
+    - EXPLICIT_OUTPUT_STATE
+    - NO_SAME_BRANCH_OVERLAP
+    - GITHUB_HANDOFF
+    - BUSY_ON_FOREIGN_LEASE
+  example_states:
+    - ORIENTING
+    - PLAN_READY
+    - IMPLEMENTING
+    - WAITING_CI
+    - REVIEWING
+    - CLOSING
+finalization:
+  sequence:
+    - PRE_FINAL_WHILE_ACTIVE
+    - RELEASE_CAS_TO_IDLE
+    - RELEASE_ATTESTED_FINAL
+    - CHAT_FINAL
+  pre_final:
+    normal_fencing_required: true
+    update_existing_run_comment: true
+    lease_release_field: PENDING
+    must_not_claim_release_success: true
+  release:
+    use_latest_lease_blob_sha: true
+    operational_status: IDLE
+    clear_active_ownership_fields: true
+    preserve:
+      - LAST_RUN_TOKEN_CURRENT
+      - LAST_FINAL_STATUS
+      - LAST_ENDED_AT
+      - LAST_SUMMARY
+      - LAST_RELEASE_ERROR
+    returned_control_commit_is_release_evidence: true
+  post_release_attestation:
+    allowed_mutations: 1
+    mutation_type: UPDATE_CURRENT_RUN_EXISTING_COMMENT_ONLY
+    development_ownership_granted: false
+    required_lease_reread_conditions:
+      - STATUS_IDLE_OR_LATER_RUN_ACTIVE
+      - LAST_RUN_TOKEN_MATCHES_CURRENT_RUN
+      - SEQUENCE_NOT_LESS_THAN_CURRENT_RUN
+      - LAST_RELEASE_ERROR_NULL
+    allowed_field_changes:
+      - LEASE_RELEASE_PENDING_TO_CONFIRMED
+      - RELEASE_COMMIT_SHA
+      - POST_RELEASE_ATTESTATION_USED
+    forbidden_changes:
+      - BUSINESS_VERDICT
+      - ACTIONS
+      - FILES
+      - TESTS
+      - CI
+      - NEXT_ACTION
+      - CAMPAIGN_STATE
+      - BRANCH
+      - PR_METADATA
+      - OTHER_REPOSITORY_RESOURCE
+    marker_and_comment_id_must_match_current_run: true
+    retry_on_failure: forbidden
+    incomplete_status: RELEASE_ATTESTATION_INCOMPLETE
+    incomplete_run_counts_for_acceptance: false

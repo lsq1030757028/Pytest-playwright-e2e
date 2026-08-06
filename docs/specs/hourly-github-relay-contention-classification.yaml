@@ -1,0 +1,63 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-CONTENTION@0.1.2
+parent_addendum: ADDENDUM-HOURLY-GITHUB-RELAY-CONCURRENCY@0.1.1
+goal_issue: 49
+status: CANDIDATE_PILOT_APPROVED
+principle:
+  busy_is_control_decision_not_process_proof: true
+  separate_lock_availability_from_activity_confirmation: true
+contention_classes:
+  ACTIVE_CONFIRMED:
+    write_allowed: false
+    live_activity_claim_allowed: true
+  LEASE_HELD_UNCONFIRMED:
+    write_allowed: false
+    live_activity_claim_allowed: false
+  CAS_LOST_ACTIVE:
+    write_allowed: false
+    live_activity_claim_allowed: false
+  CAS_LOST_RELEASED:
+    bounded_retry_allowed: true
+  STALE_REVIEW_REQUIRED:
+    write_allowed: false
+    takeover_allowed: false
+activity_confirmation:
+  window_minutes: 15
+  require_any:
+    - RECENT_LEASE_HEARTBEAT
+    - RECENT_HOLDER_RUN_COMMENT_UPDATE
+    - RECENT_TOKEN_ATTRIBUTABLE_BRANCH_OR_PR_UPDATE
+    - QUEUED_OR_RUNNING_CI_FOR_HOLDER_COMMIT
+  no_evidence_class: LEASE_HELD_UNCONFIRMED
+bounded_conflict_recovery:
+  reread_after_conflict: exactly_once
+  when_reread_active_foreign_unexpired: CAS_LOST_ACTIVE
+  when_reread_idle:
+    retry_acquisition: exactly_once
+  on_second_conflict:
+    reread: exactly_once
+    finish_busy: true
+  loops_forbidden: true
+invalid_lease:
+  examples:
+    - ACTIVE_WITHOUT_RUN_TOKEN
+    - MISSING_OR_UNPARSABLE_EXPIRY
+    - CAMPAIGN_OR_BRANCH_MISMATCH
+    - EXPIRY_BEFORE_HEARTBEAT
+    - HOLDER_TOKEN_RUN_RECORD_MISMATCH
+  status:
+    - REPLAN_REQUIRED
+    - BLOCKED
+  cause: LEASE_STATE_INVALID
+  classify_as_live_ai: forbidden
+busy_chat_required_fields:
+  - CONTENTION_CLASS
+  - FOREIGN_RUN_TOKEN_WHEN_VISIBLE
+  - HEARTBEAT_AT
+  - EXPIRES_AT
+  - ACTIVITY_EVIDENCE_OR_UNCONFIRMED
+  - NO_CAMPAIGN_WRITE_CONFIRMATION
+safety_priority:
+  - PREVENT_OVERLAPPING_WRITES
+  - PRECISE_EVIDENCE_WORDING
+  - MINIMIZE_FALSE_BUSY_WITH_BOUNDED_RETRY
+  - NEVER_TRADE_SAFETY_FOR_LIVENESS
