@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "revision": 0,
+  "sequence": 0,
+  "status": "IDLE",
+  "integration_token": null,
+  "work_item_id": null,
+  "started_at": null,
+  "expires_at": null
+}
