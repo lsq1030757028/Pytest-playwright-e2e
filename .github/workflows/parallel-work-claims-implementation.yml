@@ -61,9 +61,12 @@ jobs:
       - name: Install lint dependencies
         run: python -m pip install -e ".[test]"
       - name: Apply repository lint fixes
+        shell: bash
         run: |
-          ruff check --fix src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
+          set -euo pipefail
+          ruff check --fix src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py || true
           ruff format src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
+          ruff check src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
       - name: Commit fenced lint repair when needed
         shell: bash
         env:
