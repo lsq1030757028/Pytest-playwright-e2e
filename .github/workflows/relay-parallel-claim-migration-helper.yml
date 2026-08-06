@@ -44,7 +44,6 @@ jobs:
           lease = json.loads(lease_raw)
           message = subprocess.check_output(["git", "log", "-1", "--pretty=%B"], text=True)
           expected_head = os.environ["EXPECTED_HEAD"]
-
           assert lease["status"] == "ACTIVE"
           assert lease["owner_surface"] == "HUMAN_CONTROL"
           assert lease["target_branch"] == "spec/hourly-github-relay"
@@ -56,8 +55,8 @@ jobs:
       - name: Patch protocol and product work map
         run: |
           python - <<'PY'
-          from pathlib import Path
           import re
+          from pathlib import Path
 
           addendum = "ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0"
           spec_dir = Path("docs/specs")
@@ -72,20 +71,25 @@ jobs:
                   isolation_bullet + "\n" + parallel_bullet,
                   1,
               )
-          section = """
-
-## 15. Parallel Work Item claiming production profile
-
-After the claim foundation in PRs #56 and #57, ordinary module development uses per-Work-Item claims rather than the repository-wide Relay Lease. Different non-conflicting Work Items may proceed concurrently; the same Work Item, exclusive domain, branch or PR remains single-owner.
-
-The compatibility Lease on `ops/hourly-github-relay-control` remains an exclusive maintenance and emergency-stop control. An ACTIVE compatibility Lease blocks new claims and development mutations.
-
-The authoritative claim registry is `.agent/relay/work-claims.json`. Module work may retain one claim across multiple Runs. Only evidence-ready work enters the integration queue, and merge, `main`, release and final project-state closure require the single holder of `.agent/relay/leases/integration.json`.
-
-`ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0` supersedes earlier repository-wide development ownership while preserving the existing conversation-isolation, audit, fencing, safety and bounded-receipt rules.
-"""
+          section = (
+              "\n\n## 15. Parallel Work Item claiming production profile\n\n"
+              "After the claim foundation in PRs #56 and #57, ordinary module development "
+              "uses per-Work-Item claims rather than the repository-wide Relay Lease. Different "
+              "non-conflicting Work Items may proceed concurrently; the same Work Item, exclusive "
+              "domain, branch or PR remains single-owner.\n\n"
+              "The compatibility Lease on `ops/hourly-github-relay-control` remains an exclusive "
+              "maintenance and emergency-stop control. An ACTIVE compatibility Lease blocks new "
+              "claims and development mutations.\n\n"
+              "The authoritative claim registry is `.agent/relay/work-claims.json`. Module work "
+              "may retain one claim across multiple Runs. Only evidence-ready work enters the "
+              "integration queue, and merge, `main`, release and final project-state closure require "
+              "the single holder of `.agent/relay/leases/integration.json`.\n\n"
+              "`ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0` supersedes earlier "
+              "repository-wide development ownership while preserving conversation isolation, "
+              "audit, fencing, safety and bounded-receipt rules.\n"
+          )
           if "## 15. Parallel Work Item claiming production profile" not in base_md:
-              base_md = base_md.rstrip() + section + "\n"
+              base_md = base_md.rstrip() + section
           base_md_path.write_text(base_md, encoding="utf-8")
 
           base_yaml_path = spec_dir / "hourly-github-relay.yaml"
@@ -98,27 +102,26 @@ The authoritative claim registry is `.agent/relay/work-claims.json`. Module work
                   isolation_entry + "\n" + parallel_entry,
                   1,
               )
-          profile = """
-
-parallel_work_claiming_profile:
-  addendum: ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0
-  ordinary_module_lock: WORK_ITEM_CLAIM
-  work_map: docs/product-work-map.yaml
-  claim_registry: ops/hourly-github-relay-control:.agent/relay/work-claims.json
-  integration_lease: ops/hourly-github-relay-control:.agent/relay/leases/integration.json
-  compatibility_lease:
-    path: ops/hourly-github-relay-control:.agent/relay/leases/hourly-github-relay.json
-    role: EXCLUSIVE_MAINTENANCE_AND_EMERGENCY_STOP
-    active_behavior: BLOCK_NEW_CLAIMS_AND_DEVELOPMENT_MUTATIONS
-  parallel_when_non_conflicting: true
-  reject_same: [WORK_ITEM, EXCLUSIVE_DOMAIN, TARGET_BRANCH, TARGET_PR]
-  claim_may_span_multiple_runs: true
-  integration_serialized: true
-  claim_alone_authorizes_merge: false
-  activation_requires_bounded_scheduled_claim_probe: true
-"""
+          profile = (
+              "\n\nparallel_work_claiming_profile:\n"
+              "  addendum: ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0\n"
+              "  ordinary_module_lock: WORK_ITEM_CLAIM\n"
+              "  work_map: docs/product-work-map.yaml\n"
+              "  claim_registry: ops/hourly-github-relay-control:.agent/relay/work-claims.json\n"
+              "  integration_lease: ops/hourly-github-relay-control:.agent/relay/leases/integration.json\n"
+              "  compatibility_lease:\n"
+              "    path: ops/hourly-github-relay-control:.agent/relay/leases/hourly-github-relay.json\n"
+              "    role: EXCLUSIVE_MAINTENANCE_AND_EMERGENCY_STOP\n"
+              "    active_behavior: BLOCK_NEW_CLAIMS_AND_DEVELOPMENT_MUTATIONS\n"
+              "  parallel_when_non_conflicting: true\n"
+              "  reject_same: [WORK_ITEM, EXCLUSIVE_DOMAIN, TARGET_BRANCH, TARGET_PR]\n"
+              "  claim_may_span_multiple_runs: true\n"
+              "  integration_serialized: true\n"
+              "  claim_alone_authorizes_merge: false\n"
+              "  activation_requires_bounded_scheduled_claim_probe: true\n"
+          )
           if "parallel_work_claiming_profile:" not in base_yaml:
-              base_yaml = base_yaml.rstrip() + profile + "\n"
+              base_yaml = base_yaml.rstrip() + profile
           base_yaml_path.write_text(base_yaml, encoding="utf-8")
 
           map_path = Path("docs/product-work-map.yaml")
