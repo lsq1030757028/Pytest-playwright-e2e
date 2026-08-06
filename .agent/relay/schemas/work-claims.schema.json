@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lsq1030757028/Pytest-playwright-e2e/.agent/relay/schemas/work-claims.schema.json",
+  "title": "Parallel Work Claims Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "control_id",
+    "enabled",
+    "revision",
+    "claim_sequence",
+    "claims",
+    "recovered_claims",
+    "integration_queue"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "control_id": {"const": "PARALLEL-WORK-CLAIMS"},
+    "enabled": {"type": "boolean"},
+    "revision": {"type": "integer", "minimum": 0},
+    "claim_sequence": {"type": "integer", "minimum": 0},
+    "claims": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/claim"}
+    },
+    "recovered_claims": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/recoveredClaim"}
+    },
+    "integration_queue": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/integrationEntry"}
+    }
+  },
+  "$defs": {
+    "timestamp": {"type": "string", "format": "date-time"},
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_item_id",
+        "claim_token",
+        "surface",
+        "state",
+        "exclusive_domain",
+        "target_branch",
+        "target_pr",
+        "expected_head_sha",
+        "started_at",
+        "heartbeat_at",
+        "expires_at",
+        "last_checkpoint"
+      ],
+      "properties": {
+        "work_item_id": {"type": "string", "minLength": 1},
+        "claim_token": {"type": "string", "minLength": 1},
+        "surface": {"enum": ["HUMAN_CONTROL", "RELAY_RUNTIME"]},
+        "state": {
+          "enum": [
+            "CLAIMED",
+            "IN_PROGRESS",
+            "EVIDENCE_READY",
+            "INTEGRATION_WAITING",
+            "INTEGRATING"
+          ]
+        },
+        "exclusive_domain": {"type": "string", "minLength": 1},
+        "target_branch": {"type": "string", "minLength": 1},
+        "target_pr": {"type": ["integer", "null"], "minimum": 1},
+        "expected_head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "started_at": {"$ref": "#/$defs/timestamp"},
+        "heartbeat_at": {"$ref": "#/$defs/timestamp"},
+        "expires_at": {"$ref": "#/$defs/timestamp"},
+        "last_checkpoint": {"type": "string", "minLength": 1}
+      }
+    },
+    "recoveredClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_item_id",
+        "claim_token",
+        "surface",
+        "state",
+        "exclusive_domain",
+        "target_branch",
+        "target_pr",
+        "expected_head_sha",
+        "started_at",
+        "heartbeat_at",
+        "expires_at",
+        "last_checkpoint",
+        "recovered_at"
+      ],
+      "properties": {
+        "work_item_id": {"type": "string", "minLength": 1},
+        "claim_token": {"type": "string", "minLength": 1},
+        "surface": {"enum": ["HUMAN_CONTROL", "RELAY_RUNTIME"]},
+        "state": {"const": "STALE_RECOVERED"},
+        "exclusive_domain": {"type": "string", "minLength": 1},
+        "target_branch": {"type": "string", "minLength": 1},
+        "target_pr": {"type": ["integer", "null"], "minimum": 1},
+        "expected_head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "started_at": {"$ref": "#/$defs/timestamp"},
+        "heartbeat_at": {"$ref": "#/$defs/timestamp"},
+        "expires_at": {"$ref": "#/$defs/timestamp"},
+        "last_checkpoint": {"type": "string", "minLength": 1},
+        "recovered_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "integrationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_item_id",
+        "claim_token",
+        "enqueued_at",
+        "security_or_correctness_repair",
+        "dependency_unblocking",
+        "state"
+      ],
+      "properties": {
+        "work_item_id": {"type": "string", "minLength": 1},
+        "claim_token": {"type": "string", "minLength": 1},
+        "enqueued_at": {"$ref": "#/$defs/timestamp"},
+        "security_or_correctness_repair": {"type": "boolean"},
+        "dependency_unblocking": {"type": "boolean"},
+        "state": {"const": "INTEGRATION_WAITING"}
+      }
+    }
+  }
+}

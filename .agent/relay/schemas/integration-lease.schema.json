@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lsq1030757028/Pytest-playwright-e2e/.agent/relay/schemas/integration-lease.schema.json",
+  "title": "Serialized Integration Lease",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "sequence", "status"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "revision": {"type": "integer", "minimum": 0},
+    "sequence": {"type": "integer", "minimum": 0},
+    "status": {"enum": ["IDLE", "ACTIVE"]},
+    "integration_token": {"type": ["string", "null"]},
+    "work_item_id": {"type": ["string", "null"]},
+    "started_at": {"type": ["string", "null"], "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "ACTIVE"}}},
+      "then": {
+        "required": ["integration_token", "work_item_id", "started_at", "expires_at"],
+        "properties": {
+          "integration_token": {"type": "string", "minLength": 1},
+          "work_item_id": {"type": "string", "minLength": 1},
+          "started_at": {"type": "string", "format": "date-time"},
+          "expires_at": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  ]
+}
