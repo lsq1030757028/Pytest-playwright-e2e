@@ -18,6 +18,7 @@ This base SPEC is interpreted together with the versioned addenda in the same PR
 - `ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1`;
 - `ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0`;
 - `ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0`.
+- `ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0`.
 
 When an addendum is more specific or newer than a statement in this base document, the addendum controls. The machine-readable YAML files must express the same effective rules. A contradiction between Markdown, YAML, the scheduled-task entrypoint and the operational Lease is `REPLAN_REQUIRED`; it must not be silently resolved by model preference.
 
@@ -309,3 +310,13 @@ A production task is enable-eligible only when:
 The previously created production task associated with the human collaboration conversation remains disabled. The available task tool does not expose a target-conversation migration field, so a new isolated task requires one Owner UI action in the dedicated Relay Runtime conversation. This is an operational binding action, not approval to bypass GitHub Gates.
 
 The full normative rules, migration sequence, failure modes, prompt budget and acceptance criteria are defined by `ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0`.
+
+## 15. Parallel Work Item claiming production profile
+
+After the claim foundation in PRs #56 and #57, ordinary module development uses per-Work-Item claims rather than the repository-wide Relay Lease. Different non-conflicting Work Items may proceed concurrently; the same Work Item, exclusive domain, branch or PR remains single-owner.
+
+The compatibility Lease on `ops/hourly-github-relay-control` remains an exclusive maintenance and emergency-stop control. An ACTIVE compatibility Lease blocks new claims and development mutations.
+
+The authoritative claim registry is `.agent/relay/work-claims.json`. Module work may retain one claim across multiple Runs. Only evidence-ready work enters the integration queue, and merge, `main`, release and final project-state closure require the single holder of `.agent/relay/leases/integration.json`.
+
+`ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0` supersedes earlier repository-wide development ownership while preserving conversation isolation, audit, fencing, safety and bounded-receipt rules.

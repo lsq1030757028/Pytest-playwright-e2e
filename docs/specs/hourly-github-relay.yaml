@@ -17,6 +17,7 @@ effective_protocol:
     - ADDENDUM-HOURLY-GITHUB-RELAY-TERMINATION@0.1.1
     - ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0
     - ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0
+    - ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0
   precedence:
     more_specific_or_newer_addendum_controls: true
     markdown_yaml_prompt_lease_contradiction: REPLAN_REQUIRED
@@ -444,3 +445,20 @@ rollback:
   - CLOSE_OR_REVERT_PILOT_GOVERNANCE_ASSETS
   - PRESERVE_AUDIT_HISTORY
   - CONTINUE_INTERACTIVE_WORK_THROUGH_HUMAN_CONTROL_SESSION_AND_SHARED_LEASE
+
+parallel_work_claiming_profile:
+  addendum: ADDENDUM-HOURLY-GITHUB-RELAY-PARALLEL-CLAIMS@0.2.0
+  ordinary_module_lock: WORK_ITEM_CLAIM
+  work_map: docs/product-work-map.yaml
+  claim_registry: ops/hourly-github-relay-control:.agent/relay/work-claims.json
+  integration_lease: ops/hourly-github-relay-control:.agent/relay/leases/integration.json
+  compatibility_lease:
+    path: ops/hourly-github-relay-control:.agent/relay/leases/hourly-github-relay.json
+    role: EXCLUSIVE_MAINTENANCE_AND_EMERGENCY_STOP
+    active_behavior: BLOCK_NEW_CLAIMS_AND_DEVELOPMENT_MUTATIONS
+  parallel_when_non_conflicting: true
+  reject_same: [WORK_ITEM, EXCLUSIVE_DOMAIN, TARGET_BRANCH, TARGET_PR]
+  claim_may_span_multiple_runs: true
+  integration_serialized: true
+  claim_alone_authorizes_merge: false
+  activation_requires_bounded_scheduled_claim_probe: true
