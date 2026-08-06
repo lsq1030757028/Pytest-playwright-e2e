@@ -93,7 +93,7 @@ def test_integration_lease_schema_accepts_idle_and_active_states() -> None:
             "revision": 1,
             "sequence": 1,
             "status": "ACTIVE",
-            "integration_token": "integration-1-20260806T120000Z",
+            "integration_token": "x",
             "work_item_id": "A",
             "started_at": "2026-08-06T12:00:00Z",
             "expires_at": "2026-08-06T13:00:00Z",
