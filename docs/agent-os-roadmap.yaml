@@ -1,6 +1,6 @@
 project: AI Test Harness
-roadmap_version: 3.4
-updated_at: 2026-08-05T23:15:00+08:00
+roadmap_version: 3.5
+updated_at: 2026-08-06T22:35:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
@@ -105,12 +105,19 @@ milestones:
         goal_issue: 43
         pull_request: 44
         merge_commit: 0585e357aebda650ee50ee95ff962b3ac81f6d4c
-        pr_runtime_gate_run: 31018116312
-        pr_full_quality_run: 31018117595
-        main_runtime_gate_run: 31018460853
-        main_quality_run: 31018460602
-        release_run: 31018460644
-        cleanup_run: 31018460853
+        remediation_pull_request: 45
+        remediation_merge_commit: ef681c3b679305d7b88d17f776926dc25b76e49f
+        integration_secret_scan_repair_pull_request: 61
+        final_main_head: bd673cb1cab3edc6d16eca2aded4dcfe4bd45957
+        main_secret_scan_run: 31108779724
+        main_codeql_run: 31108779549
+        m1b_goal_issue: 62
+        pr_runtime_gate_run: 31107607723
+        pr_full_quality_run: 31107611134
+        main_runtime_gate_run: 31108111384
+        main_quality_run: 31108781025
+        release_run: 31108779552
+        cleanup_run: 31108781076
         focused_tests: 29
         proof_scenarios: 15
         critical_false_green: 0
@@ -151,6 +158,7 @@ milestones:
       merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
     active_execution:
       id: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+      goal_issue: 62
       status: NEXT
       phase: SPEC
       assurance: DEV3

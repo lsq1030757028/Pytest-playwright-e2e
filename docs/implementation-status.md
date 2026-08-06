@@ -100,29 +100,32 @@ Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，
 最终交付事实：
 
 ```text
-Goal：Issue #43 — 待台账合并后关闭
-Implementation PR：#44 — MERGED
-Merge Commit：0585e357aebda650ee50ee95ff962b3ac81f6d4c
-PR M1A Runtime Gate：31018116312 — SUCCESS
-PR Full Quality：31018117595 — SUCCESS
-PR UX0 Shadow：31018115286 — SUCCESS
-PR UX1 Mutation Proof：31018115295 — SUCCESS
-Main M1A Runtime Gate：31018460853 — SUCCESS
-Main Full Quality：31018460602 — SUCCESS
-Main UX0 Shadow：31018460951 — SUCCESS
-Main UX1 Mutation Proof：31018460698 — SUCCESS
-Release：31018460644 — SUCCESS
-Cleanup：31018460853 / 31018460929 — SUCCESS
+Goal：Issue #43 — CLOSED
+Base Implementation PR：#44 — MERGED (`0585e357aebda650ee50ee95ff962b3ac81f6d4c`)
+Closure Remediation PR：#45 — MERGED (`ef681c3b679305d7b88d17f776926dc25b76e49f`)
+Integration Secret-scan Repair PR：#61 — MERGED (`bd673cb1cab3edc6d16eca2aded4dcfe4bd45957`)
+PR M1A Runtime Gate：31107607723 — SUCCESS
+PR Full Quality：31107611134 — SUCCESS
+PR Secret Scan：31107608110 — SUCCESS
+PR CodeQL：31107607912 — SUCCESS
+Main M1A Runtime Gate：31108111384 — SUCCESS
+Final Main Full Quality：31108781025 — SUCCESS
+Final Main Secret Scan：31108779724 — SUCCESS
+Final Main CodeQL：31108779549 — SUCCESS
+Release：31108779552 — SUCCESS
+Cleanup：31108781076 — SUCCESS
+Python Distribution Artifact：8970728772 (`sha256:4cba37b10f909bbb6d6123c75dbb140cfd652064bfecda63a010fb7cd2fd0d35`)
+GHCR Build Record：8970756802 (`sha256:140cabd09cb6c5c983d77c22ad846a753db8b05595c6294115d80eb2d48ec0c3`)
 Focused Tests：29 / 29 PASS
 Deterministic Proof：15 / 15 PASS
 Critical False Green：0
 Unauthorized Namespace Actions：0
 Unauthorized Promotion Actions：0
 Review Threads：0
-Implementation Branch：DELETED
+M1B Goal：Issue #62
 ```
 
-M1A Runtime Contracts 已满足实现、CI、Review、Merge、Release、证据与 Cleanup 条件。关闭台账合并后，Issue #43 将正式关闭。
+M1A Runtime Contracts 已满足实现、CI、Review、Merge、Release、证据与 Cleanup 条件。M1A 已由本台账正式关闭；M1B Goal #62 已解锁进入 SPEC。
 
 ---
 

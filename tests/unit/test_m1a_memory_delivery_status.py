@@ -60,6 +60,17 @@ def test_m1a_runtime_delivery_is_closed_without_claiming_a_production_store() ->
     assert ledger["verification"]["unauthorized_namespace_actions"] == 0
     assert ledger["verification"]["unauthorized_promotion_actions"] == 0
     assert ledger["verification"]["cleanup"]["implementation_branch_deleted"] is True
+    assert ledger["closure_chain"]["closure_remediation_pr"] == 45
+    assert ledger["closure_chain"]["closure_remediation_merge_commit"] == "ef681c3b679305d7b88d17f776926dc25b76e49f"
+    assert ledger["closure_chain"]["integration_secret_scan_repair_pr"] == 61
+    assert ledger["closure_chain"]["final_main_head"] == "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957"
+    assert ledger["verification"]["pr_runtime_gate"]["run_id"] == 31107607723
+    assert ledger["verification"]["main_runtime_gate"]["run_id"] == 31108111384
+    assert ledger["verification"]["main_full_quality"]["run_id"] == 31108781025
+    assert ledger["verification"]["main_secret_scan"]["run_id"] == 31108779724
+    assert ledger["verification"]["main_codeql"]["run_id"] == 31108779549
+    assert ledger["verification"]["release"]["run_id"] == 31108779552
+    assert ledger["verification"]["cleanup"]["repository_cleanup_run_id"] == 31108781076
     assert ledger["protected_boundaries"]["production_store_implemented"] is False
     assert ledger["protected_boundaries"]["database_or_vector_backend_selected"] is False
     assert ledger["protected_boundaries"]["memory_gate_closed"] is False
@@ -75,6 +86,7 @@ def test_current_truth_advances_to_m1b_spec_and_preserves_global_boundaries() ->
         "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
     )
     assert runtime_ledger["next_state"]["status"] == "NEXT"
+    assert runtime_ledger["next_state"]["goal_issue"] == 62
     assert runtime_ledger["next_state"]["implementation_blocked_until_spec_approved"] is True
     assert roadmap["stage_delivery_status"] == "NOT_READY"
     assert roadmap["active_module"] == "M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC"
@@ -94,3 +106,5 @@ def test_closure_and_probe_branches_are_registered_for_cleanup() -> None:
     assert '"docs/m1a-memory-contracts-final-ledger"' in cleanup
     assert '"docs/m1a-runtime-contracts-final-ledger"' in cleanup
     assert '"ops/m1a-runtime-closure-evidence"' in cleanup
+    assert '"agent/m1a-runtime-contract-remediation"' in cleanup
+    assert '"fix/m1a-integration-token-fingerprint"' in cleanup

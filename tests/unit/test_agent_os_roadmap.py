@@ -72,13 +72,22 @@ def test_m1_tracks_closed_runtime_and_next_m1b_spec_truthfully() -> None:
     assert runtime["goal_issue"] == 43
     assert runtime["pull_request"] == 44
     assert runtime["merge_commit"] == "0585e357aebda650ee50ee95ff962b3ac81f6d4c"
-    assert runtime["main_runtime_gate_run"] == 31018460853
-    assert runtime["main_quality_run"] == 31018460602
-    assert runtime["release_run"] == 31018460644
+    assert runtime["main_runtime_gate_run"] == 31108111384
+    assert runtime["main_quality_run"] == 31108781025
+    assert runtime["release_run"] == 31108779552
     assert runtime["critical_false_green"] == 0
     assert runtime["review_threads"] == 0
     assert runtime["implementation_branch_deleted"] is True
+    assert runtime["remediation_pull_request"] == 45
+    assert runtime["remediation_merge_commit"] == "ef681c3b679305d7b88d17f776926dc25b76e49f"
+    assert runtime["integration_secret_scan_repair_pull_request"] == 61
+    assert runtime["final_main_head"] == "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957"
+    assert runtime["main_secret_scan_run"] == 31108779724
+    assert runtime["main_codeql_run"] == 31108779549
+    assert runtime["cleanup_run"] == 31108781076
+    assert runtime["m1b_goal_issue"] == 62
     assert m1["active_execution"]["phase"] == "SPEC"
+    assert m1["active_execution"]["goal_issue"] == 62
     assert m1["active_execution"]["implementation_blocked_until_spec_approved"] is True
     assert m1["active_execution"]["production_backend_selected"] is False
     assert roadmap["next_execution_sequence"][0] == (
