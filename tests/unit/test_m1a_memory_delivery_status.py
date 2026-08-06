@@ -61,9 +61,13 @@ def test_m1a_runtime_delivery_is_closed_without_claiming_a_production_store() ->
     assert ledger["verification"]["unauthorized_promotion_actions"] == 0
     assert ledger["verification"]["cleanup"]["implementation_branch_deleted"] is True
     assert ledger["closure_chain"]["closure_remediation_pr"] == 45
-    assert ledger["closure_chain"]["closure_remediation_merge_commit"] == "ef681c3b679305d7b88d17f776926dc25b76e49f"
+    assert ledger["closure_chain"]["closure_remediation_merge_commit"] == (
+        "ef681c3b679305d7b88d17f776926dc25b76e49f"
+    )
     assert ledger["closure_chain"]["integration_secret_scan_repair_pr"] == 61
-    assert ledger["closure_chain"]["final_main_head"] == "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957"
+    assert ledger["closure_chain"]["final_main_head"] == (
+        "bd673cb1cab3edc6d16eca2aded4dcfe4bd45957"
+    )
     assert ledger["verification"]["pr_runtime_gate"]["run_id"] == 31107607723
     assert ledger["verification"]["main_runtime_gate"]["run_id"] == 31108111384
     assert ledger["verification"]["main_full_quality"]["run_id"] == 31108781025
