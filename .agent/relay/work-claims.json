@@ -2,23 +2,9 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 44,
+  "revision": 45,
   "claim_sequence": 6,
   "claims": {
-    "M1A-RUNTIME-CONTRACTS-CLOSE": {
-      "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
-      "claim_token": "claim-m1a-runtime-contracts-close-human-4-20260806T132500Z",
-      "surface": "HUMAN_CONTROL",
-      "state": "INTEGRATING",
-      "exclusive_domain": "memory-runtime-contracts",
-      "target_branch": "docs/m1a-runtime-contracts-final-ledger-clean",
-      "target_pr": 64,
-      "expected_head_sha": "70513d3e08b1d523b4b543b82aeb3457614ca040",
-      "started_at": "2026-08-06T13:25:00Z",
-      "heartbeat_at": "2026-08-06T15:22:00Z",
-      "expires_at": "2026-08-06T17:22:00Z",
-      "last_checkpoint": "M10_ROADMAP_GUARD_ALIGNED_WITH_M1B_NEXT_FINAL_GATES_RUNNING"
-    },
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
       "claim_token": "claim-ux-fp-fn-benchmark-spec-5-20260806T140300Z",
@@ -31,7 +17,7 @@
       "started_at": "2026-08-06T14:03:00Z",
       "heartbeat_at": "2026-08-06T15:15:00Z",
       "expires_at": "2026-08-06T17:15:00Z",
-      "last_checkpoint": "FINAL_HEAD_REVERIFIED_WAITING_FOR_M1A_INTEGRATION_RELEASE"
+      "last_checkpoint": "FINAL_HEAD_REVERIFIED_WAITING_FOR_INTEGRATION_LEASE"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
       "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
@@ -45,19 +31,11 @@
       "started_at": "2026-08-06T15:27:00Z",
       "heartbeat_at": "2026-08-06T15:44:00Z",
       "expires_at": "2026-08-06T17:44:00Z",
-      "last_checkpoint": "DRAFT_PR_67_OPENED_VERTICAL_BETA_SPEC_PACKAGE_COMMITTED"
+      "last_checkpoint": "DEDICATED_GATE_AND_SECRET_GREEN_FULL_CI_RERUN_AND_CODEQL_PENDING"
     }
   },
   "recovered_claims": [],
   "integration_queue": [
-    {
-      "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
-      "claim_token": "claim-m1a-runtime-contracts-close-human-4-20260806T132500Z",
-      "enqueued_at": "2026-08-06T13:53:00Z",
-      "security_or_correctness_repair": true,
-      "dependency_unblocking": true,
-      "state": "INTEGRATING"
-    },
     {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
       "claim_token": "claim-ux-fp-fn-benchmark-spec-5-20260806T140300Z",
