@@ -2,22 +2,22 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 11,
+  "revision": 12,
   "claim_sequence": 4,
   "claims": {
     "M1A-RUNTIME-CONTRACTS-CLOSE": {
       "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
       "claim_token": "claim-m1a-runtime-contracts-close-human-4-20260806T132500Z",
       "surface": "HUMAN_CONTROL",
-      "state": "INTEGRATION_WAITING",
+      "state": "INTEGRATING",
       "exclusive_domain": "memory-runtime-contracts",
       "target_branch": "agent/m1a-runtime-contract-remediation",
       "target_pr": 45,
       "expected_head_sha": "0fa4147ac639b36a33427b10a5a7eafb85049246",
       "started_at": "2026-08-06T13:25:00Z",
-      "heartbeat_at": "2026-08-06T13:53:00Z",
-      "expires_at": "2026-08-06T15:53:00Z",
-      "last_checkpoint": "FINAL_HEAD_ALL_GATES_GREEN_REVIEW_ZERO_ENQUEUED_FOR_INTEGRATION"
+      "heartbeat_at": "2026-08-06T13:55:00Z",
+      "expires_at": "2026-08-06T15:55:00Z",
+      "last_checkpoint": "INTEGRATION_LEASE_ACQUIRED_PR_READY_FOR_MERGE"
     }
   },
   "recovered_claims": [],
