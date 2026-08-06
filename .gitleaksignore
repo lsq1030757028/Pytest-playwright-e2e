@@ -5,3 +5,5 @@
 035cc4ad95f63b5c19800792e507544efac568cd:tests/unit/test_relay_claim_schemas.py:generic-api-key:96
 # Exact fingerprint for the public integration Lease coordination ID created during PR #51 integration; no credential was present.
 18909950453ea74f2c1dc082dd49d29a04450c81:.agent/relay/leases/integration.json:generic-api-key:6
+# Exact fingerprint for the public integration coordination ID created during M1A closure; no credential was present.
+12870202e18b4266dd279633390ab9e3710d38a6:.agent/relay/leases/integration.json:generic-api-key:6
