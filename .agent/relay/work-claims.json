@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 47,
+  "revision": 48,
   "claim_sequence": 6,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -15,8 +15,8 @@
       "target_pr": 63,
       "expected_head_sha": "59bb81a6c82af992e9951117200d3202733cddd8",
       "started_at": "2026-08-06T14:03:00Z",
-      "heartbeat_at": "2026-08-06T16:05:00Z",
-      "expires_at": "2026-08-06T18:05:00Z",
+      "heartbeat_at": "2026-08-06T16:08:00Z",
+      "expires_at": "2026-08-06T18:08:00Z",
       "last_checkpoint": "CURRENT_MAIN_SYNCED_ZERO_OVERLAP_FINAL_GATES_RUNNING"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
@@ -27,11 +27,11 @@
       "exclusive_domain": "beta-product-architecture",
       "target_branch": "spec/test-agent-runtime-beta",
       "target_pr": 67,
-      "expected_head_sha": "1b6ce2621f5404156233ade0ba35519114a26113",
+      "expected_head_sha": "6d1770b408e5231a9ef917beba72b9e015c3d31d",
       "started_at": "2026-08-06T15:27:00Z",
-      "heartbeat_at": "2026-08-06T16:05:00Z",
-      "expires_at": "2026-08-06T18:05:00Z",
-      "last_checkpoint": "DEDICATED_GATE_AND_SECRET_GREEN_FULL_CI_RERUN_AND_CODEQL_PENDING"
+      "heartbeat_at": "2026-08-06T16:08:00Z",
+      "expires_at": "2026-08-06T18:08:00Z",
+      "last_checkpoint": "OWNER_RETRIGGERED_FULL_CI_AND_CODEQL_AFTER_RUNNER_ONLY_FAILURES"
     }
   },
   "recovered_claims": [],
