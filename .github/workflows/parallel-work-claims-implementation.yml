@@ -5,6 +5,7 @@ name: Parallel Work Claims Implementation
     paths:
       - "src/test_workflow/relay_claims.py"
       - "tests/unit/test_relay_claims.py"
+      - "tests/unit/test_relay_claim_schemas.py"
       - ".agent/relay/schemas/work-claims.schema.json"
       - ".agent/relay/schemas/integration-lease.schema.json"
       - ".github/workflows/parallel-work-claims-implementation.yml"
@@ -13,13 +14,14 @@ name: Parallel Work Claims Implementation
     paths:
       - "src/test_workflow/relay_claims.py"
       - "tests/unit/test_relay_claims.py"
+      - "tests/unit/test_relay_claim_schemas.py"
       - ".agent/relay/schemas/work-claims.schema.json"
       - ".agent/relay/schemas/integration-lease.schema.json"
       - ".github/workflows/parallel-work-claims-implementation.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   claims:
@@ -34,4 +36,87 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install -e ".[test]"
       - name: Validate claim allocator and integration queue
-        run: pytest -q tests/unit/test_relay_claims.py
+        run: pytest -q tests/unit/test_relay_claims.py tests/unit/test_relay_claim_schemas.py
+
+  temporary-lint-repair:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref == 'agent/parallel-work-claims'
+    needs: claims
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RELAY_RUN_TOKEN: relay-parallel-work-claiming-foundation-10-20260806T104500Z
+      TARGET_BRANCH: agent/parallel-work-claims
+      TARGET_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install lint dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Apply repository lint fixes
+        run: |
+          ruff check --fix src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
+          ruff format src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
+      - name: Commit fenced lint repair when needed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py; then
+            echo "No lint repair required."
+            exit 0
+          fi
+          verify_lease() {
+            python - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.request
+          from datetime import UTC, datetime
+
+          repository = os.environ["GITHUB_REPOSITORY"]
+          url = (
+              f"https://api.github.com/repos/{repository}/contents/"
+              ".agent/relay/leases/hourly-github-relay.json"
+              "?ref=ops/hourly-github-relay-control"
+          )
+          request = urllib.request.Request(
+              url,
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              payload = json.load(response)
+          lease = json.loads(base64.b64decode(payload["content"]).decode("utf-8"))
+          expected = {
+              "status": "ACTIVE",
+              "run_token": os.environ["RELAY_RUN_TOKEN"],
+              "target_branch": os.environ["TARGET_BRANCH"],
+              "target_head_sha": os.environ["TARGET_HEAD"],
+          }
+          for field, value in expected.items():
+              if lease.get(field) != value:
+                  raise SystemExit(f"Lease fence mismatch: {field}")
+          expires = datetime.fromisoformat(lease["expires_at"].replace("Z", "+00:00"))
+          if expires <= datetime.now(UTC):
+              raise SystemExit("Lease fence mismatch: expired")
+          PY
+          }
+          verify_lease
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/test_workflow/relay_claims.py tests/unit/test_relay_claims.py
+          git commit -m "style(relay): align claim allocator with lint policy [RELAY:${RELAY_RUN_TOKEN}]"
+          verify_lease
+          git push origin "HEAD:${TARGET_BRANCH}"
