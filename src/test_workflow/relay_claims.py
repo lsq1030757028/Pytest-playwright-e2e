@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Mapping
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 ACTIVE_CLAIM_STATES = frozenset(
     {"CLAIMED", "IN_PROGRESS", "EVIDENCE_READY", "INTEGRATION_WAITING", "INTEGRATING"}
@@ -51,13 +52,13 @@ def parse_utc(value: str) -> datetime:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ClaimControlError("timestamp must include a timezone")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def format_utc(value: datetime) -> str:
     if value.tzinfo is None:
         raise ClaimControlError("timestamp must include a timezone")
-    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _items_by_id(work_map: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
@@ -152,9 +153,7 @@ def _require_revision(registry: Mapping[str, Any], expected_revision: int) -> No
 
 def _blocking_claims(registry: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [
-        claim
-        for claim in registry["claims"].values()
-        if claim.get("state") in ACTIVE_CLAIM_STATES
+        claim for claim in registry["claims"].values() if claim.get("state") in ACTIVE_CLAIM_STATES
     ]
 
 
@@ -195,9 +194,7 @@ def select_work_item(work_map: Mapping[str, Any], registry: Mapping[str, Any]) -
             continue
         incompatible = set(incompatibilities.get(domain, []))
         reverse_incompatible = {
-            other_domain
-            for other_domain, blocked in incompatibilities.items()
-            if domain in blocked
+            other_domain for other_domain, blocked in incompatibilities.items() if domain in blocked
         }
         conflicting_domains = sorted((incompatible | reverse_incompatible) & active_domains)
         if conflicting_domains:
@@ -248,7 +245,7 @@ def allocate_next(
 
     sequence = int(registry["claim_sequence"]) + 1
     started_at = format_utc(now)
-    token_time = now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    token_time = now.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     claim_token = f"claim-{selection.work_item_id.lower()}-{sequence}-{token_time}"
     claim = {
         "work_item_id": selection.work_item_id,
@@ -296,7 +293,7 @@ def assert_claim_fence(
             raise ClaimFenceViolation(f"claim fence mismatch: {field}")
     if claim.get("state") not in ACTIVE_CLAIM_STATES:
         raise ClaimFenceViolation("claim is not active")
-    if parse_utc(claim["expires_at"]) <= now.astimezone(timezone.utc):
+    if parse_utc(claim["expires_at"]) <= now.astimezone(UTC):
         raise ClaimFenceViolation("claim is expired")
 
 
@@ -339,7 +336,7 @@ def recover_stale_claims(
     for work_item_id, claim in list(updated["claims"].items()):
         if claim.get("state") not in ACTIVE_CLAIM_STATES:
             continue
-        if parse_utc(claim["expires_at"]) > now.astimezone(timezone.utc):
+        if parse_utc(claim["expires_at"]) > now.astimezone(UTC):
             continue
         signals = activity.get(work_item_id, {})
         if any(
@@ -398,7 +395,9 @@ def enqueue_integration(
 def select_integration_entry(registry: Mapping[str, Any]) -> dict[str, Any] | None:
     validate_registry(registry)
     eligible = [
-        entry for entry in registry["integration_queue"] if entry.get("state") == "INTEGRATION_WAITING"
+        entry
+        for entry in registry["integration_queue"]
+        if entry.get("state") == "INTEGRATION_WAITING"
     ]
     if not eligible:
         return None
@@ -431,7 +430,7 @@ def acquire_integration_lease(
     if entry is None:
         raise ClaimControlError("integration queue is empty")
     sequence = int(lease.get("sequence", 0)) + 1
-    token_time = now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    token_time = now.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     updated = deepcopy(dict(lease))
     updated.update(
         {
