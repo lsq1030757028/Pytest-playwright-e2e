@@ -1,0 +1,167 @@
+roadmap_id: TEST_AGENT_RUNTIME_BETA-VERTICAL-SLICES
+version: 0.1.0
+status: CANDIDATE
+spec_ref: SPEC-TEST-AGENT-RUNTIME-BETA@0.1.0
+goal_issue: 66
+parent_campaign_issue: 65
+product_state: SPEC_ONLY_NOT_OPERATIONAL
+delivery_principle: VERTICAL_OPERATING_SLICE_BEFORE_UNUSED_HORIZONTAL_SUBSYSTEM
+slices:
+  - id: BETA-A
+    title: Execute an existing governed test pack
+    state: PLANNED
+    dependencies: []
+    user_entrypoint: CLI
+    user_outcome: durable_job_returns_evidence_backed_verdict
+    required_components:
+      - CLI_CLIENT
+      - CONTROL_PLANE
+      - DURABLE_JOB_STORE_QUEUE
+      - PROJECT_ADAPTER
+      - EXECUTION_WORKER
+      - EVIDENCE_COLLECTOR
+      - DETERMINISTIC_VERIFIER
+      - RELEASE_SMOKE_VERIFIER
+    product_evidence:
+      - real_submit_status_result_cancel
+      - sqlite_restart
+      - worker_lease_fencing
+      - pytest_playwright_execution
+      - evidence_bundle_replay
+      - cancellation_cleanup
+      - package_container_smoke
+    completion_gate:
+      critical_false_green_count: 0
+      unverifiable_success_count: 0
+      duplicate_execution_after_restart_count: 0
+  - id: BETA-B
+    title: Generate and execute a bounded test from a requirement
+    state: BLOCKED
+    dependencies: [BETA-A]
+    user_entrypoint: CLI
+    user_outcome: requirement_becomes_reviewable_executed_test_patch
+    required_components:
+      - PLANNER
+      - TEST_AUTHORING_CAPABILITY
+      - GOVERNED_CONTEXT_ASSEMBLY
+      - PROJECT_ADAPTER
+    product_evidence:
+      - oracle_bound_test_plan
+      - generated_pytest_playwright_patch
+      - allowed_path_enforcement
+      - lint_import_collection
+      - real_execution
+      - patch_traceability
+    completion_gate:
+      product_source_write_count: 0
+      fixed_sleep_or_blind_retry_count: 0
+      missing_oracle_success_count: 0
+  - id: BETA-C
+    title: Diagnose repair and re-run
+    state: BLOCKED
+    dependencies: [BETA-B]
+    user_entrypoint: CLI
+    user_outcome: test_defect_is_repaired_product_defect_is_reported
+    required_components:
+      - DIAGNOSIS_REPAIR_CONTROLLER
+      - DETERMINISTIC_VERIFIER
+      - UX_FP_FN_BENCHMARK
+    product_evidence:
+      - seeded_test_defect_repaired
+      - seeded_product_defect_not_masked
+      - environment_failure_classified
+      - insufficient_evidence_abstention
+      - oracle_conflict_stop
+      - before_after_replay
+    completion_gate:
+      maximum_repair_cycles: 2
+      unauthorized_product_repair_count: 0
+      assertion_weakening_count: 0
+  - id: BETA-D
+    title: Resume the same job after restart with governed context
+    state: BLOCKED
+    dependencies: [BETA-A, BETA-C]
+    user_entrypoint: CLI
+    user_outcome: durable_resume_without_chat_history_or_duplicate_work
+    required_components:
+      - DURABLE_JOB_STORE_QUEUE
+      - GOVERNED_MEMORY_ADAPTER
+      - WORKER_LEASE_RECOVERY
+    product_evidence:
+      - control_plane_restart
+      - worker_restart
+      - uncertain_side_effect_reconciliation
+      - memory_off_control
+      - progressive_authorized_memory
+      - stale_revoked_forgotten_memory_exclusion
+    completion_gate:
+      lost_job_count: 0
+      duplicate_uncertain_side_effect_count: 0
+      cross_project_memory_leak_count: 0
+  - id: BETA-E
+    title: Two-project operating Beta acceptance
+    state: BLOCKED
+    dependencies: [BETA-B, BETA-C, BETA-D]
+    user_entrypoint: CLI
+    user_outcome: new_user_runs_beta_against_two_supported_projects
+    required_components:
+      - CROSS_MODEL_SAFE_DEGRADATION
+      - CROSS_PROJECT_ADAPTERS
+      - DEPLOYED_RUNTIME
+      - HUMAN_UAT
+    product_evidence:
+      - two_materially_different_projects
+      - healthy_control_no_false_positive
+      - seeded_product_defect_detected
+      - generated_test_reviewability
+      - deployment_smoke
+      - user_documentation
+      - human_uat
+    completion_gate:
+      supported_projects: 2
+      healthy_false_positive_count: 0
+      critical_false_green_count: 0
+      human_uat_complete: true
+milestone_to_slice:
+  M1:
+    role: governed_memory_and_progressive_context
+    exercised_by: [BETA-D]
+  M2:
+    role: cross_model_normalization_degradation_and_routing
+    exercised_by: [BETA-B, BETA-C, BETA-E]
+  M3:
+    role: project_architecture_and_adapter_generalization
+    exercised_by: [BETA-E]
+  M4:
+    role: bounded_role_orchestration_only_when_slice_requires
+    exercised_by: [BETA-B, BETA-C]
+  M5:
+    role: durable_control_plane_worker_state_and_recovery
+    exercised_by: [BETA-A, BETA-D]
+  M6:
+    role: integrated_operating_beta_and_acceptance
+    exercised_by: [BETA-E]
+parallel_lanes:
+  - lane: MEMORY
+    current_goal: 62
+    advances: [BETA-D]
+  - lane: UX_FALSE_POSITIVE_FALSE_NEGATIVE
+    current_goal: 60
+    advances: [BETA-C, BETA-E]
+  - lane: BETA_VERTICAL_ARCHITECTURE
+    current_goal: 66
+    advances: [BETA-A, BETA-B, BETA-C, BETA-D, BETA-E]
+integration:
+  serialized: true
+  order_rule: dependency_unblocking_then_security_correctness_then_queue_time
+  main_release_deployment_single_owner: true
+campaign_completion:
+  entrypoint_documented_and_real: true
+  full_agent_loop: true
+  durable_restart: true
+  projects: 2
+  seeded_product_defect_detected: true
+  healthy_false_positive_count: 0
+  critical_false_green_count: 0
+  release_deployment_smoke: true
+  human_uat_complete: true
