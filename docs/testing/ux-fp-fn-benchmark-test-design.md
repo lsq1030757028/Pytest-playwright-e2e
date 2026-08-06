@@ -51,6 +51,8 @@ The current PR must provide:
 11. threat controls cover leakage, fixture drift, selective reporting, cross-revision evidence, cache reuse, threshold manipulation and rollback;
 12. no touched path belongs to PR #45 or the M1A memory-runtime domain.
 
+The **zero canonical FP** requirement is absolute: the canonical healthy-behavior baseline permits no false-positive verdicts.
+
 ## 4. Future canonical scenario matrix
 
 ### 4.1 Healthy controls
