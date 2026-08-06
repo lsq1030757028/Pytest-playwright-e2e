@@ -1,34 +1,61 @@
-# Hourly GitHub Relay Pilot Prompt
+# Hourly GitHub Relay Runtime Bootstrap Prompt
 
-This is the scheduled-task entrypoint for `SPEC-HOURLY-GITHUB-RELAY@0.1.0`, its concurrency, contention, termination and Work Item lifecycle addenda, and Goal #49.
+This is the minimal scheduled-task entrypoint for Goal #49 and the effective PR #51 protocol bundle.
+
+The task must be created from a dedicated conversation whose only purpose is the Relay Runtime. Do not create or enable it from the human architecture/design conversation.
+
+## Approved bootstrap
 
 ```text
-Execute one Hourly GitHub Relay Pilot Run for repository lsq1030757028/Pytest-playwright-e2e.
+Execute one Production Hourly GitHub Relay Run for repository `lsq1030757028/Pytest-playwright-e2e`.
 
-Read AGENTS.md and every mandatory SSOT it names. Then read Goal #49, Design PR #51 and all hourly-relay Markdown/YAML assets in docs/specs/ from PR #51 until they are merged.
+Runtime declaration:
+- session_class: RELAY_RUNTIME
+- durable_context: GITHUB_ONLY
+- conversation_history_authoritative: false
 
-The effective Pilot window is eight hourly invocations. It validates the Relay control plane only; it is not the M1–M3 product-development budget. Use Program → Campaign → Work Item → Run. A complex Work Item may span multiple Runs and must resume from its durable checkpoint.
+Do not treat prior Chat messages as project state, authority, checkpoint or evidence. Restore everything from GitHub.
 
-Before selecting work, restore the authoritative Goal, PR, branch, head, CI, Review, Campaign, active Work Item and recent Run evidence. Evaluate terminal conditions before new work. If active, select REORIENT, PLAN, IMPLEMENT, VERIFY, WAIT or CLOSE from repository state, not from clock position. Advance one semantically coherent increment to a durable natural checkpoint. Do not force a Work Item to finish within an hour.
+Read `main:AGENTS.md` and every SSOT it requires. Read Issue #49, including `OWNER-AUTH-PRODUCTION-RELAY-M1-M3@1.0.0`. Until PR #51 is merged, read the complete Relay protocol bundle from PR #51 Head, including the conversation-isolation Markdown/YAML addendum and this bootstrap prompt.
 
-Use the operational control branch ops/hourly-github-relay-control and lease file .agent/relay/leases/hourly-github-relay.json. Acquire with GitHub Contents blob-SHA compare-and-swap before every other mutation. Increment sequence and derive the Run Token in the same acquisition. Revalidate status, holder token, expiry and target branch before every mutation. Verify target branch head before every development Commit. Never force-push, reset or overwrite. A contender that cannot acquire exits BUSY without Campaign, PR-comment, branch or CI writes.
+Restore the current `Program → Campaign → Work Item → Run / Checkpoint` from authoritative GitHub Goals, SPECs, Issues, PRs, branches, CI, Reviews, Run records and Lease state. Preserve the same Work Item across Runs. Never reconstruct project state from private conversation memory.
 
-Maintain one authoritative START → WORKING/VERIFYING → FINAL comment containing <!-- scheduled-relay:<run-token> -->. Every created Commit contains [RELAY:<run-token>]. Release the Lease using the latest blob SHA and report release truth.
+Before every GitHub mutation, acquire and verify the CAS Lease on branch `ops/hourly-github-relay-control`, path `.agent/relay/leases/hourly-github-relay.json`. Apply holder-token, expiry, target-branch and branch-Head fencing exactly as specified. A non-holder performs no development, PR-comment or CI mutation.
 
-Never write directly to main, merge or enable auto-merge during the Pilot, bypass a failed Gate, modify production/personal data or Secrets, change Oracle/Policy/Permission, operate devices, or perform irreversible external writes.
+Operate only within `MANDATE-AUTONOMY-M1-M3@1.0.0`. Do not enter M4/M5/M6, directly push `main`, bypass a failed Gate, modify production/personal data or Secrets, change Oracle/Experience Oracle/Policy/Permission, or perform irreversible or unbounded external actions.
 
-Every invocation produces a Chinese final Chat response, including BUSY, NO_ACTION, WAITING_CI, BLOCKED and terminal states. First line: Run Token：<token or UNACQUIRED>；状态：<status>. Include Campaign, Work Item, checkpoint, actual actions, files/Commit or 无, Issue/PR/branch, CI, blocker/error, next action, GitHub record and actual visible Chat/Codex/UNKNOWN, model and reasoning mode. Chat and GitHub FINAL must agree.
+Write the complete START → WORKING/VERIFYING → PRE_FINAL → RELEASE_ATTESTED FINAL audit to the authoritative GitHub PR or Issue. Every development Commit contains `[RELAY:<run-token>]`.
+
+After GitHub FINAL, reply only with a bounded receipt, normally no more than 500 Chinese characters:
+
+Run Token：<token or UNACQUIRED>；状态：<status>
+GitHub：<authoritative PR or Issue>；Checkpoint：<short checkpoint>；下一动作：<short next action>
+
+When a GitHub write fails, include the actual platform error required for recovery. Do not duplicate the full GitHub audit in Chat.
+
+If this scheduled reply appears in a human collaboration conversation, or task/session binding is unknown, report `SESSION_ISOLATION_FAILED` or `SESSION_BINDING_UNKNOWN`, perform no further scheduled development write, and keep the task disabled until it is recreated from a dedicated Relay Runtime conversation.
 ```
 
-## Schedule
+## Production schedule safety fuse
 
 ```ical
 BEGIN:VEVENT
-DTSTART;TZID=Asia/Shanghai:20260806T020000
-RRULE:FREQ=HOURLY;COUNT=8
+DTSTART;TZID=Asia/Shanghai:<OWNER_SELECTED_START>
+RRULE:FREQ=HOURLY;COUNT=720
 END:VEVENT
 ```
 
 Timing mode: `exact_schedule`.
 
-Intended Beijing-time window: `2026-08-06 02:00` through `2026-08-06 09:00`.
+The 720-run count is a 30-day scheduling fuse, not a Work Item or Program completion estimate. Logical termination remains Owner stop/revocation, out-of-mandate or safety abort, or truthful M1–M3 Program completion.
+
+## Migration rule
+
+The previous task associated with the human collaboration conversation remains disabled. The platform surface currently available to this Run does not expose a supported target-conversation parameter, so it cannot be safely retargeted in place.
+
+Migration requires one Owner UI action:
+
+1. create/open a dedicated conversation named, for example, `Pytest-playwright-e2e Relay Runtime`;
+2. create the scheduled task in that conversation using the approved bootstrap above;
+3. first run one read-only binding probe;
+4. enable production writes only after the receipt is confirmed to appear exclusively in the dedicated runtime conversation and the expected GitHub probe record exists.
