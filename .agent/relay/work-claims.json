@@ -1,10 +1,25 @@
 {
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
-  "enabled": false,
-  "revision": 8,
-  "claim_sequence": 3,
-  "claims": {},
+  "enabled": true,
+  "revision": 9,
+  "claim_sequence": 4,
+  "claims": {
+    "M1A-RUNTIME-CONTRACTS-CLOSE": {
+      "work_item_id": "M1A-RUNTIME-CONTRACTS-CLOSE",
+      "claim_token": "claim-m1a-runtime-contracts-close-human-4-20260806T132500Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "CLAIMED",
+      "exclusive_domain": "memory-runtime-contracts",
+      "target_branch": "agent/m1a-runtime-contract-remediation",
+      "target_pr": 45,
+      "expected_head_sha": "3a04029584a728c4a0e612a5bd347321e6b37c9c",
+      "started_at": "2026-08-06T13:25:00Z",
+      "heartbeat_at": "2026-08-06T13:25:00Z",
+      "expires_at": "2026-08-06T15:25:00Z",
+      "last_checkpoint": "HUMAN_CONTROL_CLAIMED_FOR_MAIN_SYNC_AND_FINAL_CLOSURE"
+    }
+  },
   "recovered_claims": [],
   "integration_queue": []
 }
