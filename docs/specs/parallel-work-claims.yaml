@@ -1,0 +1,127 @@
+spec_id: SPEC-PARALLEL-WORK-CLAIMS
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 55
+parent_relay_issue: 49
+authority: OWNER-AUTH-PARALLEL-WORK-CLAIMS-M1-M3@1.0.0
+mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+assurance:
+  development: DEV3
+  ux: UX0
+classification:
+  kind: engineering_delivery_control_plane
+  product_m4_claim: false
+  milestones_supported: [M1, M2, M3]
+outcome:
+  statement: independent non-conflicting Work Items can be developed concurrently and integrated through serialized gates
+  chat_history_authoritative: false
+  github_authoritative: true
+sources:
+  work_map: docs/product-work-map.yaml
+  work_map_human: docs/product-work-map.md
+  goal: issue:55
+  control_branch: ops/hourly-github-relay-control
+  claim_registry: .agent/relay/work-claims.json
+  integration_lease: .agent/relay/leases/integration.json
+work_item:
+  required_fields:
+    - work_item_id
+    - milestone
+    - outcome
+    - phase
+    - state
+    - priority
+    - dependencies
+    - authority_issue
+    - required_spec
+    - exclusive_domain
+    - scope
+    - assurance
+    - integration_group
+    - completion_checks
+    - rollback
+  phases: [SPEC, IMPLEMENTATION, EVIDENCE, INTEGRATION, CLOSURE]
+  states:
+    normal: [PLANNED, BLOCKED, READY, CLAIMED, IN_PROGRESS, EVIDENCE_READY, INTEGRATION_WAITING, INTEGRATING, MERGED, RELEASE_VERIFYING, CLOSED]
+    exceptional: [REPLAN_REQUIRED, OUT_OF_MANDATE, FAILED, CANCELLED]
+claiming:
+  registry_cas: required
+  claim_sequence: monotonic
+  max_selection_retries_after_cas_conflict: 1
+  selection:
+    dependency_satisfied: required
+    authority_satisfied: required
+    unclaimed: required
+    exclusive_domain_free: required
+    incompatible_domains_free: required
+    order: [priority_desc, work_item_id_asc]
+  token_format: claim-<work-item-id>-<sequence>-<utc-start>
+  lease_minutes: 120
+  heartbeat_max_minutes: 45
+  stale_recovery:
+    check_branch_activity: true
+    check_pr_activity: true
+    check_ci_activity: true
+    reset_or_force_push_allowed: false
+conflicts:
+  exactly_one_exclusive_domain_per_item: true
+  duplicate_domain_active_claims_allowed: false
+  always_serialized:
+    - same_branch
+    - same_pull_request
+    - main_integration
+    - package_or_image_release
+    - implementation_status_and_ledger
+    - active_branch_cleanup
+    - shared_mutable_external_boundary
+fencing:
+  before_every_mutation: true
+  require:
+    - claim_exists
+    - claim_token_matches
+    - claim_not_expired
+    - work_item_id_matches
+    - exclusive_domain_matches
+    - target_branch_matches
+    - branch_head_matches_expected
+  lost_claim_action: stop_writes
+  force_push_allowed: false
+  reset_allowed: false
+integration:
+  serialized: true
+  lease_cas: required
+  queue_entry_requires_state: EVIDENCE_READY
+  queue_priority: [security_or_correctness_repair, dependency_unblocking, oldest_eligible, work_item_id]
+  failure_action: REPLAN_REQUIRED_OR_BLOCKED
+verification:
+  levels: [MODULE, INTEGRATION_GROUP, FINAL_STAGE]
+  parallelism_may_lower_evidence: false
+  critical_false_green: 0
+migration:
+  legacy_global_lease_initially_retained: true
+  claim_aware_writes_initially_disabled: true
+  acceptance_requires:
+    independent_concurrent_claims: 2
+    conflicting_claim_rejections: 1
+    bounded_write_probe: true
+  task_prompt_migration_after_acceptance: true
+  integration_serialized_from_start: true
+acceptance:
+  deterministic_selection: required
+  atomic_one_winner_contention: required
+  concurrent_different_domains: required
+  reject_same_domain: required
+  reject_same_branch: required
+  safe_stale_recovery: required
+  per_mutation_fencing: required
+  serialized_integration_release: required
+  isolated_runtime_receipt: required
+  task_disable_stops_claims: required
+  critical_false_green: 0
+rollback:
+  disable_claim_aware_task: true
+  stop_new_claims: true
+  preserve_registry_and_evidence: true
+  restore_global_lease_mode: true
+  force_reset_active_branches: false
+  change_event_required_for_redesign: true

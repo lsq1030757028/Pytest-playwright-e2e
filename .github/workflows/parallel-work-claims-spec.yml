@@ -1,0 +1,43 @@
+name: Parallel Work Claims SPEC
+
+"on":
+  pull_request:
+    paths:
+      - "docs/specs/parallel-work-claims.md"
+      - "docs/specs/parallel-work-claims.yaml"
+      - "docs/product-work-map.md"
+      - "docs/product-work-map.yaml"
+      - "docs/test-design/parallel-work-claims-test-design.md"
+      - "tests/unit/test_parallel_work_claims_spec.py"
+      - ".github/workflows/parallel-work-claims-spec.yml"
+      - ".gitleaksignore"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/parallel-work-claims.md"
+      - "docs/specs/parallel-work-claims.yaml"
+      - "docs/product-work-map.md"
+      - "docs/product-work-map.yaml"
+      - "docs/test-design/parallel-work-claims-test-design.md"
+      - "tests/unit/test_parallel_work_claims_spec.py"
+      - ".github/workflows/parallel-work-claims-spec.yml"
+      - ".gitleaksignore"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Validate parallel work claim assets
+        run: pytest -q tests/unit/test_parallel_work_claims_spec.py
