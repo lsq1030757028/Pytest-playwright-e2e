@@ -1,0 +1,181 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-CONVERSATION-ISOLATION@0.1.0
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+status: CANDIDATE_OWNER_REQUESTED
+assurance:
+  dev: DEV3
+  ux: UX0
+
+architecture:
+  planes:
+    human_control_session:
+      responsibilities:
+        - ARCHITECTURE_DISCUSSION
+        - OWNER_DECISIONS
+        - CHANGE_REQUESTS
+        - INTERACTIVE_IMPLEMENTATION
+        - REVIEW_GITHUB_EVIDENCE
+      scheduled_task_binding: forbidden
+    github_truth_plane:
+      authoritative_for:
+        - GOAL
+        - CHANGE_EVENT
+        - SPEC
+        - CAMPAIGN
+        - WORK_ITEM
+        - CHECKPOINT
+        - EVIDENCE
+        - RUN_RECORD
+        - LEASE
+        - CI_REVIEW_RELEASE_LEDGER_HUMAN_UAT
+    relay_runtime_session:
+      responsibilities:
+        - HOST_SCHEDULED_TASK
+        - HYDRATE_FROM_GITHUB
+        - EXECUTE_ONE_RELAY_RUN
+        - EMIT_BOUNDED_RECEIPT
+      human_design_discussion: forbidden
+  handoff_channel: GITHUB_ONLY
+  chat_history_authoritative: false
+
+session_classes:
+  HUMAN_CONTROL:
+    may_use_shared_lease: true
+    durable_decisions_must_be_externalized: true
+    may_receive_scheduled_relay_results: false
+  RELAY_RUNTIME:
+    dedicated_conversation_required: true
+    prior_chat_prose_as_authority: forbidden
+    durable_context: GITHUB_ONLY
+    full_audit_location: GITHUB
+    output_role: BOUNDED_RECEIPT
+
+binding_gate:
+  accepted_only_when:
+    - TASK_CREATED_FROM_DEDICATED_RELAY_RUNTIME_SESSION
+    - SESSION_NOT_USED_FOR_NORMAL_COLLABORATION
+    - HUMAN_CONTROL_SESSION_RECEIVES_NO_SCHEDULED_REPLY
+    - PROMPT_DECLARES_SESSION_CLASS_RELAY_RUNTIME
+    - PROMPT_DECLARES_DURABLE_CONTEXT_GITHUB_ONLY
+  unknown_or_ambiguous_binding: DISABLE_TASK
+  retarget_assumption: forbidden
+
+migration:
+  sequence:
+    - DISABLE_OLD_TASK
+    - CREATE_DEDICATED_RELAY_RUNTIME_SESSION
+    - CREATE_NEW_TASK_FROM_THAT_SESSION
+    - RUN_ONE_READ_ONLY_BINDING_PROBE
+    - VERIFY_GITHUB_RECORD
+    - VERIFY_RECEIPT_LOCATION
+    - ENABLE_PRODUCTION_WRITES
+  old_task_after_migration: DISABLED_HISTORICAL_ONLY
+  owner_ui_action_required_when_no_target_conversation_api: true
+
+context_ownership:
+  chat_authoritative_fields: []
+  restore_from_github_every_run:
+    - PROGRAM_AND_TERMINAL_GATES
+    - CAMPAIGN
+    - ACTIVE_WORK_ITEM
+    - CHECKPOINT_AND_COMPLETION_CRITERIA
+    - COMPLETED_EVIDENCE
+    - UNRESOLVED_QUESTIONS
+    - CANDIDATE_AND_REJECTED_OPTIONS
+    - FAILED_ATTEMPTS_AND_RETRY_PRECONDITIONS
+    - NEXT_VALID_ACTION
+    - AUTHORITY_MANDATE_AND_SAFETY
+    - TARGET_ISSUE_PR_BRANCH_HEAD
+    - LEASE_AND_RECENT_RUN
+    - CI_REVIEW_RELEASE_LEDGER_HUMAN_UAT
+  acceptable_work_item_authority:
+    - APPROVED_REPOSITORY_STATE_FILE
+    - AUTHORITATIVE_ISSUE_OR_PR_BODY
+    - UNIQUELY_MARKED_RUN_OR_HANDOFF_RECORD
+  private_chat_memory_sufficient: false
+
+runtime_receipt:
+  normal_lines: 2
+  first_line: "Run Token：<token>；状态：<status>"
+  second_line: "GitHub：<authoritative PR or Issue>；Checkpoint：<short checkpoint>；下一动作：<short next action>"
+  suggested_max_chinese_characters: 500
+  full_platform_error_when_github_write_failed: required
+  duplicate_full_github_audit: forbidden
+
+prompt_budget:
+  allowed:
+    - REPOSITORY_IDENTITY
+    - SESSION_CLASS
+    - GITHUB_ONLY_CONTEXT_RULE
+    - SSOT_AND_PROTOCOL_ENTRYPOINTS
+    - LEASE_AND_FENCING_REQUIREMENT
+    - SCOPE_AND_SAFETY_BOUNDARIES
+    - BOUNDED_RECEIPT_FORMAT
+  forbidden:
+    - CURRENT_WORK_ITEM_PROSE
+    - CURRENT_BRANCH_HEAD
+    - COPIED_CI_RESULTS
+    - LONG_PRIOR_RUN_SUMMARIES
+    - PRIVATE_DESIGN_DISCUSSION
+    - MANUAL_ROADMAP_SNAPSHOT
+
+concurrency:
+  conversation_isolation_replaces_lease: false
+  both_sessions_use_same_lease: true
+  human_control_automatic_priority: false
+  owner_interactive_supersession:
+    explicit: true
+    durable_record_required: true
+  no_lease_allowed_actions:
+    - READ_ONLY_ANALYSIS
+    - PREPARE_LOCAL_DRAFT
+    - REPORT_BUSY
+  no_lease_github_mutation: forbidden
+
+failures:
+  scheduled_reply_in_human_control_session:
+    status: SESSION_ISOLATION_FAILED
+    actions:
+      - DISABLE_TASK
+      - STOP_FURTHER_SCHEDULED_DEVELOPMENT_WRITES
+      - PRESERVE_GITHUB_RUN_RECORD
+      - RECREATE_FROM_DEDICATED_RUNTIME_SESSION
+  runtime_depends_on_chat_discussion:
+    status: CONTEXT_NOT_DURABLE
+    actions:
+      - STOP_BEFORE_MUTATION
+      - EXTERNALIZE_MISSING_CONTEXT_TO_GITHUB
+  binding_not_inspectable:
+    status: SESSION_BINDING_UNKNOWN
+    actions:
+      - FAIL_CLOSED
+      - KEEP_SCHEDULED_WRITES_DISABLED
+      - ALLOW_BOUNDED_READ_ONLY_PROBE_ONLY
+  github_final_succeeds_receipt_fails:
+    github_remains_authoritative: true
+    status: CHAT_RECEIPT_FAILED
+    repeat_development_writes_for_receipt: forbidden
+
+current_task_migration:
+  old_title: GitHub 正式接力
+  observed_problem: ASSOCIATED_WITH_HUMAN_COLLABORATION_CONVERSATION
+  state_required: DISABLED
+  dedicated_session_example: Pytest-playwright-e2e Relay Runtime
+  production_write_enable_after_probe_only: true
+
+acceptance:
+  criteria:
+    - NO_SCHEDULED_RESULT_IN_HUMAN_CONTROL_SESSION_DURING_PROBE
+    - BOUNDED_RECEIPT_IN_DEDICATED_RUNTIME_SESSION
+    - WORK_ITEM_RESTORED_WITHOUT_PRIOR_CHAT_DEPENDENCY
+    - COMPLETE_GITHUB_START_CHECKPOINT_FINAL
+    - RECEIPT_POINTS_TO_AUTHORITATIVE_GITHUB_RECORD
+    - SHARED_LEASE_PREVENTS_OVERLAPPING_WRITES
+    - DISABLING_TASK_STOPS_SCHEDULED_GITHUB_WRITES
+    - NO_M4_M5_M6_OR_DURABLE_RUNTIME_PRODUCT_CLAIM
+
+rollback:
+  - DISABLE_ISOLATED_TASK
+  - RETAIN_GITHUB_AUDIT
+  - CONTINUE_INTERACTIVE_WORK_WITH_SHARED_LEASE
+  - REVERT_ADDENDUM_ONLY_THROUGH_REVIEWED_GOVERNANCE_CHANGE

@@ -1,0 +1,95 @@
+addendum_id: ADDENDUM-HOURLY-GITHUB-RELAY-WORK-ITEM-LIFECYCLE@0.1.0
+parent_spec: SPEC-HOURLY-GITHUB-RELAY@0.1.0
+goal_issue: 49
+status: CANDIDATE_PILOT_APPROVED
+units:
+  hierarchy:
+    - PROGRAM
+    - CAMPAIGN
+    - WORK_ITEM
+    - RUN
+  run_is_roadmap_step: false
+  run_is_work_item_completion_promise: false
+run_timebox:
+  cadence_minutes: 60
+  recommended_active_work_minutes: 45
+  reserve_for:
+    - VERIFICATION
+    - GITHUB_FINAL
+    - CAMPAIGN_HANDOFF
+    - LEASE_RELEASE
+  natural_checkpoint_required: true
+  skip_evidence_to_fit_timer: forbidden
+work_item:
+  may_span_multiple_runs: true
+  required_fields:
+    - id
+    - objective
+    - status
+    - completion_criteria
+    - current_checkpoint
+    - completed_evidence
+    - unresolved_questions
+    - candidate_options
+    - rejected_options
+    - next_valid_action
+    - owner_authority_required
+    - runs
+  statuses:
+    - PLANNED
+    - ACTIVE
+    - WAITING
+    - VERIFYING
+    - BLOCKED
+    - COMPLETE
+    - SUPERSEDED
+external_project_selection:
+  governed_work_item: true
+  checkpoints:
+    - DEFINE_SELECTION_CRITERIA
+    - BUILD_CANDIDATE_SET
+    - LICENSE_AND_SAFETY_SCREEN
+    - ARCHITECTURE_AND_TESTABILITY_REVIEW
+    - REPRODUCIBLE_BASELINE
+    - FINAL_SELECTION
+    - PINNED_REVISION_AND_ASSET_LEDGER
+stagnation:
+  three_no_progress_runs: REORIENT
+  six_no_progress_runs: REPLAN_REQUIRED
+  changed_precondition_required_before_retry: true
+  external_waiting_is_not_implementation_failure: true
+pilot:
+  platform_trigger_cap: 8
+  purpose:
+    - SCHEDULING_VALIDATION
+    - LEASE_VALIDATION
+    - FENCING_VALIDATION
+    - GITHUB_RECORD_VALIDATION
+    - CHAT_REPORTING_VALIDATION
+  not_product_program_budget: true
+  campaign_not_finished_within_cap_is_pilot_failure: false
+production_relay:
+  run_count_derived_from_roadmap_steps: forbidden
+  terminal_conditions:
+    - PROGRAM_COMPLETE
+    - OWNER_STOP
+    - MANDATE_REVOKED
+  recommended_calendar_safety_fuse_days: 30
+  renewal_requires_owner_authority: true
+  durable_terminal_state_required: true
+  self_disable: BEST_EFFORT
+  terminal_no_write_fallback: required
+program_complete:
+  requires:
+    - M1_GATE_CLOSED
+    - M2_GATE_CLOSED
+    - M3_GATE_CLOSED
+    - GLOBAL_SAFETY_GATE_CLOSED
+    - STAGE_DELIVERY_TEST_AGENT_RUNTIME_BETA
+    - RELATED_GOALS_CLOSED
+    - RELATED_PRS_AND_MAIN_RELEASE_EVIDENCE_CLOSED
+    - LEDGER_AND_CLEANUP_CLOSED
+    - REQUIRED_HUMAN_UAT_CLOSED
+  run_count_relevant: false
+  work_item_count_relevant: false
+  auto_start_m4_m5_m6: false

@@ -28,7 +28,7 @@ work_items:
     milestone: M1
     outcome: close and merge the dedicated Relay Runtime conversation isolation design
     phase: CLOSURE
-    state: READY
+    state: IN_PROGRESS
     priority: 100
     dependencies: []
     authority_issue: 49
@@ -46,13 +46,13 @@ work_items:
     milestone: M1
     outcome: approve atomic Work Item claiming and serialized integration rules
     phase: SPEC
-    state: IN_PROGRESS
+    state: CLOSED
     priority: 110
     dependencies: []
     authority_issue: 55
     required_spec: self
     target_branch: spec/parallel-work-claims
-    target_pr: null
+    target_pr: 56
     exclusive_domain: parallel-delivery-control
     observation_domains: [relay-control-plane, integration-main]
     scope: {paths: [docs/specs/parallel-work-claims, docs/product-work-map, tests/unit/test_parallel_work_claims_spec.py], shared_mutable_external_boundary: false}
@@ -64,13 +64,13 @@ work_items:
     milestone: M1
     outcome: implement the operational claim registry and integration queue
     phase: IMPLEMENTATION
-    state: BLOCKED
+    state: CLOSED
     priority: 105
     dependencies: [PARALLEL-WORK-CLAIMS-SPEC]
     authority_issue: 55
     required_spec: SPEC-PARALLEL-WORK-CLAIMS@0.1.0
-    target_branch: null
-    target_pr: null
+    target_branch: agent/parallel-work-claims
+    target_pr: 57
     exclusive_domain: parallel-delivery-control
     observation_domains: [integration-main]
     scope: {paths: [.agent/relay/work-claims.json, .agent/relay/leases/integration.json, src, tests], shared_mutable_external_boundary: false}
