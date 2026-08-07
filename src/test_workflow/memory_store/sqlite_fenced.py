@@ -45,6 +45,8 @@ class FencedSQLiteMemoryStore(SQLiteMemoryStore):
             )
 
         fences = self._fences_from_revision(revision)
+        if len(fences) != len(revision.provenance.parent_memory_refs):
+            return self._fence_rejected(ErrorCode.PROVENANCE_MISSING)
         return self.append_revision_with_parent_fences(
             actor=actor,
             revision=revision,
@@ -90,8 +92,8 @@ class FencedSQLiteMemoryStore(SQLiteMemoryStore):
     def _requires_parent_fence(revision: MemoryRevision) -> bool:
         return revision.formation_event_ref.startswith("consolidation_")
 
-    @staticmethod
     def _fences_from_revision(
+        self,
         revision: MemoryRevision,
     ) -> tuple[MemoryRevisionFence, ...]:
         fences: list[MemoryRevisionFence] = []
@@ -105,10 +107,7 @@ class FencedSQLiteMemoryStore(SQLiteMemoryStore):
                     memory_id=memory_id,
                     revision_id=revision_id,
                     content_hash=hashes[ref],
-                    # Commit-time fencing only needs to prove the parent is
-                    # still currently admissible. The exact pre-admission state
-                    # remains part of M1C replay evidence.
-                    lifecycle_state=LifecycleState.CANDIDATE,
+                    lifecycle_state=self.get_effective_state(memory_id=memory_id),
                 )
             )
         return tuple(fences)
@@ -195,6 +194,11 @@ class FencedSQLiteMemoryStore(SQLiteMemoryStore):
                 if state_row is None
                 else StateEvent.model_validate_json(state_row["payload_json"]).to_state
             )
+            if current_state != fence.lifecycle_state:
+                return MemoryFenceViolation(
+                    "PARENT_FENCE_LIFECYCLE_CHANGED",
+                    ErrorCode.REVISION_CONFLICT,
+                )
             if current_state not in _ADMISSIBLE_FENCE_STATES:
                 return MemoryFenceViolation(
                     "PARENT_FENCE_NOT_ADMISSIBLE",
