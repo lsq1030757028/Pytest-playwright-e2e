@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import time
 
-from ..memory_contracts import MemoryRevision, canonical_sha256
+from ..memory_contracts import AccessOperation, MemoryRevision, canonical_sha256
 from .models import FormationEvent, FormationRequest, FormationStatus
 from .resolver import FormationAdmissionError
 from .runtime import FormationRuntime as _BaseFormationRuntime
 
 
 class FormationRuntime(_BaseFormationRuntime):
-    """Public I1 runtime with subject-safe duplicate and forgotten-ID guards."""
+    """Public I1 runtime with authority-first and subject-safe guards."""
 
     @staticmethod
     def _proposal_digest(request: FormationRequest) -> str:
@@ -37,6 +37,34 @@ class FormationRuntime(_BaseFormationRuntime):
         )
 
     def form(self, request: FormationRequest):
+        # Target authority must be proven before *any* Formation-owned durable
+        # mutation, including idempotency reservation. Otherwise an unauthorized
+        # actor could squat a guessed idempotency key and deny a later authorized
+        # request. The base runtime repeats this check before source admission.
+        permission = self.store.evaluate_permission(
+            actor=request.actor,
+            namespace=request.target_namespace,
+            operation=AccessOperation.APPEND_REVISION,
+        )
+        if not permission.allowed:
+            started = time.perf_counter()
+            proposal_digest = self._proposal_digest(request)
+            event = FormationEvent.create(
+                request=request,
+                proposed_memory_id=self._memory_id(request),
+                proposal_digest=proposal_digest,
+            )
+            result, _evidence = self._result(
+                request=request,
+                event=event,
+                status=FormationStatus.REJECTED,
+                source_evidence_digest=self._surface_source_digest(request),
+                proposal_digest=proposal_digest,
+                budget=self._budget(request, started, estimated_tokens=0),
+                rejected_reasons=("TARGET_NAMESPACE_APPEND_DENIED",),
+            )
+            return result
+
         try:
             return super().form(request)
         except FormationAdmissionError as exc:
