@@ -40,7 +40,8 @@ def test_target_authority_is_denied_before_any_artifact_read(tmp_path) -> None:
     assert result.status is FormationStatus.REJECTED
     assert result.rejected_reasons == ("TARGET_NAMESPACE_APPEND_DENIED",)
     assert spy.get_calls == 0
-    assert SQLiteMemoryStore(db_path).primary_content_rows() == 0
+    with sqlite3.connect(db_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM revisions").fetchone()[0] == 0
 
 
 def test_retry_after_result_loss_reuses_same_candidate_without_second_revision(tmp_path) -> None:
