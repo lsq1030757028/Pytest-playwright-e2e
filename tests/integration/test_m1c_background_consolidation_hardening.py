@@ -75,3 +75,25 @@ def test_unauthorized_actor_cannot_squat_consolidation_idempotency_key(tmp_path)
 
     accepted = consolidator.consolidate(authorized)
     assert accepted.status is ConsolidationStatus.CREATED_CANDIDATE
+
+
+def test_fabricated_requirement_authority_ref_cannot_form_candidate(tmp_path) -> None:
+    db_path = tmp_path / "memory.db"
+    parent = _hot_parent(db_path, claim="timeout is 30 seconds", number=703)
+    request = _request(
+        parents=(parent,),
+        subject="fabricated-authority",
+        request_id="fabricated-authority",
+        idempotency_key="fabricated-authority-idem",
+    ).model_copy(update={"authority_refs": ("requirement/fabricated@999",)})
+    consolidator = BackgroundConsolidator(SQLiteMemoryStore(db_path))
+    with sqlite3.connect(db_path) as connection:
+        before = connection.execute("SELECT COUNT(*) FROM revisions").fetchone()[0]
+
+    result = consolidator.consolidate(request)
+
+    assert result.status is ConsolidationStatus.REJECTED
+    assert result.candidate_revision_ref is None
+    with sqlite3.connect(db_path) as connection:
+        after = connection.execute("SELECT COUNT(*) FROM revisions").fetchone()[0]
+    assert after == before
