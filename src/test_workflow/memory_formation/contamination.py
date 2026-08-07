@@ -5,9 +5,14 @@ from contextlib import closing
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ..memory_contracts import MemoryRevision, canonical_sha256
+from ..memory_contracts import (
+    ErrorCode,
+    MemoryContractError,
+    MemoryRevision,
+    canonical_sha256,
+)
 
 
 class ContaminationClass(StrEnum):
@@ -26,12 +31,28 @@ class ContaminationRecord(BaseModel):
     inherited_from_ref: str | None = None
     record_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
+    @model_validator(mode="after")
+    def validate_digest(self) -> ContaminationRecord:
+        if self.record_digest != canonical_sha256(self.digest_payload()):
+            raise ValueError("contamination record digest mismatch")
+        return self
+
+    def digest_payload(self) -> dict[str, str | None]:
+        return {
+            "memory_ref": self.memory_ref,
+            "contamination_class": self.contamination_class.value,
+            "evidence_digest": self.evidence_digest,
+            "inherited_from_ref": self.inherited_from_ref,
+        }
+
 
 class MemoryContaminationRegistry:
     """Fail-closed marker surface for evaluator/holdout contamination.
 
     Marking only reduces trust. Existing descendants are recursively marked so a
     later-discovered contaminated ancestor cannot be consolidated as clean data.
+    Materialized markers are committed to a chained manifest checkpoint so row
+    mutation/deletion is detected before future formation work.
     """
 
     def __init__(self, db_path: Path | str) -> None:
@@ -51,7 +72,7 @@ class MemoryContaminationRegistry:
 
     def _initialize(self) -> None:
         with closing(self._connect()) as connection:
-            connection.execute(
+            connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS memory_contamination (
                     memory_ref TEXT NOT NULL,
@@ -60,7 +81,13 @@ class MemoryContaminationRegistry:
                     inherited_from_ref TEXT,
                     record_digest TEXT NOT NULL,
                     PRIMARY KEY(memory_ref, contamination_class)
-                )
+                );
+                CREATE TABLE IF NOT EXISTS memory_contamination_checkpoints (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                    manifest_digest TEXT NOT NULL,
+                    previous_checkpoint_hash TEXT NOT NULL,
+                    checkpoint_hash TEXT NOT NULL
+                );
                 """
             )
 
@@ -74,6 +101,7 @@ class MemoryContaminationRegistry:
         _parse_memory_ref(memory_ref)
         if len(evidence_digest) != 64:
             raise ValueError("evidence_digest must be sha256 hex")
+        self.verify_integrity()
         with closing(self._connect()) as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -90,6 +118,8 @@ class MemoryContaminationRegistry:
                     contamination_class=contamination_class,
                     evidence_digest=evidence_digest,
                 )
+                if inserted is not None or propagated:
+                    self._append_checkpoint(connection)
                 connection.commit()
             except Exception:
                 connection.rollback()
@@ -98,12 +128,50 @@ class MemoryContaminationRegistry:
         records.extend(propagated)
         return tuple(records)
 
+    def verify_integrity(self) -> None:
+        try:
+            with closing(self._connect()) as connection:
+                records = self._all_records(connection)
+                manifest_digest = canonical_sha256(
+                    [record.model_dump(mode="json") for record in records]
+                )
+                checkpoints = connection.execute(
+                    """
+                    SELECT manifest_digest, previous_checkpoint_hash, checkpoint_hash
+                    FROM memory_contamination_checkpoints
+                    ORDER BY sequence
+                    """
+                ).fetchall()
+                previous = ""
+                for row in checkpoints:
+                    payload = {
+                        "manifest_digest": row["manifest_digest"],
+                        "previous_checkpoint_hash": row["previous_checkpoint_hash"],
+                    }
+                    if row["previous_checkpoint_hash"] != previous:
+                        raise ValueError("contamination checkpoint chain mismatch")
+                    if row["checkpoint_hash"] != canonical_sha256(payload):
+                        raise ValueError("contamination checkpoint hash mismatch")
+                    previous = row["checkpoint_hash"]
+                if records and not checkpoints:
+                    raise ValueError("contamination records lack a checkpoint")
+                if checkpoints and checkpoints[-1]["manifest_digest"] != manifest_digest:
+                    raise ValueError("contamination materialization/checkpoint mismatch")
+        except MemoryContractError:
+            raise
+        except Exception as exc:
+            raise MemoryContractError(
+                ErrorCode.INTEGRITY_FAILED,
+                "Memory contamination integrity verification failed",
+            ) from exc
+
     def records_for_refs(
         self,
         refs: tuple[str, ...],
     ) -> tuple[ContaminationRecord, ...]:
         if not refs:
             return ()
+        self.verify_integrity()
         placeholders = ",".join("?" for _ in refs)
         with closing(self._connect()) as connection:
             rows = connection.execute(
@@ -157,6 +225,45 @@ class MemoryContaminationRegistry:
                 if record is not None:
                     propagated.append(record)
         return propagated
+
+    def _append_checkpoint(self, connection: sqlite3.Connection) -> None:
+        records = self._all_records(connection)
+        manifest_digest = canonical_sha256(
+            [record.model_dump(mode="json") for record in records]
+        )
+        previous_row = connection.execute(
+            """
+            SELECT checkpoint_hash
+            FROM memory_contamination_checkpoints
+            ORDER BY sequence DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        previous = "" if previous_row is None else previous_row["checkpoint_hash"]
+        payload = {
+            "manifest_digest": manifest_digest,
+            "previous_checkpoint_hash": previous,
+        }
+        connection.execute(
+            """
+            INSERT INTO memory_contamination_checkpoints(
+                manifest_digest, previous_checkpoint_hash, checkpoint_hash
+            ) VALUES (?, ?, ?)
+            """,
+            (manifest_digest, previous, canonical_sha256(payload)),
+        )
+
+    @staticmethod
+    def _all_records(connection: sqlite3.Connection) -> tuple[ContaminationRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT memory_ref, contamination_class, evidence_digest,
+                   inherited_from_ref, record_digest
+            FROM memory_contamination
+            ORDER BY memory_ref, contamination_class
+            """
+        ).fetchall()
+        return tuple(ContaminationRecord(**dict(row)) for row in rows)
 
     @staticmethod
     def _insert_record(
