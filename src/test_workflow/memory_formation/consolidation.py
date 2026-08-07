@@ -39,11 +39,7 @@ _MAX_TOKENS = 16_000
 _MAX_WALL_MS = 10_000
 _MAX_DERIVATION_DEPTH = 2
 _ACTIVE_PARENT_STATES = frozenset(
-    {
-        LifecycleState.CANDIDATE,
-        LifecycleState.VERIFIED,
-        LifecycleState.PROMOTED,
-    }
+    {LifecycleState.CANDIDATE, LifecycleState.VERIFIED, LifecycleState.PROMOTED}
 )
 _PROTECTED_AUTHORITY_KEYS = frozenset(
     {
@@ -93,12 +89,18 @@ class ConsolidationRequest(FrozenModel):
     memory_kind: MemoryKind
     candidate_content: dict[str, Any]
     authority_refs: tuple[str, ...] = Field(min_length=1)
-    formation_rule_ref: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$")
-    validator_profile_ref: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$")
+    formation_rule_ref: str = Field(
+        pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$"
+    )
+    validator_profile_ref: str = Field(
+        pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$"
+    )
     retention_policy: RetentionPolicy
     semantic_subject_key: str | None = Field(default=None, min_length=1, max_length=255)
     expected_head_revision_id: str | None = None
-    idempotency_key: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$")
+    idempotency_key: str = Field(
+        pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:@/-]{0,254}$"
+    )
     now: datetime
 
     @model_validator(mode="after")
@@ -161,9 +163,8 @@ class ConsolidationEvent(FrozenModel):
             "target_namespace": request.target_namespace.canonical,
             "occurred_at": request.now,
         }
-        event_id = f"consolidation_{canonical_sha256(seed)}"
         payload = {
-            "event_id": event_id,
+            "event_id": f"consolidation_{canonical_sha256(seed)}",
             "request_digest": request.request_digest,
             "proposed_memory_id": proposed_memory_id,
             "proposal_digest": proposal_digest,
@@ -189,16 +190,43 @@ class ConsolidationReplayEvidence(FrozenModel):
 
     @model_validator(mode="after")
     def validate_manifest(self) -> ConsolidationReplayEvidence:
-        if self.parent_snapshot_digest != canonical_sha256(
-            [item.model_dump(mode="json") for item in self.parent_snapshots]
-        ):
+        snapshots = [item.model_dump(mode="json") for item in self.parent_snapshots]
+        if self.parent_snapshot_digest != canonical_sha256(snapshots):
             raise ValueError("parent snapshot digest mismatch")
-        if self.manifest_digest != canonical_sha256(self.manifest_payload()):
+        if self.manifest_digest != canonical_sha256(
+            self.model_dump(mode="json", exclude={"manifest_digest"})
+        ):
             raise ValueError("consolidation replay manifest mismatch")
         return self
 
-    def manifest_payload(self) -> dict[str, Any]:
-        return self.model_dump(mode="json", exclude={"manifest_digest"})
+    @classmethod
+    def create(
+        cls,
+        *,
+        request_digest: str,
+        event_hash: str,
+        parent_snapshots: tuple[ParentSnapshot, ...],
+        proposal_digest: str,
+        validator_profile_ref: str,
+        status: ConsolidationStatus,
+        candidate_revision_ref: str | None,
+        candidate_content_hash: str | None,
+        store_audit_ref: str | None,
+    ) -> ConsolidationReplayEvidence:
+        snapshots = [item.model_dump(mode="json") for item in parent_snapshots]
+        payload = {
+            "request_digest": request_digest,
+            "event_hash": event_hash,
+            "parent_snapshots": snapshots,
+            "parent_snapshot_digest": canonical_sha256(snapshots),
+            "proposal_digest": proposal_digest,
+            "validator_profile_ref": validator_profile_ref,
+            "status": status.value,
+            "candidate_revision_ref": candidate_revision_ref,
+            "candidate_content_hash": candidate_content_hash,
+            "store_audit_ref": store_audit_ref,
+        }
+        return cls(**payload, manifest_digest=canonical_sha256(payload))
 
 
 class ConsolidationResult(FrozenModel):
@@ -229,7 +257,7 @@ class _ParentRecord(FrozenModel):
 
 
 class BackgroundConsolidator:
-    """M1C-I2 reference consolidator with authority-first parent admission."""
+    """M1C-I2 deterministic reference consolidator."""
 
     def __init__(self, store: SQLiteMemoryStore) -> None:
         self.store = store
@@ -281,14 +309,9 @@ class BackgroundConsolidator:
             proposed_memory_id=memory_id,
             proposal_digest=proposal_digest,
         )
-
         if not self._target_authorized(request):
             return self._ephemeral_rejection(
-                request=request,
-                event=event,
-                proposal_digest=proposal_digest,
-                started=started,
-                reason="TARGET_NAMESPACE_AUTHORITY_DENIED",
+                request, event, proposal_digest, started, "TARGET_NAMESPACE_AUTHORITY_DENIED"
             )
 
         fingerprint = canonical_sha256(
@@ -297,20 +320,16 @@ class BackgroundConsolidator:
                 "request_digest": request.request_digest,
             }
         )
-        reservation = self._reserve_idempotency(request, fingerprint)
+        reservation = self._reserve(request, fingerprint)
         if isinstance(reservation, ConsolidationResult):
             return reservation
         if reservation == "REBOUND":
             return self._ephemeral_rejection(
-                request=request,
-                event=event,
-                proposal_digest=proposal_digest,
-                started=started,
-                reason="IDEMPOTENCY_KEY_REBOUND",
+                request, event, proposal_digest, started, "IDEMPOTENCY_KEY_REBOUND"
             )
 
         try:
-            parents = self._load_authorized_parents(request)
+            parents = self._admit_parents(request)
             self._validate_candidate(request, parents)
         except ConsolidationAdmissionError as exc:
             status = (
@@ -330,49 +349,44 @@ class BackgroundConsolidator:
             )
 
         estimated_tokens = self._estimate_tokens(request, parents)
-        new_depth = 1 + max(item.snapshot.derivation_depth for item in parents)
-        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        derivation_depth = 1 + max(item.snapshot.derivation_depth for item in parents)
         if estimated_tokens > _MAX_TOKENS:
-            return self._finish(
-                request=request,
-                fingerprint=fingerprint,
-                event=event,
-                status=ConsolidationStatus.BUDGET_EXHAUSTED,
-                proposal_digest=proposal_digest,
-                parents=parents,
-                started=started,
-                estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
-                rejected_reasons=("BACKGROUND_TOKEN_BUDGET_EXHAUSTED",),
+            return self._budget_failure(
+                request,
+                fingerprint,
+                event,
+                proposal_digest,
+                parents,
+                started,
+                estimated_tokens,
+                derivation_depth,
+                "BACKGROUND_TOKEN_BUDGET_EXHAUSTED",
             )
-        if new_depth > _MAX_DERIVATION_DEPTH:
-            return self._finish(
-                request=request,
-                fingerprint=fingerprint,
-                event=event,
-                status=ConsolidationStatus.BUDGET_EXHAUSTED,
-                proposal_digest=proposal_digest,
-                parents=parents,
-                started=started,
-                estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
-                rejected_reasons=("BACKGROUND_DERIVATION_DEPTH_EXHAUSTED",),
+        if derivation_depth > _MAX_DERIVATION_DEPTH:
+            return self._budget_failure(
+                request,
+                fingerprint,
+                event,
+                proposal_digest,
+                parents,
+                started,
+                estimated_tokens,
+                derivation_depth,
+                "BACKGROUND_DERIVATION_DEPTH_EXHAUSTED",
             )
-        if elapsed_ms > _MAX_WALL_MS:
-            return self._finish(
-                request=request,
-                fingerprint=fingerprint,
-                event=event,
-                status=ConsolidationStatus.BUDGET_EXHAUSTED,
-                proposal_digest=proposal_digest,
-                parents=parents,
-                started=started,
-                estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
-                rejected_reasons=("BACKGROUND_LATENCY_BUDGET_EXHAUSTED",),
+        if int((time.perf_counter() - started) * 1000) > _MAX_WALL_MS:
+            return self._budget_failure(
+                request,
+                fingerprint,
+                event,
+                proposal_digest,
+                parents,
+                started,
+                estimated_tokens,
+                derivation_depth,
+                "BACKGROUND_LATENCY_BUDGET_EXHAUSTED",
             )
-
-        if not self._revalidate_parent_snapshot(request, parents):
+        if not self._revalidate(request, parents):
             return self._finish(
                 request=request,
                 fingerprint=fingerprint,
@@ -382,11 +396,26 @@ class BackgroundConsolidator:
                 parents=parents,
                 started=started,
                 estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
+                derivation_depth=derivation_depth,
                 rejected_reasons=("PARENT_SNAPSHOT_CHANGED",),
             )
 
-        existing, existing_state = self._existing_target(request, memory_id)
+        try:
+            existing, existing_state = self._existing_target(request, memory_id)
+        except ConsolidationAdmissionError as exc:
+            return self._finish(
+                request=request,
+                fingerprint=fingerprint,
+                event=event,
+                status=ConsolidationStatus.REJECTED,
+                proposal_digest=proposal_digest,
+                parents=parents,
+                started=started,
+                estimated_tokens=estimated_tokens,
+                derivation_depth=derivation_depth,
+                rejected_reasons=(exc.reason,),
+            )
+
         if existing is not None:
             duplicate = self._logical_digest(existing) == proposal_digest
             if duplicate and existing_state is LifecycleState.CANDIDATE:
@@ -399,7 +428,7 @@ class BackgroundConsolidator:
                     parents=parents,
                     started=started,
                     estimated_tokens=estimated_tokens,
-                    derivation_depth=new_depth,
+                    derivation_depth=derivation_depth,
                     candidate_revision_ref=existing.ref,
                     candidate_content_hash=existing.content_hash,
                     effective_lifecycle=existing_state,
@@ -420,7 +449,7 @@ class BackgroundConsolidator:
                     parents=parents,
                     started=started,
                     estimated_tokens=estimated_tokens,
-                    derivation_depth=new_depth,
+                    derivation_depth=derivation_depth,
                     conflict_refs=(existing.ref,),
                     rejected_reasons=(reason,),
                 )
@@ -434,23 +463,19 @@ class BackgroundConsolidator:
                 parents=parents,
                 started=started,
                 estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
+                derivation_depth=derivation_depth,
                 rejected_reasons=("EXPECTED_HEAD_NOT_FOUND",),
             )
 
-        revision = self._build_revision(
-            request=request,
-            event=event,
-            parents=parents,
-            memory_id=memory_id,
-            existing=existing,
-        )
+        revision = self._build_revision(request, event, parents, memory_id, existing)
+        parent_refs = tuple(item.snapshot.ref for item in parents)
         resolved_sources = {
             item.snapshot.ref: item.snapshot.content_hash for item in parents
         }
         request_store = SQLiteMemoryStore(
             self.db_path,
             resolved_sources=resolved_sources,
+            resolved_evidence=parent_refs,
         )
         store_result = request_store.append_revision(
             actor=request.actor,
@@ -481,13 +506,12 @@ class BackgroundConsolidator:
                 parents=parents,
                 started=started,
                 estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
+                derivation_depth=derivation_depth,
                 candidate_revision_ref=revision.ref,
                 candidate_content_hash=revision.content_hash,
                 effective_lifecycle=lifecycle,
                 store_audit_ref=store_result.audit_event_ref,
             )
-
         if store_result.decision is Decision.CONFLICT:
             return self._finish(
                 request=request,
@@ -498,9 +522,14 @@ class BackgroundConsolidator:
                 parents=parents,
                 started=started,
                 estimated_tokens=estimated_tokens,
-                derivation_depth=new_depth,
+                derivation_depth=derivation_depth,
                 rejected_reasons=("STORE_CAS_CONFLICT",),
             )
+        reason = (
+            store_result.error_code.value
+            if store_result.error_code is not None
+            else "STORE_REJECTED"
+        )
         return self._finish(
             request=request,
             fingerprint=fingerprint,
@@ -510,12 +539,8 @@ class BackgroundConsolidator:
             parents=parents,
             started=started,
             estimated_tokens=estimated_tokens,
-            derivation_depth=new_depth,
-            rejected_reasons=(
-                store_result.error_code.value
-                if store_result.error_code is not None
-                else "STORE_REJECTED",
-            ),
+            derivation_depth=derivation_depth,
+            rejected_reasons=(reason,),
         )
 
     def replay_evidence(self, request_digest: str) -> ConsolidationReplayEvidence:
@@ -531,20 +556,19 @@ class BackgroundConsolidator:
     def _target_authorized(self, request: ConsolidationRequest) -> bool:
         with closing(self._connect()) as connection:
             entries = self._acl_entries(connection, request.target_namespace.canonical)
-        for operation in (
-            AccessOperation.APPEND_REVISION,
-            AccessOperation.QUERY,
-            AccessOperation.READ_CONTENT,
-        ):
-            decision = evaluate_permission(
+        return all(
+            evaluate_permission(
                 actor=request.actor,
                 namespace=request.target_namespace,
                 operation=operation,
                 acl_entries=entries,
+            ).allowed
+            for operation in (
+                AccessOperation.APPEND_REVISION,
+                AccessOperation.QUERY,
+                AccessOperation.READ_CONTENT,
             )
-            if not decision.allowed:
-                return False
-        return True
+        )
 
     @staticmethod
     def _acl_entries(
@@ -553,67 +577,43 @@ class BackgroundConsolidator:
     ) -> tuple[AclEntry, ...]:
         rows = connection.execute(
             """
-            SELECT payload_json
-            FROM acl_events
-            WHERE namespace = ?
-            ORDER BY sequence
+            SELECT payload_json FROM acl_events
+            WHERE namespace = ? ORDER BY sequence
             """,
             (namespace,),
         ).fetchall()
         return tuple(AclEntry.model_validate_json(row["payload_json"]) for row in rows)
 
-    def _load_authorized_parents(
+    def _admit_parents(
         self,
         request: ConsolidationRequest,
     ) -> tuple[_ParentRecord, ...]:
-        if len(request.parent_memory_refs) > _MAX_PARENT_REFS:
-            raise ConsolidationAdmissionError("BACKGROUND_PARENT_BUDGET_EXHAUSTED")
         with closing(self._connect()) as connection:
             connection.execute("BEGIN")
             try:
-                entries = self._acl_entries(
-                    connection,
-                    request.target_namespace.canonical,
-                )
-                for operation in (AccessOperation.QUERY, AccessOperation.READ_CONTENT):
-                    decision = evaluate_permission(
-                        actor=request.actor,
-                        namespace=request.target_namespace,
-                        operation=operation,
-                        acl_entries=entries,
-                    )
-                    if not decision.allowed:
-                        raise ConsolidationAdmissionError("PARENT_NOT_ADMISSIBLE")
-
-                metadata: list[tuple[str, str, str, LifecycleState]] = []
+                metadata: list[tuple[str, str, LifecycleState]] = []
                 for ref in request.parent_memory_refs:
                     memory_id, revision_id = _parse_memory_ref(ref)
                     row = connection.execute(
                         """
-                        SELECT r.namespace, r.revision_id, h.revision_id AS head_revision_id
+                        SELECT r.namespace, h.revision_id AS head_revision_id
                         FROM revisions AS r
                         LEFT JOIN heads AS h ON h.memory_id = r.memory_id
                         WHERE r.memory_id = ? AND r.revision_id = ?
                         """,
                         (memory_id, revision_id),
                     ).fetchone()
-                    if row is None:
-                        raise ConsolidationAdmissionError("PARENT_NOT_ADMISSIBLE")
-                    if row["namespace"] != request.target_namespace.canonical:
+                    if row is None or row["namespace"] != request.target_namespace.canonical:
                         raise ConsolidationAdmissionError("PARENT_NOT_ADMISSIBLE")
                     if row["head_revision_id"] != revision_id:
                         raise ConsolidationAdmissionError("PARENT_NOT_CURRENT_HEAD")
-                    state = self._state_from_metadata(
-                        connection,
-                        memory_id=memory_id,
-                        revision_id=revision_id,
-                    )
+                    state = self._current_state(connection, memory_id)
                     if state not in _ACTIVE_PARENT_STATES:
                         raise ConsolidationAdmissionError("PARENT_STATE_NOT_CONSOLIDATABLE")
-                    metadata.append((ref, memory_id, revision_id, state))
+                    metadata.append((ref, revision_id, state))
 
                 records: list[_ParentRecord] = []
-                for ref, memory_id, revision_id, state in metadata:
+                for ref, revision_id, state in metadata:
                     row = connection.execute(
                         "SELECT payload_json FROM revisions WHERE revision_id = ?",
                         (revision_id,),
@@ -660,11 +660,7 @@ class BackgroundConsolidator:
     ) -> int:
         if not revision.formation_event_ref.startswith("consolidation_"):
             return 0
-        parent_refs = tuple(
-            ref
-            for ref in revision.provenance.parent_memory_refs
-            if _parse_memory_ref(ref)[0] != revision.memory_id
-        )
+        parent_refs = tuple(revision.provenance.parent_memory_refs)
         if not parent_refs:
             return 1
         depths: list[int] = []
@@ -674,20 +670,20 @@ class BackgroundConsolidator:
             memory_id, revision_id = _parse_memory_ref(ref)
             row = connection.execute(
                 """
-                SELECT namespace, payload_json
-                FROM revisions
-                WHERE memory_id = ? AND revision_id = ?
+                SELECT r.namespace, r.payload_json, h.revision_id AS head_revision_id
+                FROM revisions AS r
+                LEFT JOIN heads AS h ON h.memory_id = r.memory_id
+                WHERE r.memory_id = ? AND r.revision_id = ?
                 """,
                 (memory_id, revision_id),
             ).fetchone()
-            if row is None or row["namespace"] != request.target_namespace.canonical:
+            if (
+                row is None
+                or row["namespace"] != request.target_namespace.canonical
+                or row["head_revision_id"] != revision_id
+            ):
                 raise ConsolidationAdmissionError("ANCESTOR_NOT_ADMISSIBLE")
-            state = self._state_from_metadata(
-                connection,
-                memory_id=memory_id,
-                revision_id=revision_id,
-            )
-            if state not in _ACTIVE_PARENT_STATES:
+            if self._current_state(connection, memory_id) not in _ACTIVE_PARENT_STATES:
                 raise ConsolidationAdmissionError("ANCESTOR_STATE_NOT_CONSOLIDATABLE")
             ancestor = MemoryRevision.model_validate_json(row["payload_json"])
             depths.append(
@@ -701,39 +697,41 @@ class BackgroundConsolidator:
         return 1 + max(depths, default=0)
 
     @staticmethod
-    def _state_from_metadata(
+    def _current_state(
         connection: sqlite3.Connection,
-        *,
         memory_id: str,
-        revision_id: str,
     ) -> LifecycleState:
-        forgotten = connection.execute(
+        if connection.execute(
             "SELECT 1 FROM tombstones WHERE memory_id = ?",
             (memory_id,),
-        ).fetchone()
-        if forgotten is not None:
+        ).fetchone():
             return LifecycleState.FORGOTTEN
+        head = connection.execute(
+            "SELECT revision_id FROM heads WHERE memory_id = ?",
+            (memory_id,),
+        ).fetchone()
+        if head is None:
+            return LifecycleState.CANDIDATE
         row = connection.execute(
             """
-            SELECT payload_json
-            FROM state_events
+            SELECT payload_json FROM state_events
             WHERE memory_id = ? AND revision_id = ?
-            ORDER BY sequence DESC
-            LIMIT 1
+            ORDER BY sequence DESC LIMIT 1
             """,
-            (memory_id, revision_id),
+            (memory_id, head["revision_id"]),
         ).fetchone()
-        if row is None:
-            return LifecycleState.CANDIDATE
-        return StateEvent.model_validate_json(row["payload_json"]).to_state
+        return (
+            LifecycleState.CANDIDATE
+            if row is None
+            else StateEvent.model_validate_json(row["payload_json"]).to_state
+        )
 
     def _validate_candidate(
         self,
         request: ConsolidationRequest,
         parents: tuple[_ParentRecord, ...],
     ) -> None:
-        blocked = _find_keys(request.candidate_content) & _PROTECTED_AUTHORITY_KEYS
-        if blocked:
+        if _find_keys(request.candidate_content) & _PROTECTED_AUTHORITY_KEYS:
             raise ConsolidationAdmissionError("PROTECTED_AUTHORITY_MUTATION_ATTEMPT")
         if request.memory_kind is MemoryKind.SEMANTIC:
             claim = request.candidate_content["claim"]
@@ -756,14 +754,13 @@ class BackgroundConsolidator:
     ) -> int:
         characters = len(
             json.dumps(request.candidate_content, ensure_ascii=False, sort_keys=True)
-        )
-        characters += sum(
+        ) + sum(
             len(json.dumps(item.revision.content, ensure_ascii=False, sort_keys=True))
             for item in parents
         )
         return max(1, math.ceil(characters / 4))
 
-    def _revalidate_parent_snapshot(
+    def _revalidate(
         self,
         request: ConsolidationRequest,
         parents: tuple[_ParentRecord, ...],
@@ -784,11 +781,7 @@ class BackgroundConsolidator:
                 ).fetchone()
                 if row is None or row["head_revision_id"] != revision_id:
                     return False
-                state = self._state_from_metadata(
-                    connection,
-                    memory_id=memory_id,
-                    revision_id=revision_id,
-                )
+                state = self._current_state(connection, memory_id)
                 if state != item.snapshot.lifecycle or state not in _ACTIVE_PARENT_STATES:
                     return False
                 revision = MemoryRevision.model_validate_json(row["payload_json"])
@@ -802,16 +795,14 @@ class BackgroundConsolidator:
         memory_id: str,
     ) -> tuple[MemoryRevision | None, LifecycleState | None]:
         with closing(self._connect()) as connection:
-            tombstone = connection.execute(
+            if connection.execute(
                 "SELECT 1 FROM tombstones WHERE memory_id = ?",
                 (memory_id,),
-            ).fetchone()
-            if tombstone is not None:
+            ).fetchone():
                 raise ConsolidationAdmissionError("FORGOTTEN_SUBJECT_CANNOT_RESURRECT")
             row = connection.execute(
                 """
-                SELECT r.payload_json, h.revision_id
-                FROM heads AS h
+                SELECT r.payload_json FROM heads AS h
                 JOIN revisions AS r ON r.revision_id = h.revision_id
                 WHERE h.memory_id = ?
                 """,
@@ -820,27 +811,20 @@ class BackgroundConsolidator:
             if row is None:
                 return None, None
             revision = MemoryRevision.model_validate_json(row["payload_json"])
-            state = self._state_from_metadata(
-                connection,
-                memory_id=memory_id,
-                revision_id=revision.revision_id,
-            )
-            return revision, state
+            return revision, self._current_state(connection, memory_id)
 
     def _build_revision(
         self,
-        *,
         request: ConsolidationRequest,
         event: ConsolidationEvent,
         parents: tuple[_ParentRecord, ...],
         memory_id: str,
         existing: MemoryRevision | None,
     ) -> MemoryRevision:
-        revision_number = 1 if existing is None else existing.revision_number + 1
-        parent_revision_refs = () if existing is None else (existing.ref,)
+        parent_refs = tuple(item.snapshot.ref for item in parents)
         provenance = Provenance(
-            source_refs=tuple(item.snapshot.ref for item in parents),
-            evidence_refs=(),
+            source_refs=parent_refs,
+            evidence_refs=parent_refs,
             source_content_hashes={
                 item.snapshot.ref: item.snapshot.content_hash for item in parents
             },
@@ -856,9 +840,10 @@ class BackgroundConsolidator:
             environment_revision_refs=tuple(
                 ref for ref in request.authority_refs if ref.startswith("environment/")
             ),
-            parent_memory_refs=tuple(item.snapshot.ref for item in parents),
+            parent_memory_refs=parent_refs,
             transformation_kind=TransformationKind.SUMMARY,
         )
+        revision_number = 1 if existing is None else existing.revision_number + 1
         revision_nonce = canonical_sha256(
             {
                 "request_digest": request.request_digest,
@@ -871,7 +856,7 @@ class BackgroundConsolidator:
             memory_id=memory_id,
             revision_nonce=revision_nonce,
             revision_number=revision_number,
-            parent_revision_refs=parent_revision_refs,
+            parent_revision_refs=() if existing is None else (existing.ref,),
             memory_kind=request.memory_kind,
             namespace=request.target_namespace,
             content=request.candidate_content,
@@ -879,11 +864,12 @@ class BackgroundConsolidator:
             retention_policy=request.retention_policy,
             formation_event_ref=event.event_id,
             created_by=request.actor.principal_id,
-            idempotency_key=f"m1c-i2/{request.idempotency_key}",
+            idempotency_key="m1c-i2/"
+            + canonical_sha256({"request_digest": request.request_digest}),
             created_at=request.now,
         )
 
-    def _reserve_idempotency(
+    def _reserve(
         self,
         request: ConsolidationRequest,
         fingerprint: str,
@@ -894,8 +880,7 @@ class BackgroundConsolidator:
                 row = connection.execute(
                     """
                     SELECT request_fingerprint, result_json
-                    FROM consolidation_idempotency
-                    WHERE idempotency_key = ?
+                    FROM consolidation_idempotency WHERE idempotency_key = ?
                     """,
                     (request.idempotency_key,),
                 ).fetchone()
@@ -907,11 +892,7 @@ class BackgroundConsolidator:
                             request_digest, state, result_json
                         ) VALUES (?, ?, ?, 'IN_PROGRESS', NULL)
                         """,
-                        (
-                            request.idempotency_key,
-                            fingerprint,
-                            request.request_digest,
-                        ),
+                        (request.idempotency_key, fingerprint, request.request_digest),
                     )
                     connection.commit()
                     return None
@@ -927,6 +908,31 @@ class BackgroundConsolidator:
             except Exception:
                 connection.rollback()
                 raise
+
+    def _budget_failure(
+        self,
+        request: ConsolidationRequest,
+        fingerprint: str,
+        event: ConsolidationEvent,
+        proposal_digest: str,
+        parents: tuple[_ParentRecord, ...],
+        started: float,
+        estimated_tokens: int,
+        derivation_depth: int,
+        reason: str,
+    ) -> ConsolidationResult:
+        return self._finish(
+            request=request,
+            fingerprint=fingerprint,
+            event=event,
+            status=ConsolidationStatus.BUDGET_EXHAUSTED,
+            proposal_digest=proposal_digest,
+            parents=parents,
+            started=started,
+            estimated_tokens=estimated_tokens,
+            derivation_depth=derivation_depth,
+            rejected_reasons=(reason,),
+        )
 
     def _finish(
         self,
@@ -948,13 +954,12 @@ class BackgroundConsolidator:
         rejected_reasons: tuple[str, ...] = (),
         store_audit_ref: str | None = None,
     ) -> ConsolidationResult:
-        snapshots = tuple(item.snapshot for item in parents)
-        result, evidence = self._result(
+        result, evidence = self._make_result(
             request=request,
             event=event,
             status=status,
             proposal_digest=proposal_digest,
-            snapshots=snapshots,
+            snapshots=tuple(item.snapshot for item in parents),
             started=started,
             estimated_tokens=estimated_tokens,
             derivation_depth=derivation_depth,
@@ -971,14 +976,13 @@ class BackgroundConsolidator:
 
     def _ephemeral_rejection(
         self,
-        *,
         request: ConsolidationRequest,
         event: ConsolidationEvent,
         proposal_digest: str,
         started: float,
         reason: str,
     ) -> ConsolidationResult:
-        result, _evidence = self._result(
+        return self._make_result(
             request=request,
             event=event,
             status=ConsolidationStatus.REJECTED,
@@ -986,11 +990,10 @@ class BackgroundConsolidator:
             snapshots=(),
             started=started,
             rejected_reasons=(reason,),
-        )
-        return result
+        )[0]
 
-    def _result(
-        self,
+    @staticmethod
+    def _make_result(
         *,
         request: ConsolidationRequest,
         event: ConsolidationEvent,
@@ -1008,42 +1011,16 @@ class BackgroundConsolidator:
         rejected_reasons: tuple[str, ...] = (),
         store_audit_ref: str | None = None,
     ) -> tuple[ConsolidationResult, ConsolidationReplayEvidence]:
-        snapshot_digest = canonical_sha256(
-            [item.model_dump(mode="json") for item in snapshots]
-        )
-        evidence_payload = {
-            "request_digest": request.request_digest,
-            "event_hash": event.event_hash,
-            "parent_snapshots": snapshots,
-            "parent_snapshot_digest": snapshot_digest,
-            "proposal_digest": proposal_digest,
-            "validator_profile_ref": request.validator_profile_ref,
-            "status": status,
-            "candidate_revision_ref": candidate_revision_ref,
-            "candidate_content_hash": candidate_content_hash,
-            "store_audit_ref": store_audit_ref,
-        }
-        evidence_without_manifest = ConsolidationReplayEvidence(
-            **evidence_payload,
-            manifest_digest=canonical_sha256(
-                {
-                    **evidence_payload,
-                    "parent_snapshots": [
-                        item.model_dump(mode="json") for item in snapshots
-                    ],
-                    "status": status.value,
-                }
-            ),
-        )
-        budget = ConsolidationBudgetConsumption(
-            parent_count=len(snapshots),
-            estimated_tokens=estimated_tokens,
-            output_count=int(candidate_revision_ref is not None),
-            derivation_depth=derivation_depth,
-            elapsed_ms_before_store=max(
-                0,
-                int((time.perf_counter() - started) * 1000),
-            ),
+        evidence = ConsolidationReplayEvidence.create(
+            request_digest=request.request_digest,
+            event_hash=event.event_hash,
+            parent_snapshots=snapshots,
+            proposal_digest=proposal_digest,
+            validator_profile_ref=request.validator_profile_ref,
+            status=status,
+            candidate_revision_ref=candidate_revision_ref,
+            candidate_content_hash=candidate_content_hash,
+            store_audit_ref=store_audit_ref,
         )
         result = ConsolidationResult(
             request_digest=request.request_digest,
@@ -1052,15 +1029,23 @@ class BackgroundConsolidator:
             candidate_revision_ref=candidate_revision_ref,
             candidate_content_hash=candidate_content_hash,
             effective_lifecycle=effective_lifecycle,
-            parent_snapshot_digest=snapshot_digest,
+            parent_snapshot_digest=evidence.parent_snapshot_digest,
             duplicate_ref=duplicate_ref,
             conflict_refs=conflict_refs,
             rejected_reasons=rejected_reasons,
-            budget=budget,
+            budget=ConsolidationBudgetConsumption(
+                parent_count=len(snapshots),
+                estimated_tokens=estimated_tokens,
+                output_count=int(candidate_revision_ref is not None),
+                derivation_depth=derivation_depth,
+                elapsed_ms_before_store=max(
+                    0, int((time.perf_counter() - started) * 1000)
+                ),
+            ),
             store_audit_ref=store_audit_ref,
-            replay_evidence_digest=evidence_without_manifest.manifest_digest,
+            replay_evidence_digest=evidence.manifest_digest,
         )
-        return result, evidence_without_manifest
+        return result, evidence
 
     def _finalize(
         self,
@@ -1177,8 +1162,6 @@ def _creator_type(principal_type: PrincipalType) -> CreatorType:
         return CreatorType.HUMAN
     if principal_type is PrincipalType.AGENT:
         return CreatorType.AGENT
-    if principal_type is PrincipalType.SERVICE:
-        return CreatorType.SERVICE
     return CreatorType.SERVICE
 
 
