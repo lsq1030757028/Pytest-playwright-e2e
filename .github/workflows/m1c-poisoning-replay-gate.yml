@@ -1,0 +1,79 @@
+name: m1c-poisoning-replay-gate
+
+on:
+  pull_request:
+    paths:
+      - "src/test_workflow/memory_formation/**"
+      - "src/test_workflow/memory_store/fence.py"
+      - "src/test_workflow/memory_store/sqlite_fenced.py"
+      - "src/test_workflow/memory_store/__init__.py"
+      - "tests/integration/test_m1c_parent_fence_races.py"
+      - "tests/integration/test_m1c_contamination_integrity.py"
+      - "tests/integration/test_m1c_background_consolidation*.py"
+      - "tests/integration/test_m1c_hot_formation*.py"
+      - "tests/unit/test_m1c_poisoning_normalization.py"
+      - ".github/workflows/m1c-poisoning-replay-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/test_workflow/memory_formation/**"
+      - "src/test_workflow/memory_store/fence.py"
+      - "src/test_workflow/memory_store/sqlite_fenced.py"
+      - "src/test_workflow/memory_store/__init__.py"
+      - "tests/integration/test_m1c_parent_fence_races.py"
+      - "tests/integration/test_m1c_contamination_integrity.py"
+      - "tests/integration/test_m1c_background_consolidation*.py"
+      - "tests/integration/test_m1c_hot_formation*.py"
+      - "tests/unit/test_m1c_poisoning_normalization.py"
+      - ".github/workflows/m1c-poisoning-replay-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-poisoning-replay-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint M1C poisoning replay gate
+        run: |
+          uv run ruff check \
+            src/test_workflow/memory_formation \
+            src/test_workflow/memory_store/fence.py \
+            src/test_workflow/memory_store/sqlite_fenced.py \
+            tests/integration/test_m1c_parent_fence_races.py \
+            tests/integration/test_m1c_contamination_integrity.py \
+            tests/integration/test_m1c_background_consolidation.py \
+            tests/integration/test_m1c_background_consolidation_hardening.py \
+            tests/integration/test_m1c_hot_formation.py \
+            tests/integration/test_m1c_hot_formation_hardening.py \
+            tests/unit/test_m1c_poisoning_normalization.py
+
+      - name: Prove M1C poisoning replay concurrency and prior Memory invariants
+        run: |
+          uv run pytest \
+            tests/integration/test_m1c_parent_fence_races.py \
+            tests/integration/test_m1c_contamination_integrity.py \
+            tests/integration/test_m1c_background_consolidation.py \
+            tests/integration/test_m1c_background_consolidation_hardening.py \
+            tests/integration/test_m1c_hot_formation.py \
+            tests/integration/test_m1c_hot_formation_hardening.py \
+            tests/unit/test_m1c_poisoning_normalization.py \
+            tests/integration/test_m1b_sqlite_store.py \
+            tests/integration/test_m1b_progressive_retrieval.py \
+            tests/integration/test_m1b_resilience.py \
+            tests/integration/test_m1b_recovery.py \
+            tests/integration/test_m1b_migration.py \
+            tests/integration/test_m1b_benchmark.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_security_regression.py \
+            -q
