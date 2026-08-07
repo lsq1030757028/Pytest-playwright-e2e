@@ -1,7 +1,14 @@
 import sqlite3
 
-from test_workflow.memory_store import ProgressiveMemoryRetriever, RetrievalStatus, SQLiteDerivedIndex
-from test_workflow.memory_store.recovery import FailClosedRetrievalGateway, SQLiteOutboxRecovery
+from test_workflow.memory_store import (
+    ProgressiveMemoryRetriever,
+    RetrievalStatus,
+    SQLiteDerivedIndex,
+)
+from test_workflow.memory_store.recovery import (
+    FailClosedRetrievalGateway,
+    SQLiteOutboxRecovery,
+)
 from tests.integration.test_m1b_progressive_retrieval import (
     CURSOR_KEY,
     append_promoted,
