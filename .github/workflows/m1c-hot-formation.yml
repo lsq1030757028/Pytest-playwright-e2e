@@ -30,11 +30,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      - name: Diagnose Ruff import ordering
+      - name: Lint M1C Hot Formation
         run: |
-          uv run ruff check --fix src/test_workflow/memory_formation/runtime.py || true
-          git diff -- src/test_workflow/memory_formation/runtime.py
-          test -z "$(git diff --name-only -- src/test_workflow/memory_formation/runtime.py)"
+          uv run ruff check \
+            src/test_workflow/memory_formation \
+            tests/integration/test_m1c_hot_formation.py
 
       - name: Prove Hot Formation and prior Memory invariants
         run: |
