@@ -2,7 +2,6 @@ from .index import IndexHit, SQLiteDerivedIndex
 from .retrieval import (
     BudgetConsumption,
     ChannelContribution,
-    ProgressiveMemoryRetriever,
     RecallChannel,
     ReleasedMemory,
     RetrievalRequest,
@@ -11,6 +10,7 @@ from .retrieval import (
     RetrievalStatus,
     StageBudget,
 )
+from .retrieval_guarded import ProgressiveMemoryRetriever
 from .sqlite import SQLiteMemoryStore
 
 __all__ = [
