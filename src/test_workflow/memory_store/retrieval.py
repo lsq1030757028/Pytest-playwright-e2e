@@ -18,13 +18,16 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ..memory_contracts import (
     AccessOperation,
     CompatibilityContext,
+    Decision,
     LifecycleState,
+    MemoryContractError,
     MemoryKind,
     MemoryNamespace,
     MemoryRevision,
     PrincipalContext,
     ReadMode,
     canonical_sha256,
+    evaluate_effective_read,
 )
 from .index import IndexHit, SQLiteDerivedIndex
 from .sqlite import SQLiteMemoryStore
@@ -548,22 +551,70 @@ class ProgressiveMemoryRetriever:
                 return False
         return True
 
-    def _eligible_revisions(
-        self, request: RetrievalRequest
-    ) -> tuple[MemoryRevision, ...]:
+    @staticmethod
+    def _read_modes(request: RetrievalRequest) -> tuple[ReadMode, ...]:
         if request.read_mode is ReadMode.ADVISORY:
-            modes = (
+            return (
                 ReadMode.ADVISORY,
                 ReadMode.EVIDENCE_BEARING,
                 ReadMode.PRODUCTION_RETRIEVAL,
             )
-        elif request.read_mode is ReadMode.EVIDENCE_BEARING:
-            modes = (
+        if request.read_mode is ReadMode.EVIDENCE_BEARING:
+            return (
                 ReadMode.EVIDENCE_BEARING,
                 ReadMode.PRODUCTION_RETRIEVAL,
             )
-        else:
-            modes = (ReadMode.PRODUCTION_RETRIEVAL,)
+        return (ReadMode.PRODUCTION_RETRIEVAL,)
+
+    def _resolve_strong_ref(
+        self,
+        *,
+        request: RetrievalRequest,
+        ref: str,
+        modes: tuple[ReadMode, ...],
+    ) -> MemoryRevision | None:
+        try:
+            memory_id, revision_id = ref.rsplit("@", 1)
+        except ValueError:
+            return None
+        if not memory_id or not revision_id:
+            return None
+        try:
+            revision = self.store.get_revision(
+                actor=request.actor,
+                memory_id=memory_id,
+                revision_id=revision_id,
+            )
+            head = self.store.get_head_revision(
+                actor=request.actor,
+                memory_id=memory_id,
+            )
+        except MemoryContractError:
+            return None
+        if revision.ref != ref or head.revision_id != revision.revision_id:
+            return None
+        requested_namespaces = {
+            namespace.canonical for namespace in request.namespaces
+        }
+        if revision.namespace.canonical not in requested_namespaces:
+            return None
+        state = self.store.get_effective_state(memory_id=memory_id)
+        for mode in modes:
+            effective = evaluate_effective_read(
+                revision=revision,
+                state=state,
+                read_mode=mode,
+                now=request.evaluation_time,
+                compatibility_context=request.compatibility_context,
+            )
+            if effective.decision is Decision.ALLOW:
+                return revision
+        return None
+
+    def _eligible_revisions(
+        self, request: RetrievalRequest
+    ) -> tuple[MemoryRevision, ...]:
+        modes = self._read_modes(request)
         selected: dict[str, MemoryRevision] = {}
         for mode in modes:
             revisions, _cursor = self.store.query_exact_authorized_namespaces(
@@ -575,6 +626,15 @@ class ProgressiveMemoryRetriever:
                 limit=DEFAULT_BUDGETS[RetrievalStage.COLD].candidate_limit,
             )
             selected.update({revision.ref: revision for revision in revisions})
+        strong_refs = sorted(set(request.exact_refs) | set(request.required_refs))
+        for ref in strong_refs:
+            revision = self._resolve_strong_ref(
+                request=request,
+                ref=ref,
+                modes=modes,
+            )
+            if revision is not None:
+                selected[revision.ref] = revision
         return tuple(
             sorted(
                 selected.values(),
@@ -610,9 +670,7 @@ class ProgressiveMemoryRetriever:
                 ),
                 schema_version=request.schema_version,
             )
-            channels[RecallChannel.METADATA] = tuple(
-                hit.ref for hit in metadata
-            )
+            channels[RecallChannel.METADATA] = tuple(hit.ref for hit in metadata)
             if request.keywords:
                 keyword = self.index.keyword_rank(
                     eligible_refs=eligible_refs,
