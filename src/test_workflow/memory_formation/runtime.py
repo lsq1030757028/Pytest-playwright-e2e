@@ -33,7 +33,6 @@ from .models import (
 )
 from .resolver import ArtifactFormationResolver, FormationAdmissionError, ResolvedFormationInputs
 
-
 _PROTECTED_AUTHORITY_KEYS = frozenset(
     {
         "oracle_override",
