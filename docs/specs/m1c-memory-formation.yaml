@@ -1,0 +1,390 @@
+spec_id: SPEC-M1C-MEMORY-FORMATION
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 74
+parent_campaign_issue: 59
+milestone: M1
+assurance:
+  development: DEV3
+  ux: UX0
+product_claim: SPEC_ONLY
+
+authority:
+  mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+  m1a_spec: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES@1.0.0
+  m1b_spec: SPEC-M1B-STORE-PROGRESSIVE-RETRIEVAL@0.1.0
+  m1b_goal_issue: 69
+  m1b_status: CLOSED
+  m1b_main_merge: 9600ed4924ddb8b8f76322f8547c4864e71b3e67
+  m1_benchmark_spec: SPEC-M1.0-MEMORY-BENCHMARK@1.0.0
+
+core_invariants:
+  implicit_session_to_memory_write: false
+  source_data_is_control: false
+  candidate_only_formation: true
+  direct_verified_output: false
+  direct_promoted_output: false
+  model_confidence_is_authority: false
+  requirement_oracle_policy_permission_mutation: false
+  exact_namespace_before_proposal: true
+  provenance_before_store_write: true
+  canonical_hash_before_store_write: true
+  m1b_store_cas_and_authenticated_idempotency_required: true
+  m1b_retrieval_authority_order_preserved: true
+
+formation_modes:
+  HOT_PATH:
+    purpose: current_completed_run_or_bounded_checkpoint
+    source_ref_limit: 16
+    source_memory_ref_limit: 16
+    proposal_limit: 8
+    accepted_candidate_limit: 4
+    token_limit: 4000
+    latency_budget_ms: 1000
+    maximum_derivation_depth: 1
+    unrestricted_history_scan: false
+    automatic_shared_scope_write: false
+  BACKGROUND_CONSOLIDATION:
+    purpose: bounded_consolidation_of_explicit_authorized_inputs
+    source_ref_limit: 32
+    source_memory_ref_limit: 128
+    proposal_limit: 32
+    accepted_candidate_limit: 16
+    token_limit: 16000
+    latency_budget_ms: 10000
+    maximum_derivation_depth: 2
+    unrestricted_history_scan: false
+    source_memory_requires_m1b_authority: true
+    automatic_shared_scope_write: false
+
+source_classes:
+  - RUN_EVENT
+  - TOOL_RESULT
+  - ARTIFACT
+  - REQUIREMENT_REVISION
+  - CODE_REVISION
+  - ENVIRONMENT_REVISION
+  - MEMORY_REVISION
+  - HUMAN_ASSERTION
+
+source_contract:
+  immutable_ref_required: true
+  canonical_hash_required: true
+  evaluator_only_source_forbidden: true
+  hidden_holdout_source_forbidden: true
+  secret_acquisition_forbidden: true
+  prompt_instructions_are_data_only: true
+  cross_namespace_source_requires_explicit_authority: true
+
+formation_request:
+  required_fields:
+    - request_id
+    - actor_context
+    - formation_mode
+    - target_namespace
+    - requested_memory_kind
+    - source_descriptors
+    - evidence_refs
+    - authority_refs
+    - formation_rule_ref
+    - validator_profile_ref
+    - retention_profile_ref
+    - budget_profile_ref
+    - now
+    - idempotency_key
+  optional_fields:
+    - provider_profile_ref
+    - expected_memory_id
+    - expected_head_revision_id
+    - semantic_subject_key
+    - compatibility_descriptor
+    - historical_only
+  forbidden_fields:
+    - wildcard_cross_project_namespace
+    - lifecycle_verified_override
+    - lifecycle_promoted_override
+    - model_declared_permission
+    - unversioned_executable_capability
+    - hidden_benchmark_answer
+    - evaluator_only_payload
+    - secret_acquisition_request
+    - automatic_shared_scope_expansion
+
+validation_pipeline:
+  order:
+    - authenticate_actor
+    - resolve_exact_target_namespace
+    - evaluate_append_authority
+    - validate_source_ref_hash_completeness
+    - validate_evidence_bindings
+    - reject_holdout_or_evaluator_contamination
+    - reject_secret_or_sensitive_forbidden_profile
+    - validate_memory_kind_schema
+    - enforce_executable_data_boundary
+    - validate_current_authority_dominance
+    - reject_unsupported_or_fabricated_claims
+    - validate_authenticated_idempotency
+    - resolve_duplicate_or_conflict_identity
+    - enforce_formation_budget
+    - validate_m1a_provenance_and_canonical_hash
+    - append_through_m1b_store
+    - record_replay_evidence
+  relevance_before_authority: false
+  provider_output_is_untrusted: true
+  deterministic_validator_owns_admission: true
+
+candidate_lifecycle:
+  initial_state: CANDIDATE
+  initial_candidate_percent_required: 100
+  allowed_immediate_safety_states:
+    - CANDIDATE
+    - CONFLICTING
+    - QUARANTINED
+  forbidden_direct_states:
+    - VERIFIED
+    - PROMOTED
+  working_memory_ttl_required: true
+
+memory_kind_policy:
+  WORKING:
+    allowed: true
+    ttl_required: true
+    production_authority: false
+  EPISODIC:
+    allowed: true
+    required_content:
+      - run_or_event_refs
+      - action_summary
+      - outcome
+      - provenance
+  SEMANTIC:
+    allowed: true
+    factual_elements_require_source_trace: true
+    unsupported_inference_action: REJECT_OR_HYPOTHESIS_LABEL
+  PROCEDURAL:
+    allowed: PROPOSAL_CANDIDATE_ONLY
+    compatibility_required: true
+    versioned_capability_refs_only: true
+    arbitrary_executable_payload_forbidden: true
+    promotion_owner: M1E
+  SKILL:
+    allowed: PROPOSAL_CANDIDATE_ONLY
+    governed_capability_ref_required: true
+    permission_expansion_forbidden: true
+    promotion_owner: M1E
+
+formation_provenance:
+  required:
+    - ordered_source_refs
+    - source_content_hashes
+    - evidence_refs
+    - actor_principal_ref
+    - formation_rule_ref
+    - validator_profile_ref
+    - request_digest
+    - decision_digest
+  conditional:
+    - provider_profile_ref
+    - requirement_revision_refs
+    - code_revision_refs
+    - environment_revision_refs
+    - parent_memory_refs
+    - compatibility_descriptor
+  fabricated_or_unresolved_source_result: REJECTED
+  fabricated_or_unresolved_evidence_result: REJECTED
+
+current_authority:
+  current_requirement_dominates_stale_requirement: true
+  oracle_conflict_action: REJECT_OR_QUARANTINE
+  policy_conflict_action: REJECT_OR_QUARANTINE
+  permission_conflict_action: REJECT
+  stale_historical_episode_allowed_when_labeled: true
+  candidate_may_redefine_correctness: false
+
+idempotency:
+  authenticated_binding_fields:
+    - actor_principal_id
+    - target_namespace
+    - formation_mode
+    - ordered_source_hashes
+    - formation_rule_ref
+    - validator_profile_ref
+    - requested_memory_kind
+    - expected_memory_id
+    - expected_head_revision_id
+    - candidate_payload_digest
+  same_request_result: ORIGINAL_RESULT
+  rebound_key_result: REJECTED
+  duplicate_suppression_replayable: true
+
+duplicate_and_conflict:
+  exact_duplicate_fingerprint_after_authorization: true
+  duplicate_result: DUPLICATE_SUPPRESSED
+  semantic_subject_key_optional: true
+  same_subject_different_canonical_claim_result: CONFLICT_REQUIRES_REVIEW
+  model_confidence_may_choose_conflict_winner: false
+  silent_conflict_merge: false
+  preserve_both_conflicting_observations_when_rule_requires: true
+
+formation_result:
+  statuses:
+    - CREATED_CANDIDATE
+    - APPENDED_CANDIDATE_REVISION
+    - DUPLICATE_SUPPRESSED
+    - CONFLICT_REQUIRES_REVIEW
+    - QUARANTINED
+    - REJECTED
+    - BUDGET_EXHAUSTED
+    - DEGRADED
+  required_fields:
+    - request_digest
+    - formation_event_ref
+    - status
+    - source_evidence_digest
+    - omitted_or_rejected_reasons
+    - budget_consumption
+    - validator_profile_ref
+    - store_result_ref
+    - replay_evidence_digest
+  conditional_fields:
+    - candidate_revision_ref
+    - candidate_content_hash
+    - effective_lifecycle
+    - provider_profile_ref
+    - duplicate_ref
+    - conflict_refs
+  unauthorized_source_counts_exposed: false
+  hidden_evaluator_values_exposed: false
+  raw_secret_exposed: false
+
+poisoning_controls:
+  critical_families:
+    - prompt_injection_as_control
+    - malicious_memory_instruction
+    - fabricated_source_or_evidence_id
+    - hidden_benchmark_or_evaluator_contamination
+    - cross_namespace_source_mix
+    - stale_requirement_as_current
+    - unsupported_assumption_as_fact
+    - arbitrary_executable_payload
+    - candidate_flood
+    - recursive_poison_amplification
+  source_is_data_only: true
+  exact_namespace_before_provider: true
+  contamination_fail_closed: true
+  bounded_derivation_depth: true
+  bounded_candidate_count: true
+  bounded_tokens: true
+  bounded_time: true
+  autonomous_lifecycle_promotion: false
+
+replay_evidence:
+  required:
+    - formation_request_digest
+    - exact_source_refs_and_hashes
+    - authority_refs_and_digests
+    - formation_rule_and_version
+    - validator_profile_and_version
+    - proposal_digest
+    - admission_and_rejection_decisions
+    - duplicate_conflict_snapshot_refs
+    - expected_head_and_store_result
+    - resulting_revision_content_hash
+    - final_result_digest
+  provider_profile_and_output_digest_when_used: true
+  chain_of_thought_forbidden: true
+  hidden_benchmark_content_forbidden: true
+  unauthorized_raw_content_forbidden: true
+  deterministic_equivalence_percent: 100
+  minimum_deterministic_repetitions: 3
+
+failure_modes:
+  PRIMARY_STORE_UNAVAILABLE:
+    durable_write: BLOCKED
+  NAMESPACE_OR_ACL_UNKNOWN:
+    durable_write: BLOCKED
+  SOURCE_HASH_MISSING_OR_MISMATCH:
+    result: REJECTED
+  EVIDENCE_UNRESOLVED_OR_FABRICATED:
+    result: REJECTED
+  CURRENT_REQUIREMENT_AUTHORITY_UNKNOWN:
+    current_fact_formation: REJECTED
+    historical_episode: MAY_PRESERVE_WITH_EXPLICIT_LABEL
+  HOLDOUT_OR_EVALUATOR_CONTAMINATION:
+    result: REJECTED
+    descendant_formation: INVALID
+  PROPOSAL_PROVIDER_UNAVAILABLE:
+    deterministic_rule_may_continue: true
+    otherwise: DEGRADED_NO_WRITE
+    maximum_retries: 1
+  BUDGET_EXHAUSTED:
+    result: BUDGET_EXHAUSTED
+    unbounded_retry: false
+  DUPLICATE_INDEX_UNAVAILABLE:
+    safe_primary_fallback: true
+    cross_namespace_fallback: false
+  CONFLICT_RESOLVER_UNAVAILABLE:
+    result: CONFLICT_REQUIRES_REVIEW
+
+observability:
+  required_metrics:
+    - formation_request_count_by_mode_and_kind
+    - candidate_proposed_accepted_rejected_after_authorization
+    - rejection_reason_family
+    - duplicate_suppression_count
+    - conflict_and_quarantine_count
+    - source_evidence_integrity_failure_count
+    - contamination_poisoning_rejection_count
+    - budget_and_latency
+    - store_cas_conflict_count
+    - replay_equivalence_failure_count
+  forbidden_metrics:
+    - raw_secret_or_personal_content
+    - hidden_benchmark_answer
+    - unauthorized_source_counts_before_authorization
+    - model_chain_of_thought
+
+acceptance_thresholds:
+  implicit_session_to_durable_memory_writes: 0
+  initial_candidate_state_percent: 100
+  unauthorized_cross_namespace_formation_count: 0
+  unsupported_or_fabricated_provenance_accepted_count: 0
+  hidden_evaluator_contamination_accepted_count: 0
+  oracle_policy_permission_mutation_count: 0
+  unauthorized_executable_payload_accepted_count: 0
+  critical_poisoning_mutation_survivors: 0
+  deterministic_replay_equivalence_percent: 100
+  authenticated_idempotency_equivalence_percent: 100
+  m1b_critical_safety_regression_count: 0
+  critical_fact_extraction_recall_percent: 100
+  noncritical_candidate_precision_percent_minimum: 90
+  duplicate_suppression_determinism_percent: 100
+  conflict_surfacing_determinism_percent: 100
+  hot_formation_p95_ms_maximum: 1000
+
+implementation_slices:
+  M1C_I1_HOT_FORMATION:
+    outcome: deterministic_run_event_to_candidate_pipeline
+  M1C_I2_CONSOLIDATION:
+    outcome: bounded_authorized_background_candidate_consolidation
+  M1C_I3_POISONING_REPLAY_GATE:
+    outcome: adversarial_poisoning_contamination_replay_and_mutation_evidence
+
+implementation_gate:
+  implementation_allowed_after_spec_merge: true
+  implementation_work_item_separate: true
+  spec_pr_runtime_implementation_forbidden: true
+  m1d_shared_governance_out_of_scope: true
+  m1e_promotion_out_of_scope: true
+  production_personal_data_forbidden: true
+  secrets_forbidden: true
+  direct_main_write_forbidden: true
+
+acceptance:
+  dedicated_spec_gate_green: true
+  full_ci_green: true
+  secret_scan_green: true
+  codeql_green: true
+  review_threads: 0
+  blockers: 0
+  final_diff_spec_only: true
