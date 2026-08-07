@@ -10,6 +10,7 @@ from .models import FormationEvent, FormationReplayEvidence, FormationResult
 
 def verify_formation_integrity(db_path: Path | str) -> None:
     path = Path(db_path)
+    contamination_exists = False
     try:
         with closing(sqlite3.connect(path)) as connection:
             connection.row_factory = sqlite3.Row
@@ -86,6 +87,12 @@ def verify_formation_integrity(db_path: Path | str) -> None:
                 )
             ):
                 _verify_completed_consolidation_links(connection)
+            contamination_exists = _table_exists(connection, "memory_contamination")
+
+        if contamination_exists:
+            from .contamination import MemoryContaminationRegistry
+
+            MemoryContaminationRegistry(path).verify_integrity()
     except MemoryContractError:
         raise
     except Exception as exc:
