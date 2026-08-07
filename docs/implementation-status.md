@@ -1,15 +1,13 @@
 # AI Test Harness / Test Agent OS 实现状态
 
 > 文档角色：项目状态单一事实源  
-> 最近更新：2026-08-05  
+> 最近更新：2026-08-07  
 > 当前状态：`FOUNDATION_BASELINE`  
 > 阶段产品交付：`NOT_READY`  
 > 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
-> 已关闭主模块：`M1A RUNTIME_CONTRACTS`  
-> 当前主模块：`M1B STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC`  
+> 已关闭主模块：`M1B STORE_AND_PROGRESSIVE_RETRIEVAL`  
+> 当前主模块：`M1C MEMORY_FORMATION_SPEC`  
 > 当前主模块阶段：`SPEC_NEXT`  
-> 并行跨切面：`UX Assurance Plane`  
-> 下一 UX 模块：`UX2 FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK_SPEC`  
 > UX Gate：`SHADOW_NONBLOCKING`  
 > Human UAT：`REQUIRED`  
 > 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
@@ -19,24 +17,22 @@
 ## 1. 状态结论
 
 ```text
-M0 Harness Baseline：MERGED
+M0 Harness Baseline：MERGED / CLOSED
 M1.0 Memory Benchmark Harness：MERGED / CLOSED
-M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED
+M1A Memory Contracts & Namespaces：MERGED / CLOSED
 M1A Runtime Contracts：MERGED / CLOSED
-M1B Store & Progressive Retrieval：NEXT / SPEC
-TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
-UX Mutation Proof Runner：MERGED / CLOSED
-Five-mutation Campaign：5 / 5 KILLED
-UX False-positive / False-negative Benchmark：NEXT / SPEC
-UX Gate Mode：SHADOW / NONBLOCKING
-Human UAT：REQUIRED
-M1 Memory Gate：0 / 1
+M1B Store & Progressive Retrieval：MERGED / CLOSED
+M1C Memory Formation：NEXT / SPEC
+M1D Shared Memory Governance：PLANNED
+M1E Controlled Evolution：PLANNED
+M1F Memory Gate：PLANNED
+M1 Memory Gate：OPEN (0 / 1)
 Stage Delivery：NOT_READY
 ```
 
-当前项目已经具备需求到测试执行、证据、诊断、回归、重放和发布的基础闭环，也具备真实 Playwright 用户体验 Shadow 验证、UX Mutation 证明，以及可执行的治理型 Memory 领域契约。
+M1B 已从“Memory 规则”推进到真实可运行的持久化与检索系统：SQLite WAL Primary Store、Hot/Warm/Cold Progressive Retrieval、派生索引、Primary Revalidation、Outbox Recovery、Index Rebuild、Replay/Tamper、Migration/Rollback 和 Benchmark 均已进入 `main` 并完成主干与发布验证。
 
-项目仍未达到阶段产品交付标准：当前没有生产 Memory Store，尚未验证渐进式检索、跨模型泛化和跨项目架构能力，M1 Memory Gate 仍保持 OPEN。
+这不等于 M1 Memory 已完成。M1C Formation、M1D Shared Governance、M1E Controlled Evolution 和 M1F Memory Gate 尚未关闭，因此 Memory Gate 继续保持 `OPEN`，阶段产品仍为 `NOT_READY`。
 
 ---
 
@@ -46,159 +42,137 @@ Stage Delivery：NOT_READY
 flowchart LR
     A[✅ M0 Harness Baseline]
     --> B[✅ M1.0 Memory Benchmark]
-    --> C[✅ M1A Memory SPEC]
+    --> C[✅ M1A Memory Contracts]
     --> D[✅ M1A Runtime Contracts]
-    --> E[🟡 M1B Store / Retrieval SPEC]
-    --> F[⬜ M1B Implementation]
-    --> G[⬜ M1C Formation]
-    --> H[⬜ M1D Shared Governance]
-    --> I[⬜ M1E Controlled Evolution]
-    --> J[⬜ M1F Memory Gate]
-
-    B --> U1[✅ UX0 Shadow Runtime]
-    U1 --> U2[✅ UX1 Mutation Proof]
-    U2 --> U3[🟡 UX2 False-positive / False-negative Benchmark SPEC]
-    U3 --> U4[⬜ Advisory Gate Candidate]
-    U4 --> U5[⬜ Blocking Policy Candidate]
+    --> E[✅ M1B Durable Store / Retrieval]
+    --> F[🟡 M1C Memory Formation SPEC]
+    --> G[⬜ M1D Shared Governance]
+    --> H[⬜ M1E Controlled Evolution]
+    --> I[⬜ M1F Memory Gate]
 ```
 
-Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，不改变 M1B SPEC 的当前执行优先级。
+Memory 仍是当前产品主执行路径。Beta、UX 扩展和其它横向能力不得阻塞 M1C—M1F 的 Memory 主线。
 
 ---
 
-## 3. 已交付基础能力
+## 3. M1B 已交付能力
 
-### M0 Harness Baseline
+### 3.1 Durable Primary Store
 
-已具备：Capability Contract、Registry、不可变 Artifact Store、Policy、Permission、Budget、Workflow Compiler、Orchestrator、Requirement Revision、Impact、Campaign、Generation、Diagnosis、Regression、Verdict、Replay、功能 Mutation Proof、Browser、Pinned Target、Python Package 与 GHCR 发布。
+- SQLite WAL 作为可替换 Reference Profile 的权威 Primary Store；
+- `synchronous=FULL`、事务写锁、Head CAS 和跨进程重启恢复；
+- Revision、Head、Lifecycle、ACL、Audit、Idempotency、Tombstone、Invalidation、Outbox 持久化；
+- 继续复用 M1A 已证明的权限、生命周期、Provenance、Compatibility 和 Forget 语义，而不是在存储层重写业务规则；
+- Forget 会物理删除 Primary Revision 内容和可恢复内容的 Idempotency 结果，只保留必要 Tombstone / Audit / State 证据；
+- 两个独立 Store 对同一 Head 竞争时，只允许一个 CAS Winner。
 
-### M1.0 Memory Benchmark Harness
+### 3.2 Authority-first Progressive Retrieval
 
-已完成 16 个 Memory 场景、60 次运行、独立 Replay 和安全优先判定；Critical False Green 为 0。该模块证明了 Memory 价值和威胁评估基线，但不实现生产 Memory Store，也不关闭 M1 Memory Gate。
+- Hot / Warm / Cold 默认预算分别为 `24/6/2000/250ms`、`96/12/6000/1000ms`、`256/20/12000/3000ms`；
+- ACL、Lifecycle、Retention、Forget 和 Compatibility 在 Keyword / Metadata / Vector / Graph 相关性之前执行；
+- Exact Ref、Metadata、Keyword、Archive 已有确定性 Reference Channel；Vector / Graph 保持可替换 Adapter，不可用时显式 `DEGRADED`；
+- Weighted RRF + 确定性 Tie-break；
+- 每个结果在释放 Content 前再次向 Primary Store Revalidate；
+- Cursor 绑定 Actor、Namespace、Read Mode、Primary/Index Snapshot、ACL Epoch、Forget Epoch 和算法版本并进行完整性保护；
+- Exact / Required Ref 不受 256 条广义 Candidate Window 截断，257 条规模回归已证明 Exact Ref Recall 与 Precedence。
 
-### M1A Memory Contracts & Namespaces SPEC
+### 3.3 Resilience / Replay / Migration / Benchmark
 
-已明确五类 Memory、Namespace、ACL、Provenance、Revision、Lifecycle、Promotion、CAS、Conflict、Forget、Compatibility 和厂商无关 Port 的规范边界。
+- Derived Index 健康检查、陈旧/损坏检测和从 Primary + Outbox 重建；
+- Outbox Gap 检测与幂等恢复；
+- Primary 不可用时 Fail Closed，禁止仅凭缓存/索引给出 authoritative 内容；
+- Replay Manifest / Evidence Digest / Tamper Rejection；
+- Migration 前后 Store Manifest 与 Shadow Retrieval 等价验证；
+- 回滚不得复活 Target-only Forget；
+- M1B Benchmark 验证 Unauthorized / Forgotten Release、Exact / Required Recall、Noncritical Recall / Precision、Replay、Deterministic Ordering 和 Latency；
+- 100 次协调 CAS / Outbox 并发竞争全部证明单赢家，无双写静默覆盖。
 
-### M1A Runtime Contracts
+---
 
-已把上述规范变成可执行代码与证据：
-
-- 稳定 Canonical JSON、Memory ID、Revision ID 与 SHA-256；
-- Revision 和嵌套 Provenance JSON 不可原地修改，Revision 只允许 Append；
-- Project、Campaign、Agent、Organization、Shared Namespace 精确隔离；
-- 委派范围和过期时间强制执行；
-- ACL 默认拒绝、DENY 优先，相关性和向量相似度不能授权；
-- Candidate、Verified、Promoted、Conflicting、Quarantined、Superseded、Revoked、Expired、Forgotten 状态机；
-- Promotion 必须绑定真实 Actor、Evidence、Benchmark 和 Revision Provenance；
-- CAS、Idempotency、显式 Conflict 和禁止最后写入静默覆盖；
-- 过期、撤销、遗忘后的内容不会进入有效读取；
-- Procedural / Skill 必须通过代码、Schema、Capability、权限和环境兼容性检查；
-- 六类厂商无关 Port 与确定性内存参考适配器；
-- Artifact Manifest、15 项确定性 Proof、独立 Replay 和 Tamper 拒绝。
-
-最终交付事实：
+## 4. M1B 权威交付事实
 
 ```text
-Goal：Issue #43 — CLOSED
-Base Implementation PR：#44 — MERGED (`0585e357aebda650ee50ee95ff962b3ac81f6d4c`)
-Closure Remediation PR：#45 — MERGED (`ef681c3b679305d7b88d17f776926dc25b76e49f`)
-Integration Secret-scan Repair PR：#61 — MERGED (`bd673cb1cab3edc6d16eca2aded4dcfe4bd45957`)
-PR M1A Runtime Gate：31107607723 — SUCCESS
-PR Full Quality：31107611134 — SUCCESS
-PR Secret Scan：31107608110 — SUCCESS
-PR CodeQL：31107607912 — SUCCESS
-Main M1A Runtime Gate：31108111384 — SUCCESS
-Final Main Full Quality：31108781025 — SUCCESS
-Final Main Secret Scan：31108779724 — SUCCESS
-Final Main CodeQL：31108779549 — SUCCESS
-Release：31108779552 — SUCCESS
-Cleanup：31108781076 — SUCCESS
-Python Distribution Artifact：8970728772 (`sha256:4cba37b10f909bbb6d6123c75dbb140cfd652064bfecda63a010fb7cd2fd0d35`)
-GHCR Build Record：8970756802 (`sha256:140cabd09cb6c5c983d77c22ad846a753db8b05595c6294115d80eb2d48ec0c3`)
-Focused Tests：29 / 29 PASS
-Deterministic Proof：15 / 15 PASS
-Critical False Green：0
-Unauthorized Namespace Actions：0
-Unauthorized Promotion Actions：0
+SPEC Goal：Issue #62 — CLOSED
+SPEC PR：#68 — MERGED
+SPEC Merge：f0c25b75b9bd2308e862a7ce8ad7d8092de7091f
+
+Implementation Goal：Issue #69 — CLOSURE_PENDING
+I1 Primary Store PR：#70 — MERGED
+I1 Merge：54da6db80a9e7d099a8acb27b031c62a9b484148
+I2 Progressive Retrieval PR：#71 — MERGED
+I2 Merge：517c4dc5ad3d0ccd72530dec80947774d5fb0e21
+Exact-ref Correctness Repair PR：#73 — MERGED
+Repair Merge：69b31907d48241b59f05d311030a69c33e2825b6
+I3 Resilience PR：#72 — MERGED
+Final Runtime Head：9600ed4924ddb8b8f76322f8547c4864e71b3e67
+
+Main M1B Gate：31146450584 — SUCCESS
+Main Full Quality：31146450631 — SUCCESS
+Main Secret Scan：31146450593 — SUCCESS
+Main CodeQL：31146450576 — SUCCESS
+Release：31146450614 — SUCCESS
+Cleanup Baseline Run：31146450571 — SUCCESS
+
+Python Distribution Artifact：8981646972
+Python Digest：sha256:1ae404deab52790a5f0fad0d8acc3b7b17c7c168afa30ebd030f2ca782b9b375
+GHCR Build Record：8981662218
+GHCR Build Record Digest：sha256:2d345a90028414febc44f55c35de0ce09f60f096d7238b87e11abba4f90c1eb3
+
+Focused Tests：36 / 36 PASS
+Coordinated CAS / Outbox Races：100 / 100 PASS
+Critical Double Winners：0
+Unauthorized Critical Release：0
+Forgotten Content Release：0
+Exact Ref Recall：100%
+Required Authority Recall：100%
+Deterministic Replay：100%
 Review Threads：0
-M1B Goal：Issue #62
 ```
 
-M1A Runtime Contracts 已满足实现、CI、Review、Merge、Release、证据与 Cleanup 条件。M1A 已由本台账正式关闭；M1B Goal #62 已解锁进入 SPEC。
+`Cleanup Baseline Run` 本身成功，但当时尚未登记 M1B 新增分支；本 Closure PR 将统一登记并在合并后验证实际分支清理，因此 Issue #69 只有在 Closure PR、主干检查和分支清理完成后才可正式关闭。
 
 ---
 
-## 4. 当前主模块：M1B Store & Progressive Retrieval SPEC
+## 5. 当前主模块：M1C Memory Formation SPEC
 
-M1B 现在只进入 SPEC 阶段，尚未进入实现，也没有选定数据库、向量引擎、Embedding、Ranking 或索引方案。
+M1C Goal：Issue #75。
 
-SPEC 必须定义：
+目标不是让模型“自由记忆”，而是把真实工作过程形成可审计、可去重、可冲突隔离、可重放的 `CANDIDATE` Memory：
 
-- 哪些 M1A Port 由生产 Store 实现，哪些仍保持纯领域逻辑；
-- 事务边界、Append-only Revision、Head CAS、Conflict 与 Idempotency 的持久化语义；
-- Project、Campaign、Agent、Organization、Shared Namespace 的物理与逻辑隔离；
-- Hot / Warm / Cold 渐进式检索阶梯和每级预算；
-- ACL、Lifecycle、Retention、Compatibility 在检索前的 Fail-closed 顺序；
-- Keyword、Metadata、Vector、Graph 等召回信号如何组合，但绝不能授予权限；
-- 删除、撤销、过期、遗忘和 Tombstone 的一致性、审计与恢复边界；
-- 故障、超时、索引陈旧、部分不可用和回滚策略；
-- Benchmark、迁移、Replay、Tamper、性能和安全验收标准。
-
-M1B 实现继续被阻塞，直到该 SPEC 完成 Review、Approval、Merge 和 Evidence Gate。
+- Hot Path 只记录必须立即持久化的确认事实、显式决策、Blocker、Action/Result 和 Evidence；
+- Background Formation 负责 Episodic / Semantic / Working Candidate 的提取、去重、冲突识别和受控压缩；
+- 模型推导内容只能成为 `CANDIDATE`，不能直接变成 Fact、Oracle、Policy、Permission 或 Promoted Memory；
+- 禁止持久化内部 Chain-of-Thought；
+- 每条 Candidate 必须绑定 Source Ref、Source Hash、Formation Event、Actor、Namespace 和 Provenance；
+- 重复输入必须 Idempotent，矛盾输入不得 Last-write-wins；
+- 后台 Formation 中断后必须通过 M1B Durable Store 恢复而不重复接受 Revision；
+- M1C 实现继续被 SPEC Approval Gate 阻塞。
 
 ---
 
-## 5. UX Assurance 当前事实
+## 6. 安全边界
 
-UX0 Synthetic User Runtime：MERGED / CLOSED。它能够通过真实 Playwright Journey 生成体验证据，但 Release Effect 固定为 `NONBLOCKING_SHADOW`，不能替代 Human UAT。
+`MANDATE-AUTONOMY-M1-M3@1.0.0` 继续覆盖 M1—M3 的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
 
-UX1 已完成五类真实体验退化证明：
-
-```text
-MISSING_FEEDBACK
-VISIBLE_SUCCESS_STATE_LOSS
-KEYBOARD_FOCUS_SEMANTIC_BARRIER
-INTERRUPTED_RESUME_FAILURE
-FILTER_ROUTE_STATE_DRIFT
-```
-
-当前结果为 5 / 5 Mutation Killed、正常基线零误报、精确恢复 100%、独立 Replay 100%、Critical False Green 0。Advisory 和 Blocking 仍未启用。
-
----
-
-## 6. 当前自治与安全边界
-
-`MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 范围内的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
-
-仍不覆盖：真实生产数据、个人数据和 Secret；破坏性生产迁移；不可逆外部写或费用；危险设备动作；更高权威、Oracle、Experience Oracle、Policy 或 Permission 冲突；DEV-E；绕过失败的 CI、Evidence、Review 或 Release Gate。
-
-Synthetic User / UX Mutation 额外禁止：真实客户账号、敏感属性和生物识别推断、无限制网页探索、AI-only Blocker 或 Kill、修改生产目标、替代 Human UAT。
+仍禁止：生产/个人数据、Secret、破坏性生产迁移、不可逆外部动作、未经授权的 Oracle / Policy / Permission 修改、失败 Gate 绕过、直接 `main` 写入，以及把 Candidate Memory 自动提升为权威事实。
 
 ---
 
 ## 7. 近期执行顺序
 
 ```text
-1. M1B Store & Progressive Retrieval SPEC
-2. M1B implementation / verification / closure
-3. UX False-positive / False-negative Benchmark SPEC
-4. M1C Memory Formation
+1. M1B Closure / Cleanup / Goal #69 CLOSE
+2. M1C Memory Formation SPEC
+3. M1C implementation / verification / closure
+4. M1D Shared Memory Governance
+5. M1E Controlled Evolution
+6. M1F Memory Gate
 ```
-
-UX 与 Memory 可以交错推进，但不能通过并行降低各自 Evidence Gate。
 
 ---
 
-## 8. 阶段交付条件
+## 8. M1 / Stage 交付条件
 
-项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
+M1 只有在 M1C—M1F 全部关闭且完整 Memory Gate 通过后才可以标记 PASS。全局仍要求：Critical False Green 0、未授权 Oracle / Policy / Permission 修改 0、关键 Evidence 可重放率 100%、Memory Asset 可追溯且自动晋升资产可回滚。
 
-```text
-M1 Memory Gate：PASS
-M2 Model Generalization Gate：PASS
-M3 Project / Architecture Gate：PASS
-Global Safety Gate：PASS
-```
-
-全局要求继续是：Critical False Green 0、未授权 Oracle / Experience Oracle / Policy / Permission 修改 0、Out-of-Mandate 动作 0、关键 Evidence 可重放率 100%、Memory / Model / Device / UX Asset 可追溯、自动晋升资产可回滚。
+阶段产品只有在 M1、M2、M3 与 Global Safety Gate 全部通过后，才可从 `FOUNDATION_BASELINE` 晋升。
