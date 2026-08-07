@@ -1,0 +1,63 @@
+name: m1b-resilience
+
+on:
+  pull_request:
+    paths:
+      - "src/test_workflow/memory_store/**"
+      - "tests/integration/test_m1b_resilience.py"
+      - "tests/integration/test_m1b_recovery.py"
+      - "tests/integration/test_m1b_migration.py"
+      - "tests/integration/test_m1b_benchmark.py"
+      - "tests/integration/test_m1b_atomicity_stress.py"
+      - ".github/workflows/m1b-resilience.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/test_workflow/memory_store/**"
+      - "tests/integration/test_m1b_resilience.py"
+      - "tests/integration/test_m1b_recovery.py"
+      - "tests/integration/test_m1b_migration.py"
+      - "tests/integration/test_m1b_benchmark.py"
+      - "tests/integration/test_m1b_atomicity_stress.py"
+      - ".github/workflows/m1b-resilience.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-resilience:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint M1B resilience
+        run: |
+          uv run ruff check \
+            src/test_workflow/memory_store \
+            tests/integration/test_m1b_resilience.py \
+            tests/integration/test_m1b_recovery.py \
+            tests/integration/test_m1b_migration.py \
+            tests/integration/test_m1b_benchmark.py \
+            tests/integration/test_m1b_atomicity_stress.py
+
+      - name: Prove resilience migration benchmark and prior M1B invariants
+        run: |
+          uv run pytest \
+            tests/integration/test_m1b_resilience.py \
+            tests/integration/test_m1b_recovery.py \
+            tests/integration/test_m1b_migration.py \
+            tests/integration/test_m1b_benchmark.py \
+            tests/integration/test_m1b_atomicity_stress.py \
+            tests/integration/test_m1b_progressive_retrieval.py \
+            tests/integration/test_m1b_sqlite_store.py \
+            tests/integration/test_memory_contract_reference.py \
+            tests/integration/test_memory_contract_security_regression.py \
+            -q
