@@ -2,14 +2,21 @@ from __future__ import annotations
 
 import time
 
-from ..memory_contracts import AccessOperation, MemoryRevision, canonical_sha256
+from ..memory_contracts import (
+    AccessOperation,
+    MemoryKind,
+    MemoryRevision,
+    canonical_sha256,
+)
+from .integrity import verify_formation_integrity
 from .models import FormationEvent, FormationRequest, FormationStatus
-from .resolver import FormationAdmissionError
+from .poisoning import contains_control_instruction
+from .resolver import FormationAdmissionError, ResolvedFormationInputs
 from .runtime import FormationRuntime as _BaseFormationRuntime
 
 
 class FormationRuntime(_BaseFormationRuntime):
-    """Public I1 runtime with authority-first and subject-safe guards."""
+    """Public I1 runtime with authority, poisoning and replay guards."""
 
     @staticmethod
     def _proposal_digest(request: FormationRequest) -> str:
@@ -36,7 +43,22 @@ class FormationRuntime(_BaseFormationRuntime):
             }
         )
 
+    def _validate_candidate(
+        self,
+        request: FormationRequest,
+        resolved: ResolvedFormationInputs,
+    ) -> None:
+        super()._validate_candidate(request, resolved)
+        if request.memory_kind is MemoryKind.SEMANTIC:
+            claim = request.candidate_content.get("claim")
+            if isinstance(claim, str) and contains_control_instruction(claim):
+                raise FormationAdmissionError("PROMPT_CONTROL_CLAIM_REJECTED")
+
     def form(self, request: FormationRequest):
+        # Tampered durable formation/consolidation evidence invalidates further
+        # formation work until the Store is repaired/recovered.
+        verify_formation_integrity(self.db_path)
+
         # Target authority must be proven before *any* Formation-owned durable
         # mutation, including idempotency reservation. Otherwise an unauthorized
         # actor could squat a guessed idempotency key and deny a later authorized
