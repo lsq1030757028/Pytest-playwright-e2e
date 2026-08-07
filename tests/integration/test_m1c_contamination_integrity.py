@@ -25,6 +25,8 @@ from tests.integration.test_m1c_hot_formation import make_artifacts, make_reques
 def test_contaminated_parent_is_rejected_before_corrupted_content_parse(tmp_path) -> None:
     db_path = tmp_path / "memory.db"
     parent = _hot_parent(db_path, claim="fixture answer 42", number=902)
+    store = SQLiteMemoryStore(db_path)
+    consolidator = BackgroundConsolidator(store)
     registry = MemoryContaminationRegistry(db_path)
     registry.mark(
         memory_ref=parent,
@@ -39,7 +41,7 @@ def test_contaminated_parent_is_rejected_before_corrupted_content_parse(tmp_path
         )
         connection.commit()
 
-    result = BackgroundConsolidator(SQLiteMemoryStore(db_path)).consolidate(
+    result = consolidator.consolidate(
         _request(
             parents=(parent,),
             claim="fixture answer 42",
