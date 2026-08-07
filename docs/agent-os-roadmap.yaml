@@ -1,10 +1,10 @@
 project: AI Test Harness
-roadmap_version: 3.5
-updated_at: 2026-08-06T22:35:00+08:00
+roadmap_version: 3.6
+updated_at: 2026-08-07T12:15:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
-active_module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+active_module: M1C_MEMORY_FORMATION_SPEC
 active_phase: SPEC_NEXT
 
 principles:
@@ -55,13 +55,13 @@ milestones:
     title: Memory and controlled self-evolution
     status: IN_PROGRESS
     depends_on: [M0]
-    active_module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+    active_module: M1C_MEMORY_FORMATION_SPEC
     module_status:
       M1.0: MERGED_CLOSED
       M1A: SPEC_MERGED_CLOSED
       M1A_RUNTIME_CONTRACTS: MERGED_CLOSED
-      M1B: SPEC_NEXT
-      M1C: PLANNED
+      M1B: MERGED_CLOSED
+      M1C: SPEC_NEXT
       M1D: PLANNED
       M1E: PLANNED
       M1F: PLANNED
@@ -125,6 +125,41 @@ milestones:
         unauthorized_promotion_actions: 0
         review_threads: 0
         implementation_branch_deleted: true
+      M1B_STORE_AND_PROGRESSIVE_RETRIEVAL:
+        spec: SPEC-M1B-STORE-PROGRESSIVE-RETRIEVAL@0.1.0
+        spec_goal_issue: 62
+        spec_pull_request: 68
+        spec_merge_commit: f0c25b75b9bd2308e862a7ce8ad7d8092de7091f
+        implementation_goal_issue: 69
+        primary_store_pull_request: 70
+        primary_store_merge_commit: 54da6db80a9e7d099a8acb27b031c62a9b484148
+        retrieval_pull_request: 71
+        retrieval_merge_commit: 517c4dc5ad3d0ccd72530dec80947774d5fb0e21
+        exact_ref_repair_pull_request: 73
+        exact_ref_repair_merge_commit: 69b31907d48241b59f05d311030a69c33e2825b6
+        resilience_pull_request: 72
+        final_runtime_head: 9600ed4924ddb8b8f76322f8547c4864e71b3e67
+        main_runtime_gate_run: 31146450584
+        main_quality_run: 31146450631
+        main_secret_scan_run: 31146450593
+        main_codeql_run: 31146450576
+        release_run: 31146450614
+        cleanup_run: 31146450571
+        python_distribution_artifact: 8981646972
+        python_distribution_digest: sha256:1ae404deab52790a5f0fad0d8acc3b7b17c7c168afa30ebd030f2ca782b9b375
+        ghcr_build_record_artifact: 8981662218
+        ghcr_build_record_digest: sha256:2d345a90028414febc44f55c35de0ce09f60f096d7238b87e11abba4f90c1eb3
+        focused_tests: 36
+        coordinated_cas_outbox_races: 100
+        critical_double_winners: 0
+        unauthorized_critical_release: 0
+        forgotten_content_release: 0
+        exact_ref_recall_percent: 100
+        required_authority_recall_percent: 100
+        deterministic_replay_percent: 100
+        review_threads: 0
+        cleanup_branches_registered_by_closure: true
+        m1c_goal_issue: 75
     test_assets:
       - memory_off_vs_on
       - repeated_task
@@ -139,6 +174,14 @@ milestones:
       - m1a_namespace_and_acl_cases
       - m1a_runtime_contract_proof
       - m1a_reference_adapter_replay
+      - m1b_sqlite_wal_primary_store
+      - m1b_authority_first_progressive_retrieval
+      - m1b_exact_ref_scale_257
+      - m1b_index_rebuild_and_outbox_recovery
+      - m1b_replay_and_tamper_rejection
+      - m1b_migration_shadow_equivalence
+      - m1b_deterministic_benchmark
+      - m1b_cas_outbox_100_races
     gates:
       status: OPEN
       provenance_percent: 100
@@ -150,22 +193,21 @@ milestones:
         human_intervention_reduction_percent: 20
         token_or_cost_reduction_percent: 20
     governing_spec:
-      id: SPEC-M1A-MEMORY-CONTRACTS-NAMESPACES
-      version: 1.0.0
+      id: SPEC-M1B-STORE-PROGRESSIVE-RETRIEVAL
+      version: 0.1.0
       status: APPROVED
-      goal_issue: 28
-      approval_ref: APPROVAL-M1A-MEMORY-CONTRACTS-NAMESPACES-SPEC@1.0.0
-      merge_commit: 4cc4beb99fa9e45509ea1be240b0c2edebbe6137
-    active_execution:
-      id: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
       goal_issue: 62
+      merge_commit: f0c25b75b9bd2308e862a7ce8ad7d8092de7091f
+    active_execution:
+      id: M1C_MEMORY_FORMATION_SPEC
+      goal_issue: 75
       status: NEXT
       phase: SPEC
       assurance: DEV3
       ux_assurance: UX0
-      objective: define a production Memory Store and progressive retrieval contract that preserves M1A identity authority lifecycle conflict and forget semantics
+      objective: define governed hot-path and background Candidate Memory formation on the durable M1B Store without automatic authority promotion
       implementation_blocked_until_spec_approved: true
-      production_backend_selected: false
+      m1b_dependency_closed_by_this_closure: true
 
   - id: M2
     title: Cross-model generalization and safe degradation
@@ -266,9 +308,8 @@ milestones:
       - Infrastructure sandbox
 
 next_execution_sequence:
-  - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
-  - M1B_IMPLEMENTATION
-  - M1C
+  - M1C_MEMORY_FORMATION_SPEC
+  - M1C_IMPLEMENTATION
   - M1D
   - M1E
   - M1F
