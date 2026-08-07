@@ -5,12 +5,18 @@ on:
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_resilience.py"
+      - "tests/integration/test_m1b_recovery.py"
+      - "tests/integration/test_m1b_migration.py"
+      - "tests/integration/test_m1b_benchmark.py"
       - ".github/workflows/m1b-resilience.yml"
   push:
     branches: [main]
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_resilience.py"
+      - "tests/integration/test_m1b_recovery.py"
+      - "tests/integration/test_m1b_migration.py"
+      - "tests/integration/test_m1b_benchmark.py"
       - ".github/workflows/m1b-resilience.yml"
   workflow_dispatch:
 
@@ -34,12 +40,18 @@ jobs:
         run: |
           uv run ruff check \
             src/test_workflow/memory_store \
-            tests/integration/test_m1b_resilience.py
+            tests/integration/test_m1b_resilience.py \
+            tests/integration/test_m1b_recovery.py \
+            tests/integration/test_m1b_migration.py \
+            tests/integration/test_m1b_benchmark.py
 
-      - name: Prove rebuild replay and prior M1B invariants
+      - name: Prove resilience migration benchmark and prior M1B invariants
         run: |
           uv run pytest \
             tests/integration/test_m1b_resilience.py \
+            tests/integration/test_m1b_recovery.py \
+            tests/integration/test_m1b_migration.py \
+            tests/integration/test_m1b_benchmark.py \
             tests/integration/test_m1b_progressive_retrieval.py \
             tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_memory_contract_reference.py \
