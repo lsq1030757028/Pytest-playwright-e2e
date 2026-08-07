@@ -1,7 +1,5 @@
 import sqlite3
 
-from test_workflow.harness.artifacts import ArtifactEnvelope
-from test_workflow.memory_contracts import MemoryKind
 from test_workflow.memory_formation import FormationRuntime, FormationStatus, SourceClass
 from test_workflow.memory_store import SQLiteMemoryStore
 from tests.integration.test_m1b_progressive_retrieval import make_actor
@@ -10,7 +8,6 @@ from tests.integration.test_m1c_hot_formation import (
     make_request,
     make_runtime,
 )
-from tests.memory_contract_fixtures import make_namespace
 
 
 class SpyArtifactStore:
