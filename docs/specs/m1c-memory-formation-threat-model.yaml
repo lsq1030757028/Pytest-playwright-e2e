@@ -1,0 +1,49 @@
+spec_id: SPEC-M1C-MEMORY-FORMATION-THREAT-MODEL
+version: 0.1.0
+status: CANDIDATE
+
+threats:
+  - id: FORM-T01
+    name: implicit_session_promotion
+    severity: P0
+    defense: explicit_formation_event_required
+
+  - id: FORM-T02
+    name: candidate_bypass
+    severity: P0
+    defense: candidate_only_write_path
+
+  - id: FORM-T03
+    name: provenance_fabrication
+    severity: P0
+    defense: source_ref_hash_validation
+
+  - id: FORM-T04
+    name: prompt_injection_memory
+    severity: P0
+    defense: data_is_not_instruction
+
+  - id: FORM-T05
+    name: namespace_crossing
+    severity: P0
+    defense: formation_acl_validation
+
+  - id: FORM-T06
+    name: benchmark_contamination
+    severity: P0
+    defense: evaluator_fixture_isolation
+
+  - id: FORM-T07
+    name: duplicate_flooding
+    severity: P1
+    defense: idempotent_deterministic_formation
+
+  - id: FORM-T08
+    name: non_replayable_generation
+    severity: P1
+    defense: immutable_formation_evidence_digest
+
+mutation_rules:
+  critical_failures_allowed: 0
+  replay_required: true
+  candidate_promotion_allowed: false
