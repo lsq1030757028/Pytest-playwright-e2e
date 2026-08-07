@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import sqlite3
 
-from ..memory_contracts import LifecycleState, MemoryRevision, StateEvent, canonical_sha256
+from ..memory_contracts import (
+    LifecycleState,
+    MemoryRevision,
+    StateEvent,
+    canonical_sha256,
+)
+from .consolidation import BackgroundConsolidator as _BaseBackgroundConsolidator
 from .consolidation import (
-    BackgroundConsolidator as _BaseBackgroundConsolidator,
     ConsolidationAdmissionError,
     ConsolidationRequest,
     _ParentRecord,
