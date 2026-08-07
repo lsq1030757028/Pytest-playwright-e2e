@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 from ..memory_contracts import canonical_sha256
-from .retrieval import (
-    ProgressiveMemoryRetriever as _BaseProgressiveMemoryRetriever,
-    RetrievalRequest,
-    RetrievalResult,
-    RetrievalStage,
-)
+from .retrieval import ProgressiveMemoryRetriever as _BaseProgressiveMemoryRetriever
+from .retrieval import RetrievalRequest, RetrievalResult, RetrievalStage
 
 
 class ProgressiveMemoryRetriever(_BaseProgressiveMemoryRetriever):
