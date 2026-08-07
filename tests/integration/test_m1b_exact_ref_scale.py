@@ -10,6 +10,7 @@ from test_workflow.memory_contracts import (
 )
 from test_workflow.memory_store import (
     ProgressiveMemoryRetriever,
+    RecallChannel,
     RetrievalRequest,
     SQLiteMemoryStore,
 )
@@ -91,6 +92,11 @@ def test_exact_ref_recall_is_not_limited_by_broad_256_candidate_window(tmp_path)
         cursor_key=b"m1b-exact-scale-cursor-key",
     ).retrieve(request)
 
-    assert [released.ref for released in result.released] == [target.ref]
+    released_refs = [released.ref for released in result.released]
+    assert released_refs[0] == target.ref
+    assert released_refs.count(target.ref) == 1
+    assert RecallChannel.EXACT_REF in {
+        contribution.channel for contribution in result.released[0].contributions
+    }
     assert "EXACT_REF_UNRESOLVED" not in result.omitted_reasons
     assert "REQUIRED_REF_UNRESOLVED" not in result.omitted_reasons
