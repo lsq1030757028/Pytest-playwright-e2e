@@ -5,12 +5,14 @@ on:
     paths:
       - "src/test_workflow/memory_formation/**"
       - "tests/integration/test_m1c_hot_formation.py"
+      - "tests/integration/test_m1c_hot_formation_hardening.py"
       - ".github/workflows/m1c-hot-formation.yml"
   push:
     branches: [main]
     paths:
       - "src/test_workflow/memory_formation/**"
       - "tests/integration/test_m1c_hot_formation.py"
+      - "tests/integration/test_m1c_hot_formation_hardening.py"
       - ".github/workflows/m1c-hot-formation.yml"
   workflow_dispatch:
 
@@ -34,12 +36,14 @@ jobs:
         run: |
           uv run ruff check \
             src/test_workflow/memory_formation \
-            tests/integration/test_m1c_hot_formation.py
+            tests/integration/test_m1c_hot_formation.py \
+            tests/integration/test_m1c_hot_formation_hardening.py
 
       - name: Prove Hot Formation and prior Memory invariants
         run: |
           uv run pytest \
             tests/integration/test_m1c_hot_formation.py \
+            tests/integration/test_m1c_hot_formation_hardening.py \
             tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_m1b_progressive_retrieval.py \
             tests/integration/test_m1b_resilience.py \
