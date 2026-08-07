@@ -165,3 +165,62 @@ def test_tampered_consolidation_replay_blocks_subsequent_consolidation(tmp_path)
             )
         )
     assert exc.value.code is ErrorCode.INTEGRITY_FAILED
+
+
+def test_deleted_formation_event_blocks_subsequent_formation(tmp_path) -> None:
+    db_path = tmp_path / "memory.db"
+    artifacts, source, evidence = make_artifacts()
+    runtime = FormationRuntime(SQLiteMemoryStore(db_path), artifacts)
+    first = runtime.form(make_request(source=source, evidence=evidence))
+    assert first.status is FormationStatus.CREATED_CANDIDATE
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            "DELETE FROM formation_events WHERE event_id = ?",
+            (first.formation_event_ref,),
+        )
+        connection.commit()
+
+    with pytest.raises(MemoryContractError) as exc:
+        runtime.form(
+            make_request(
+                source=source,
+                evidence=evidence,
+                request_id="after-event-delete",
+                idempotency_key="after-event-delete-idem",
+                semantic_subject_key="after-event-delete",
+            )
+        )
+    assert exc.value.code is ErrorCode.INTEGRITY_FAILED
+
+
+def test_deleted_consolidation_replay_blocks_subsequent_consolidation(tmp_path) -> None:
+    db_path = tmp_path / "memory.db"
+    parent = _hot_parent(db_path, claim="timeout is 30 seconds", number=906)
+    consolidator = BackgroundConsolidator(SQLiteMemoryStore(db_path))
+    first_request = _request(
+        parents=(parent,),
+        subject="delete-replay-source",
+        request_id="delete-replay-source",
+        idempotency_key="delete-replay-source-idem",
+    )
+    first = consolidator.consolidate(first_request)
+    assert first.status is ConsolidationStatus.CREATED_CANDIDATE
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            "DELETE FROM consolidation_replay WHERE request_digest = ?",
+            (first_request.request_digest,),
+        )
+        connection.commit()
+
+    with pytest.raises(MemoryContractError) as exc:
+        consolidator.consolidate(
+            _request(
+                parents=(parent,),
+                subject="after-replay-delete",
+                request_id="after-replay-delete",
+                idempotency_key="after-replay-delete-idem",
+            )
+        )
+    assert exc.value.code is ErrorCode.INTEGRITY_FAILED
