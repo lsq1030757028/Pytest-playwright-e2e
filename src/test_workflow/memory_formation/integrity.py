@@ -15,16 +15,26 @@ def verify_formation_integrity(db_path: Path | str) -> None:
             connection.row_factory = sqlite3.Row
             if _table_exists(connection, "formation_events"):
                 for row in connection.execute(
-                    "SELECT event_hash, payload_json FROM formation_events ORDER BY event_id"
+                    """
+                    SELECT event_hash, payload_json
+                    FROM formation_events
+                    ORDER BY event_id
+                    """
                 ):
                     event = FormationEvent.model_validate_json(row["payload_json"])
                     if event.event_hash != row["event_hash"]:
                         raise ValueError("formation event column/hash mismatch")
             if _table_exists(connection, "formation_replay"):
                 for row in connection.execute(
-                    "SELECT manifest_digest, payload_json FROM formation_replay ORDER BY request_digest"
+                    """
+                    SELECT manifest_digest, payload_json
+                    FROM formation_replay
+                    ORDER BY request_digest
+                    """
                 ):
-                    evidence = FormationReplayEvidence.model_validate_json(row["payload_json"])
+                    evidence = FormationReplayEvidence.model_validate_json(
+                        row["payload_json"]
+                    )
                     if evidence.manifest_digest != row["manifest_digest"]:
                         raise ValueError("formation replay column/manifest mismatch")
 
@@ -34,7 +44,11 @@ def verify_formation_integrity(db_path: Path | str) -> None:
                 from .consolidation import ConsolidationEvent
 
                 for row in connection.execute(
-                    "SELECT event_hash, payload_json FROM consolidation_events ORDER BY event_id"
+                    """
+                    SELECT event_hash, payload_json
+                    FROM consolidation_events
+                    ORDER BY event_id
+                    """
                 ):
                     event = ConsolidationEvent.model_validate_json(row["payload_json"])
                     if event.event_hash != row["event_hash"]:
@@ -43,7 +57,11 @@ def verify_formation_integrity(db_path: Path | str) -> None:
                 from .consolidation import ConsolidationReplayEvidence
 
                 for row in connection.execute(
-                    "SELECT manifest_digest, payload_json FROM consolidation_replay ORDER BY request_digest"
+                    """
+                    SELECT manifest_digest, payload_json
+                    FROM consolidation_replay
+                    ORDER BY request_digest
+                    """
                 ):
                     evidence = ConsolidationReplayEvidence.model_validate_json(
                         row["payload_json"]
