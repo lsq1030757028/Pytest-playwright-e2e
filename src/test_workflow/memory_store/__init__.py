@@ -3,6 +3,7 @@ from .benchmark import (
     RetrievalBenchmarkReport,
     RetrievalBenchmarkRunner,
 )
+from .fence import MemoryRevisionFence
 from .index import IndexHit, SQLiteDerivedIndex
 from .migration import MigrationReport, SQLiteMigrationController, StoreManifest
 from .recovery import (
@@ -32,16 +33,24 @@ from .retrieval import (
     RetrievalStatus,
     StageBudget,
 )
-from .sqlite import SQLiteMemoryStore
+from .sqlite_fenced import FencedSQLiteMemoryStore, MemoryFenceViolation
+
+# Public SQLite profile now includes the I3 derived-Memory parent fence. The
+# subclass is behavior-identical to the M1B Store for ordinary writes and only
+# activates the extra fence for consolidation-derived revisions.
+SQLiteMemoryStore = FencedSQLiteMemoryStore
 
 __all__ = [
     "BudgetConsumption",
     "ChannelContribution",
     "FailClosedRetrievalGateway",
+    "FencedSQLiteMemoryStore",
     "IndexHealthReport",
     "IndexHealthStatus",
     "IndexHit",
     "IndexRebuildReport",
+    "MemoryFenceViolation",
+    "MemoryRevisionFence",
     "MigrationReport",
     "OutboxHealthReport",
     "OutboxRecoveryReport",
