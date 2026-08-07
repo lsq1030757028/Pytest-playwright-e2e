@@ -3,6 +3,7 @@ from .benchmark import (
     RetrievalBenchmarkReport,
     RetrievalBenchmarkRunner,
 )
+from .fence import MemoryRevisionFence
 from .index import IndexHit, SQLiteDerivedIndex
 from .migration import MigrationReport, SQLiteMigrationController, StoreManifest
 from .recovery import (
@@ -33,15 +34,19 @@ from .retrieval import (
     StageBudget,
 )
 from .sqlite import SQLiteMemoryStore
+from .sqlite_fenced import FencedSQLiteMemoryStore, MemoryFenceViolation
 
 __all__ = [
     "BudgetConsumption",
     "ChannelContribution",
     "FailClosedRetrievalGateway",
+    "FencedSQLiteMemoryStore",
     "IndexHealthReport",
     "IndexHealthStatus",
     "IndexHit",
     "IndexRebuildReport",
+    "MemoryFenceViolation",
+    "MemoryRevisionFence",
     "MigrationReport",
     "OutboxHealthReport",
     "OutboxRecoveryReport",
