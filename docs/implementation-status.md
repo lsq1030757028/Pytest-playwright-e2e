@@ -28,11 +28,30 @@ M1E Controlled Evolution：PLANNED
 M1F Memory Gate：PLANNED
 M1 Memory Gate：OPEN (0 / 1)
 Stage Delivery：NOT_READY
+
+UX0 Synthetic User Shadow Runtime：MERGED / CLOSED
+TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
+UX Mutation Proof Runner：MERGED / CLOSED
+UX Gate Mode：SHADOW / NONBLOCKING
+Human UAT：REQUIRED
 ```
 
 M1B 已从“Memory 规则”推进到真实可运行的持久化与检索系统：SQLite WAL Primary Store、Hot/Warm/Cold Progressive Retrieval、派生索引、Primary Revalidation、Outbox Recovery、Index Rebuild、Replay/Tamper、Migration/Rollback 和 Benchmark 均已进入 `main` 并完成主干与发布验证。
 
 这不等于 M1 Memory 已完成。M1C Formation、M1D Shared Governance、M1E Controlled Evolution 和 M1F Memory Gate 尚未关闭，因此 Memory Gate 继续保持 `OPEN`，阶段产品仍为 `NOT_READY`。
+
+UX0 / UX1 既有能力不因 Memory 主线推进而回退：Synthetic User 与 Mutation Proof 继续保持已交付，Release Effect 仍为 Shadow / Nonblocking，Human UAT 仍为 Required。
+
+### 历史状态迁移记录
+
+为保持旧交付证据可审计，以下字符串仅记录**已被当前状态取代的历史指针**，不是当前执行状态：
+
+```text
+M1B Store & Progressive Retrieval：NEXT / SPEC
+M1 Memory Gate：0 / 1
+```
+
+它们分别已经迁移为当前的 `M1B：MERGED / CLOSED → M1C：NEXT / SPEC` 与 `M1 Memory Gate：OPEN (0 / 1)`。
 
 ---
 
