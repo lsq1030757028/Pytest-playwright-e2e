@@ -23,7 +23,9 @@ class StoreManifest(FrozenModel):
     state_event_hashes: tuple[str, ...]
     acl_event_digests: tuple[str, ...]
     audit_event_hashes: tuple[str, ...]
+    idempotency_digests: tuple[str, ...]
     tombstone_digests: tuple[str, ...]
+    outbox_event_digests: tuple[str, ...]
     digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
@@ -82,8 +84,23 @@ class SQLiteMigrationController:
             audit_rows = connection.execute(
                 "SELECT event_hash FROM audit_events ORDER BY sequence"
             ).fetchall()
+            idempotency_rows = connection.execute(
+                """
+                SELECT idempotency_key, memory_id, request_fingerprint, result_json
+                FROM idempotency
+                ORDER BY idempotency_key
+                """
+            ).fetchall()
             tombstone_rows = connection.execute(
                 "SELECT memory_id, payload_json FROM tombstones ORDER BY memory_id"
+            ).fetchall()
+            outbox_rows = connection.execute(
+                """
+                SELECT sequence, event_id, event_type, memory_id, namespace,
+                       payload_json, applied
+                FROM outbox
+                ORDER BY sequence
+                """
             ).fetchall()
 
         revision_payloads = [json.loads(row["payload_json"]) for row in revision_rows]
@@ -109,6 +126,17 @@ class SQLiteMigrationController:
             for row in acl_rows
         )
         audit_event_hashes = tuple(row["event_hash"] for row in audit_rows)
+        idempotency_digests = tuple(
+            canonical_sha256(
+                {
+                    "idempotency_key": row["idempotency_key"],
+                    "memory_id": row["memory_id"],
+                    "request_fingerprint": row["request_fingerprint"],
+                    "result": json.loads(row["result_json"]),
+                }
+            )
+            for row in idempotency_rows
+        )
         tombstone_digests = tuple(
             canonical_sha256(
                 {
@@ -118,6 +146,20 @@ class SQLiteMigrationController:
             )
             for row in tombstone_rows
         )
+        outbox_event_digests = tuple(
+            canonical_sha256(
+                {
+                    "sequence": int(row["sequence"]),
+                    "event_id": row["event_id"],
+                    "event_type": row["event_type"],
+                    "memory_id": row["memory_id"],
+                    "namespace": row["namespace"],
+                    "payload": json.loads(row["payload_json"]),
+                    "applied": bool(row["applied"]),
+                }
+            )
+            for row in outbox_rows
+        )
         payload = {
             "schema_version": str(schema_row["value"]),
             "revision_refs": revision_refs,
@@ -126,7 +168,9 @@ class SQLiteMigrationController:
             "state_event_hashes": state_event_hashes,
             "acl_event_digests": acl_event_digests,
             "audit_event_hashes": audit_event_hashes,
+            "idempotency_digests": idempotency_digests,
             "tombstone_digests": tombstone_digests,
+            "outbox_event_digests": outbox_event_digests,
         }
         return StoreManifest(**payload, digest=canonical_sha256(payload))
 
