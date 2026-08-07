@@ -24,7 +24,7 @@ class SpyArtifactStore:
 
 def test_target_authority_is_denied_before_any_artifact_read(tmp_path) -> None:
     artifacts, source, evidence = make_artifacts()
-    db_path, store, _runtime = make_runtime(tmp_path, artifacts)
+    db_path, store, authorized_runtime = make_runtime(tmp_path, artifacts)
     spy = SpyArtifactStore()
     runtime = FormationRuntime(store, spy)
     request = make_request(source=source, evidence=evidence).model_copy(
@@ -42,6 +42,18 @@ def test_target_authority_is_denied_before_any_artifact_read(tmp_path) -> None:
     assert spy.get_calls == 0
     with sqlite3.connect(db_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM revisions").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM formation_idempotency").fetchone()[0] == 0
+
+    # An unauthorized caller must not be able to squat a guessed idempotency key
+    # and deny a later authorized formation request.
+    authorized_request = make_request(
+        source=source,
+        evidence=evidence,
+        request_id="authorized-after-denial",
+        idempotency_key=request.idempotency_key,
+    )
+    authorized_result = authorized_runtime.form(authorized_request)
+    assert authorized_result.status is FormationStatus.CREATED_CANDIDATE
 
 
 def test_retry_after_result_loss_reuses_same_candidate_without_second_revision(tmp_path) -> None:
