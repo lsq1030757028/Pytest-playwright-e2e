@@ -5,12 +5,14 @@ on:
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_sqlite_store.py"
+      - "tests/integration/test_m1b_progressive_retrieval.py"
       - ".github/workflows/m1b-primary-store.yml"
   push:
     branches: [main]
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_sqlite_store.py"
+      - "tests/integration/test_m1b_progressive_retrieval.py"
       - ".github/workflows/m1b-primary-store.yml"
   workflow_dispatch:
 
@@ -30,16 +32,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      - name: Lint M1B primary Store
+      - name: Lint M1B primary Store and retrieval
         run: |
           uv run ruff check \
             src/test_workflow/memory_store \
-            tests/integration/test_m1b_sqlite_store.py
+            tests/integration/test_m1b_sqlite_store.py \
+            tests/integration/test_m1b_progressive_retrieval.py
 
-      - name: Prove durable Store and preserved M1A contracts
+      - name: Prove durable Store, progressive retrieval and preserved M1A contracts
         run: |
           uv run pytest \
             tests/integration/test_m1b_sqlite_store.py \
+            tests/integration/test_m1b_progressive_retrieval.py \
             tests/integration/test_memory_contract_reference.py \
             tests/integration/test_memory_contract_security_regression.py \
             -q
