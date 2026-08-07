@@ -9,6 +9,7 @@ on:
       - "src/test_workflow/memory_store/__init__.py"
       - "tests/integration/test_m1c_parent_fence_races.py"
       - "tests/integration/test_m1c_contamination_integrity.py"
+      - "tests/integration/test_m1c_mutation_proof.py"
       - "tests/integration/test_m1c_background_consolidation*.py"
       - "tests/integration/test_m1c_hot_formation*.py"
       - "tests/unit/test_m1c_poisoning_normalization.py"
@@ -22,6 +23,7 @@ on:
       - "src/test_workflow/memory_store/__init__.py"
       - "tests/integration/test_m1c_parent_fence_races.py"
       - "tests/integration/test_m1c_contamination_integrity.py"
+      - "tests/integration/test_m1c_mutation_proof.py"
       - "tests/integration/test_m1c_background_consolidation*.py"
       - "tests/integration/test_m1c_hot_formation*.py"
       - "tests/unit/test_m1c_poisoning_normalization.py"
@@ -52,17 +54,19 @@ jobs:
             src/test_workflow/memory_store/sqlite_fenced.py \
             tests/integration/test_m1c_parent_fence_races.py \
             tests/integration/test_m1c_contamination_integrity.py \
+            tests/integration/test_m1c_mutation_proof.py \
             tests/integration/test_m1c_background_consolidation.py \
             tests/integration/test_m1c_background_consolidation_hardening.py \
             tests/integration/test_m1c_hot_formation.py \
             tests/integration/test_m1c_hot_formation_hardening.py \
             tests/unit/test_m1c_poisoning_normalization.py
 
-      - name: Prove M1C poisoning replay concurrency and prior Memory invariants
+      - name: Prove M1C poisoning replay concurrency mutation and prior Memory invariants
         run: |
           uv run pytest \
             tests/integration/test_m1c_parent_fence_races.py \
             tests/integration/test_m1c_contamination_integrity.py \
+            tests/integration/test_m1c_mutation_proof.py \
             tests/integration/test_m1c_background_consolidation.py \
             tests/integration/test_m1c_background_consolidation_hardening.py \
             tests/integration/test_m1c_hot_formation.py \
