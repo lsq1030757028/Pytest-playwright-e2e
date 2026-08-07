@@ -175,7 +175,7 @@ class SQLiteOutboxRecovery:
                         INSERT INTO outbox(
                             event_id, event_type, memory_id, namespace,
                             payload_json, created_at, applied
-                        ) VALUES (?, 'REVISION_RECONCILED', ?, ?, ?, ?, 0)
+                        ) VALUES (?, 'REVISION_COMMITTED', ?, ?, ?, ?, 0)
                         """,
                         (
                             event_id,
