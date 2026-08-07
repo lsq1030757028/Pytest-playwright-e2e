@@ -5,12 +5,14 @@ on:
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_progressive_retrieval.py"
+      - "tests/integration/test_m1b_exact_ref_scale.py"
       - ".github/workflows/m1b-progressive-retrieval.yml"
   push:
     branches: [main]
     paths:
       - "src/test_workflow/memory_store/**"
       - "tests/integration/test_m1b_progressive_retrieval.py"
+      - "tests/integration/test_m1b_exact_ref_scale.py"
       - ".github/workflows/m1b-progressive-retrieval.yml"
   workflow_dispatch:
 
@@ -34,12 +36,14 @@ jobs:
         run: |
           uv run ruff check \
             src/test_workflow/memory_store \
-            tests/integration/test_m1b_progressive_retrieval.py
+            tests/integration/test_m1b_progressive_retrieval.py \
+            tests/integration/test_m1b_exact_ref_scale.py
 
       - name: Prove authority-first progressive retrieval
         run: |
           uv run pytest \
             tests/integration/test_m1b_progressive_retrieval.py \
+            tests/integration/test_m1b_exact_ref_scale.py \
             tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_memory_contract_reference.py \
             tests/integration/test_memory_contract_security_regression.py \
