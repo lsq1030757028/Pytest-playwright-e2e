@@ -1,26 +1,24 @@
-name: m1b-primary-store
+name: m1b-progressive-retrieval
 
 on:
   pull_request:
     paths:
       - "src/test_workflow/memory_store/**"
-      - "tests/integration/test_m1b_sqlite_store.py"
       - "tests/integration/test_m1b_progressive_retrieval.py"
-      - ".github/workflows/m1b-primary-store.yml"
+      - ".github/workflows/m1b-progressive-retrieval.yml"
   push:
     branches: [main]
     paths:
       - "src/test_workflow/memory_store/**"
-      - "tests/integration/test_m1b_sqlite_store.py"
       - "tests/integration/test_m1b_progressive_retrieval.py"
-      - ".github/workflows/m1b-primary-store.yml"
+      - ".github/workflows/m1b-progressive-retrieval.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate-primary-store:
+  validate-progressive-retrieval:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -32,18 +30,17 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      - name: Lint M1B primary Store and retrieval
+      - name: Lint M1B retrieval
         run: |
           uv run ruff check \
             src/test_workflow/memory_store \
-            tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_m1b_progressive_retrieval.py
 
-      - name: Prove durable Store, progressive retrieval and preserved M1A contracts
+      - name: Prove authority-first progressive retrieval
         run: |
           uv run pytest \
-            tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_m1b_progressive_retrieval.py \
+            tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_memory_contract_reference.py \
             tests/integration/test_memory_contract_security_regression.py \
             -q
