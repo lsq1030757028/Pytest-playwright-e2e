@@ -546,24 +546,23 @@ class SQLiteMemoryStore(DeterministicMemoryReference):
     def _run_write(self, operation: Callable[[], T]) -> T:
         if self._active_connection is not None:
             return operation()
-        with self._lock:
-            with closing(self._connect()) as connection:
-                connection.execute("BEGIN IMMEDIATE")
-                self._active_connection = connection
-                try:
-                    self._reload_from_connection(connection)
-                    before = self._capture_state()
-                    result = operation()
-                    self._persist_delta(connection, before)
-                    connection.commit()
-                    return result
-                except Exception:
-                    connection.rollback()
-                    self._active_connection = None
-                    self._reload_from_database()
-                    raise
-                finally:
-                    self._active_connection = None
+        with self._lock, closing(self._connect()) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            self._active_connection = connection
+            try:
+                self._reload_from_connection(connection)
+                before = self._capture_state()
+                result = operation()
+                self._persist_delta(connection, before)
+                connection.commit()
+                return result
+            except Exception:
+                connection.rollback()
+                self._active_connection = None
+                self._reload_from_database()
+                raise
+            finally:
+                self._active_connection = None
 
     def _run_read(self, operation: Callable[[], T]) -> T:
         if self._active_connection is not None or self._read_depth > 0:
