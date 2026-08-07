@@ -8,15 +8,16 @@ import math
 import sqlite3
 import time
 from collections.abc import Callable
+from contextlib import closing
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..memory_contracts import (
     AccessOperation,
-    Decision,
+    CompatibilityContext,
     LifecycleState,
     MemoryKind,
     MemoryNamespace,
@@ -29,13 +30,13 @@ from .index import IndexHit, SQLiteDerivedIndex
 from .sqlite import SQLiteMemoryStore
 
 
-class RetrievalStage(str, Enum):
+class RetrievalStage(StrEnum):
     HOT = "HOT"
     WARM = "WARM"
     COLD = "COLD"
 
 
-class RetrievalStatus(str, Enum):
+class RetrievalStatus(StrEnum):
     COMPLETE = "COMPLETE"
     COMPLETE_WITH_LIMITS = "COMPLETE_WITH_LIMITS"
     DEGRADED = "DEGRADED"
@@ -43,7 +44,7 @@ class RetrievalStatus(str, Enum):
     BLOCKED = "BLOCKED"
 
 
-class RecallChannel(str, Enum):
+class RecallChannel(StrEnum):
     EXACT_REF = "exact_ref"
     METADATA = "metadata"
     KEYWORD = "keyword"
@@ -99,8 +100,6 @@ LIFECYCLE_PRIORITY = {
     LifecycleState.CANDIDATE: 1,
 }
 
-Ranker = Callable[["RetrievalRequest", tuple[MemoryRevision, ...]], tuple[str, ...]]
-
 
 class RetrievalRequest(FrozenModel):
     request_id: str = Field(min_length=1)
@@ -110,7 +109,7 @@ class RetrievalRequest(FrozenModel):
     objective_ref: str = Field(min_length=1)
     objective_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     authority_refs: tuple[str, ...] = ()
-    compatibility_context: Any | None = None
+    compatibility_context: CompatibilityContext | None = None
     evaluation_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
     exact_refs: tuple[str, ...] = ()
     required_refs: tuple[str, ...] = ()
@@ -124,8 +123,11 @@ class RetrievalRequest(FrozenModel):
     cursor: str | None = None
 
     @model_validator(mode="after")
-    def validate_request(self) -> "RetrievalRequest":
-        if self.evaluation_time.tzinfo is None or self.evaluation_time.utcoffset() is None:
+    def validate_request(self) -> RetrievalRequest:
+        if (
+            self.evaluation_time.tzinfo is None
+            or self.evaluation_time.utcoffset() is None
+        ):
             raise ValueError("evaluation_time must be timezone-aware")
         canonicals = [namespace.canonical for namespace in self.namespaces]
         if len(set(canonicals)) != len(canonicals):
@@ -138,6 +140,9 @@ class RetrievalRequest(FrozenModel):
     @property
     def request_digest(self) -> str:
         return canonical_sha256(self.binding_payload())
+
+
+Ranker = Callable[[RetrievalRequest, tuple[MemoryRevision, ...]], tuple[str, ...]]
 
 
 class ChannelContribution(FrozenModel):
@@ -200,7 +205,9 @@ class ProgressiveMemoryRetriever:
         self.cursor_key = cursor_key
         self.vector_ranker = vector_ranker
         self.graph_ranker = graph_ranker
-        self.monotonic_ms = monotonic_ms or (lambda: int(time.perf_counter() * 1000))
+        self.monotonic_ms = monotonic_ms or (
+            lambda: int(time.perf_counter() * 1000)
+        )
         self.sync_index = sync_index
 
     def retrieve(self, request: RetrievalRequest) -> RetrievalResult:
@@ -238,7 +245,11 @@ class ProgressiveMemoryRetriever:
             degraded = True
             omitted.append("INDEX_UNAVAILABLE_PRIMARY_HOT_FALLBACK")
 
-        if index_available and self.index is not None and self.index.pending_count() > 0:
+        if (
+            index_available
+            and self.index is not None
+            and self.index.pending_count() > 0
+        ):
             degraded = True
             omitted.append("INDEX_STALE_PRIMARY_REVALIDATION_REQUIRED")
 
@@ -246,7 +257,10 @@ class ProgressiveMemoryRetriever:
         eligible = tuple(
             revision
             for revision in eligible
-            if (request.memory_kind is None or revision.memory_kind is request.memory_kind)
+            if (
+                request.memory_kind is None
+                or revision.memory_kind is request.memory_kind
+            )
             and (
                 request.schema_version is None
                 or revision.schema_version == request.schema_version
@@ -265,20 +279,13 @@ class ProgressiveMemoryRetriever:
         offset = 0
         if request.cursor is not None:
             payload = self._decode_cursor(request.cursor)
-            expected = {
-                "request_digest": request.request_digest,
-                "actor_digest": canonical_sha256(request.actor),
-                "namespace_digest": canonical_sha256(
-                    sorted(namespace.canonical for namespace in request.namespaces)
-                ),
-                "read_mode": request.read_mode.value,
-                "primary_snapshot": primary_snapshot,
-                "index_snapshot": index_snapshot,
-                "acl_epoch": acl_epoch,
-                "forget_epoch": forget_epoch,
-                "filter_version": "m1b-filter@1",
-                "fusion_version": "weighted-rrf-k60@1",
-            }
+            expected = self._cursor_binding(
+                request=request,
+                primary_snapshot=primary_snapshot,
+                index_snapshot=index_snapshot,
+                acl_epoch=acl_epoch,
+                forget_epoch=forget_epoch,
+            )
             for key, value in expected.items():
                 if payload.get(key) != value:
                     raise ValueError(f"cursor binding mismatch: {key}")
@@ -288,7 +295,11 @@ class ProgressiveMemoryRetriever:
                 raise ValueError("cursor offset is invalid")
 
         if not eligible:
-            status = RetrievalStatus.DEGRADED if degraded else RetrievalStatus.INSUFFICIENT_EVIDENCE
+            status = (
+                RetrievalStatus.DEGRADED
+                if degraded
+                else RetrievalStatus.INSUFFICIENT_EVIDENCE
+            )
             return self._empty_result(
                 request=request,
                 status=status,
@@ -299,22 +310,38 @@ class ProgressiveMemoryRetriever:
                 index_snapshot=index_snapshot,
             )
 
-        # A required ref missing after authority/lifecycle filtering cannot be
-        # recovered by a relevance channel, so do not widen the search.
-        if not set(request.required_refs) <= set(eligible_map):
+        strong_refs = set(request.required_refs) | set(request.exact_refs)
+        if not strong_refs <= set(eligible_map):
+            missing_exact = not set(request.exact_refs) <= set(eligible_map)
+            reason = (
+                "EXACT_REF_UNRESOLVED"
+                if missing_exact
+                else "REQUIRED_REF_UNRESOLVED"
+            )
+            status = (
+                RetrievalStatus.DEGRADED
+                if degraded
+                else RetrievalStatus.INSUFFICIENT_EVIDENCE
+            )
             return self._empty_result(
                 request=request,
-                status=(RetrievalStatus.DEGRADED if degraded else RetrievalStatus.INSUFFICIENT_EVIDENCE),
+                status=status,
                 stage=RetrievalStage.HOT,
-                omitted=tuple(omitted) + ("REQUIRED_REF_UNRESOLVED",),
+                omitted=tuple(omitted) + (reason,),
                 started=started,
                 primary_snapshot=primary_snapshot,
                 index_snapshot=index_snapshot,
             )
 
-        stages = [cursor_stage] if cursor_stage is not None else [RetrievalStage.HOT, RetrievalStage.WARM, RetrievalStage.COLD]
+        stages = (
+            [cursor_stage]
+            if cursor_stage is not None
+            else [RetrievalStage.HOT, RetrievalStage.WARM, RetrievalStage.COLD]
+        )
         final_stage = RetrievalStage.HOT
-        final_ranked: list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]] = []
+        final_ranked: list[
+            tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+        ] = []
         final_candidates = 0
         status = RetrievalStatus.INSUFFICIENT_EVIDENCE
 
@@ -351,17 +378,26 @@ class ProgressiveMemoryRetriever:
                 release_limit=budget.release_limit,
                 token_limit=budget.token_limit,
             )
-            coverage_met = (
-                len(preview) >= request.minimum_releases
-                and set(request.required_refs)
-                <= {revision.ref for revision, _score, _contributions in preview}
+            coverage_met = self._coverage_met(
+                request=request,
+                stage=stage,
+                preview=preview,
+                cursor_page=cursor_stage is not None,
             )
             elapsed = max(0, self.monotonic_ms() - started)
             if coverage_met:
-                status = RetrievalStatus.DEGRADED if degraded else RetrievalStatus.COMPLETE
+                status = (
+                    RetrievalStatus.DEGRADED
+                    if degraded
+                    else RetrievalStatus.COMPLETE
+                )
                 break
             if elapsed >= budget.latency_ms:
-                status = RetrievalStatus.DEGRADED if degraded else RetrievalStatus.COMPLETE_WITH_LIMITS
+                status = (
+                    RetrievalStatus.DEGRADED
+                    if degraded
+                    else RetrievalStatus.COMPLETE_WITH_LIMITS
+                )
                 omitted.append("TIME_BUDGET_EXHAUSTED")
                 break
             if stage is RetrievalStage.HOT and not index_available:
@@ -389,9 +425,9 @@ class ProgressiveMemoryRetriever:
             token_limit=budget.token_limit,
         )
 
-        # Re-evaluate the primary Store after relevance ranking. A stale index or
-        # concurrent lifecycle/Forget change may only remove results, never add authority.
-        revalidated = {revision.ref: revision for revision in self._eligible_revisions(request)}
+        revalidated = {
+            revision.ref: revision for revision in self._eligible_revisions(request)
+        }
         released: list[ReleasedMemory] = []
         for revision, score, contributions in page:
             current = revalidated.get(revision.ref)
@@ -410,37 +446,38 @@ class ProgressiveMemoryRetriever:
                     lifecycle_state=state,
                     content=dict(current.content),
                     fusion_score=score,
-                    release_reason="PRIMARY_REVALIDATED_AFTER_AUTHORITY_FIRST_FILTER",
+                    release_reason=(
+                        "PRIMARY_REVALIDATED_AFTER_AUTHORITY_FIRST_FILTER"
+                    ),
                     contributions=contributions,
                 )
             )
 
-        if degraded and status not in {RetrievalStatus.BLOCKED, RetrievalStatus.INSUFFICIENT_EVIDENCE}:
+        if degraded and status not in {
+            RetrievalStatus.BLOCKED,
+            RetrievalStatus.INSUFFICIENT_EVIDENCE,
+        }:
             status = RetrievalStatus.DEGRADED
-        if not released and status in {RetrievalStatus.COMPLETE, RetrievalStatus.COMPLETE_WITH_LIMITS}:
+        if not released and status in {
+            RetrievalStatus.COMPLETE,
+            RetrievalStatus.COMPLETE_WITH_LIMITS,
+        }:
             status = RetrievalStatus.INSUFFICIENT_EVIDENCE
 
         next_cursor = None
         next_offset = offset + len(page)
-        if next_offset < len(final_ranked):
-            next_cursor = self._encode_cursor(
-                {
-                    "request_digest": request.request_digest,
-                    "actor_digest": canonical_sha256(request.actor),
-                    "namespace_digest": canonical_sha256(
-                        sorted(namespace.canonical for namespace in request.namespaces)
-                    ),
-                    "read_mode": request.read_mode.value,
-                    "primary_snapshot": primary_snapshot,
-                    "index_snapshot": index_snapshot,
-                    "acl_epoch": acl_epoch,
-                    "forget_epoch": forget_epoch,
-                    "filter_version": "m1b-filter@1",
-                    "fusion_version": "weighted-rrf-k60@1",
-                    "stage": final_stage.value,
-                    "offset": next_offset,
-                }
+        if page and next_offset < len(final_ranked):
+            cursor_payload = self._cursor_binding(
+                request=request,
+                primary_snapshot=primary_snapshot,
+                index_snapshot=index_snapshot,
+                acl_epoch=acl_epoch,
+                forget_epoch=forget_epoch,
             )
+            cursor_payload.update(
+                {"stage": final_stage.value, "offset": next_offset}
+            )
+            next_cursor = self._encode_cursor(cursor_payload)
 
         elapsed = max(0, self.monotonic_ms() - started)
         evidence_payload = {
@@ -448,7 +485,11 @@ class ProgressiveMemoryRetriever:
             "stage": final_stage.value,
             "status": status.value,
             "released": [
-                {"ref": item.ref, "hash": item.content_hash, "score": item.fusion_score}
+                {
+                    "ref": item.ref,
+                    "hash": item.content_hash,
+                    "score": item.fusion_score,
+                }
                 for item in released
             ],
             "omitted": tuple(omitted),
@@ -474,7 +515,40 @@ class ProgressiveMemoryRetriever:
             evidence_digest=canonical_sha256(evidence_payload),
         )
 
-    def _eligible_revisions(self, request: RetrievalRequest) -> tuple[MemoryRevision, ...]:
+    def _coverage_met(
+        self,
+        *,
+        request: RetrievalRequest,
+        stage: RetrievalStage,
+        preview: list[
+            tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+        ],
+        cursor_page: bool,
+    ) -> bool:
+        if cursor_page:
+            return bool(preview)
+        if stage is RetrievalStage.HOT and (
+            request.vector_query_ref or request.graph_seed_refs
+        ):
+            return False
+        refs = {revision.ref for revision, _score, _contributions in preview}
+        if len(preview) < request.minimum_releases:
+            return False
+        if not (set(request.required_refs) | set(request.exact_refs)) <= refs:
+            return False
+        if request.keywords:
+            has_keyword = any(
+                contribution.channel is RecallChannel.KEYWORD
+                for _revision, _score, contributions in preview
+                for contribution in contributions
+            )
+            if not has_keyword:
+                return False
+        return True
+
+    def _eligible_revisions(
+        self, request: RetrievalRequest
+    ) -> tuple[MemoryRevision, ...]:
         if request.read_mode is ReadMode.ADVISORY:
             modes = (
                 ReadMode.ADVISORY,
@@ -482,7 +556,10 @@ class ProgressiveMemoryRetriever:
                 ReadMode.PRODUCTION_RETRIEVAL,
             )
         elif request.read_mode is ReadMode.EVIDENCE_BEARING:
-            modes = (ReadMode.EVIDENCE_BEARING, ReadMode.PRODUCTION_RETRIEVAL)
+            modes = (
+                ReadMode.EVIDENCE_BEARING,
+                ReadMode.PRODUCTION_RETRIEVAL,
+            )
         else:
             modes = (ReadMode.PRODUCTION_RETRIEVAL,)
         selected: dict[str, MemoryRevision] = {}
@@ -497,7 +574,13 @@ class ProgressiveMemoryRetriever:
             )
             selected.update({revision.ref: revision for revision in revisions})
         return tuple(
-            sorted(selected.values(), key=lambda revision: (revision.namespace.canonical, revision.ref))
+            sorted(
+                selected.values(),
+                key=lambda revision: (
+                    revision.namespace.canonical,
+                    revision.ref,
+                ),
+            )
         )
 
     def _channel_ranks(
@@ -520,18 +603,23 @@ class ProgressiveMemoryRetriever:
         if index_available and self.index is not None:
             metadata = self.index.metadata_rank(
                 eligible_refs=eligible_refs,
-                memory_kind=request.memory_kind.value if request.memory_kind else None,
+                memory_kind=(
+                    request.memory_kind.value if request.memory_kind else None
+                ),
                 schema_version=request.schema_version,
             )
-            channels[RecallChannel.METADATA] = tuple(hit.ref for hit in metadata)
+            channels[RecallChannel.METADATA] = tuple(
+                hit.ref for hit in metadata
+            )
             if request.keywords:
                 keyword = self.index.keyword_rank(
                     eligible_refs=eligible_refs,
                     keywords=request.keywords,
                 )
-                channels[RecallChannel.KEYWORD] = tuple(hit.ref for hit in keyword)
+                channels[RecallChannel.KEYWORD] = tuple(
+                    hit.ref for hit in keyword
+                )
         else:
-            # Required degraded behavior: bounded primary fallback, Hot only.
             channels[RecallChannel.METADATA] = tuple(
                 revision.ref
                 for revision in sorted(
@@ -542,7 +630,10 @@ class ProgressiveMemoryRetriever:
             )
             if request.keywords:
                 channels[RecallChannel.KEYWORD] = tuple(
-                    hit.ref for hit in self._primary_keyword_rank(eligible, request.keywords)
+                    hit.ref
+                    for hit in self._primary_keyword_rank(
+                        eligible, request.keywords
+                    )
                 )
 
         if stage in {RetrievalStage.WARM, RetrievalStage.COLD}:
@@ -551,23 +642,30 @@ class ProgressiveMemoryRetriever:
                     omissions.append("VECTOR_UNAVAILABLE")
                 else:
                     channels[RecallChannel.VECTOR] = self._safe_adapter_ranks(
-                        self.vector_ranker(request, eligible), eligible_set
+                        self.vector_ranker(request, eligible),
+                        eligible_set,
                     )
             if request.graph_seed_refs:
                 if self.graph_ranker is None:
                     omissions.append("GRAPH_UNAVAILABLE")
                 else:
                     channels[RecallChannel.GRAPH] = self._safe_adapter_ranks(
-                        self.graph_ranker(request, eligible), eligible_set
+                        self.graph_ranker(request, eligible),
+                        eligible_set,
                     )
         if stage is RetrievalStage.COLD and self.index is not None:
             channels[RecallChannel.ARCHIVE] = tuple(
-                hit.ref for hit in self.index.archive_rank(eligible_refs=eligible_refs)
+                hit.ref
+                for hit in self.index.archive_rank(
+                    eligible_refs=eligible_refs
+                )
             )
         return channels, tuple(omissions)
 
     @staticmethod
-    def _safe_adapter_ranks(refs: tuple[str, ...], eligible_set: set[str]) -> tuple[str, ...]:
+    def _safe_adapter_ranks(
+        refs: tuple[str, ...], eligible_set: set[str]
+    ) -> tuple[str, ...]:
         seen: set[str] = set()
         safe: list[str] = []
         for ref in refs:
@@ -580,47 +678,77 @@ class ProgressiveMemoryRetriever:
     def _primary_keyword_rank(
         eligible: tuple[MemoryRevision, ...], keywords: tuple[str, ...]
     ) -> tuple[IndexHit, ...]:
-        normalized = {keyword.casefold() for keyword in keywords if keyword.strip()}
+        normalized = {
+            keyword.casefold() for keyword in keywords if keyword.strip()
+        }
         scored: list[tuple[int, datetime, str]] = []
         for revision in eligible:
-            text = json.dumps(revision.content, ensure_ascii=False, sort_keys=True).casefold()
+            text = json.dumps(
+                revision.content,
+                ensure_ascii=False,
+                sort_keys=True,
+            ).casefold()
             matched = sum(1 for keyword in normalized if keyword in text)
             if matched:
                 scored.append((matched, revision.created_at, revision.ref))
-        scored.sort(key=lambda item: (-item[0], -item[1].timestamp(), item[2]))
+        scored.sort(
+            key=lambda item: (-item[0], -item[1].timestamp(), item[2])
+        )
         return tuple(
             IndexHit(ref=ref, rank=rank, score=matched)
-            for rank, (matched, _created_at, ref) in enumerate(scored, start=1)
+            for rank, (matched, _created_at, ref) in enumerate(
+                scored, start=1
+            )
         )
 
     def _fuse(
         self,
         eligible: tuple[MemoryRevision, ...],
         channel_ranks: dict[RecallChannel, tuple[str, ...]],
-    ) -> list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]]:
+    ) -> list[
+        tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+    ]:
         eligible_map = {revision.ref: revision for revision in eligible}
         contribution_map: dict[str, list[ChannelContribution]] = {}
         for channel, refs in channel_ranks.items():
             for rank, ref in enumerate(refs, start=1):
                 if ref not in eligible_map:
                     continue
-                value = round(CHANNEL_WEIGHTS[channel] / (60 + rank), 12)
-                contribution_map.setdefault(ref, []).append(
-                    ChannelContribution(channel=channel, rank=rank, weighted_rrf=value)
+                value = round(
+                    CHANNEL_WEIGHTS[channel] / (60 + rank), 12
                 )
-        ranked: list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]] = []
+                contribution_map.setdefault(ref, []).append(
+                    ChannelContribution(
+                        channel=channel,
+                        rank=rank,
+                        weighted_rrf=value,
+                    )
+                )
+        ranked: list[
+            tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+        ] = []
         for ref, contributions in contribution_map.items():
             revision = eligible_map[ref]
-            score = round(sum(item.weighted_rrf for item in contributions), 12)
+            score = round(
+                sum(item.weighted_rrf for item in contributions), 12
+            )
             ranked.append((revision, score, tuple(contributions)))
 
-        def sort_key(item: tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]):
+        def sort_key(
+            item: tuple[
+                MemoryRevision,
+                float,
+                tuple[ChannelContribution, ...],
+            ],
+        ):
             revision, score, contributions = item
             exact = any(
                 contribution.channel is RecallChannel.EXACT_REF
                 for contribution in contributions
             )
-            state = self.store.get_effective_state(memory_id=revision.memory_id)
+            state = self.store.get_effective_state(
+                memory_id=revision.memory_id
+            )
             return (
                 -score,
                 -int(exact),
@@ -636,18 +764,29 @@ class ProgressiveMemoryRetriever:
 
     @staticmethod
     def _estimate_tokens(revision: MemoryRevision) -> int:
-        encoded = json.dumps(revision.content, ensure_ascii=False, sort_keys=True)
+        encoded = json.dumps(
+            revision.content,
+            ensure_ascii=False,
+            sort_keys=True,
+        )
         return max(1, math.ceil(len(encoded) / 4))
 
     def _page_with_budget(
         self,
-        ranked: list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]],
+        ranked: list[
+            tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+        ],
         *,
         offset: int,
         release_limit: int,
         token_limit: int,
-    ) -> tuple[list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]], int]:
-        selected: list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]] = []
+    ) -> tuple[
+        list[tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]],
+        int,
+    ]:
+        selected: list[
+            tuple[MemoryRevision, float, tuple[ChannelContribution, ...]]
+        ] = []
         tokens = 0
         for item in ranked[offset:]:
             if len(selected) >= release_limit:
@@ -670,24 +809,64 @@ class ProgressiveMemoryRetriever:
                     "hash": revision.content_hash,
                     "created_at": revision.created_at,
                 }
-                for revision in sorted(revisions, key=lambda item: item.ref)
+                for revision in sorted(
+                    revisions, key=lambda item: item.ref
+                )
             ]
         )
 
-    def _authority_epochs(self, request: RetrievalRequest) -> tuple[str, str]:
-        namespace_set = {namespace.canonical for namespace in request.namespaces}
-        namespace_hashes = {namespace.namespace_hash for namespace in request.namespaces}
-        connection = sqlite3.connect(self.store.db_path)
-        connection.row_factory = sqlite3.Row
-        try:
+    def _namespace_digest(self, request: RetrievalRequest) -> str:
+        return canonical_sha256(
+            sorted(namespace.canonical for namespace in request.namespaces)
+        )
+
+    def _cursor_binding(
+        self,
+        *,
+        request: RetrievalRequest,
+        primary_snapshot: str,
+        index_snapshot: str,
+        acl_epoch: str,
+        forget_epoch: str,
+    ) -> dict[str, Any]:
+        return {
+            "request_digest": request.request_digest,
+            "actor_digest": canonical_sha256(request.actor),
+            "namespace_digest": self._namespace_digest(request),
+            "read_mode": request.read_mode.value,
+            "primary_snapshot": primary_snapshot,
+            "index_snapshot": index_snapshot,
+            "acl_epoch": acl_epoch,
+            "forget_epoch": forget_epoch,
+            "filter_version": "m1b-filter@1",
+            "fusion_version": "weighted-rrf-k60@1",
+        }
+
+    def _authority_epochs(
+        self, request: RetrievalRequest
+    ) -> tuple[str, str]:
+        namespace_set = {
+            namespace.canonical for namespace in request.namespaces
+        }
+        namespace_hashes = {
+            namespace.namespace_hash for namespace in request.namespaces
+        }
+        with closing(sqlite3.connect(self.store.db_path)) as connection:
+            connection.row_factory = sqlite3.Row
             acl_rows = connection.execute(
-                "SELECT namespace, rule_id, payload_json FROM acl_events ORDER BY sequence"
+                """
+                SELECT namespace, rule_id, payload_json
+                FROM acl_events
+                ORDER BY sequence
+                """
             ).fetchall()
             tombstone_rows = connection.execute(
-                "SELECT memory_id, payload_json FROM tombstones ORDER BY memory_id"
+                """
+                SELECT memory_id, payload_json
+                FROM tombstones
+                ORDER BY memory_id
+                """
             ).fetchall()
-        finally:
-            connection.close()
         acl_epoch = canonical_sha256(
             [
                 {
@@ -699,22 +878,26 @@ class ProgressiveMemoryRetriever:
                 if row["namespace"] in namespace_set
             ]
         )
-        forget_epoch = canonical_sha256(
-            [
-                {
-                    "memory_id": row["memory_id"],
-                    "payload": payload,
-                }
-                for row in tombstone_rows
-                if (payload := json.loads(row["payload_json"]))["namespace_hash"]
-                in namespace_hashes
-            ]
-        )
+        tombstone_payloads: list[dict[str, Any]] = []
+        for row in tombstone_rows:
+            payload = json.loads(row["payload_json"])
+            if payload["namespace_hash"] in namespace_hashes:
+                tombstone_payloads.append(
+                    {"memory_id": row["memory_id"], "payload": payload}
+                )
+        forget_epoch = canonical_sha256(tombstone_payloads)
         return acl_epoch, forget_epoch
 
     def _encode_cursor(self, payload: dict[str, Any]) -> str:
-        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-        signature = hmac.new(self.cursor_key, raw, hashlib.sha256).digest()
+        raw = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        signature = hmac.new(
+            self.cursor_key, raw, hashlib.sha256
+        ).digest()
         return base64.urlsafe_b64encode(signature + raw).decode().rstrip("=")
 
     def _decode_cursor(self, cursor: str) -> dict[str, Any]:
@@ -724,7 +907,9 @@ class ProgressiveMemoryRetriever:
             signature, raw = decoded[:32], decoded[32:]
         except Exception as exc:
             raise ValueError("cursor is malformed") from exc
-        expected = hmac.new(self.cursor_key, raw, hashlib.sha256).digest()
+        expected = hmac.new(
+            self.cursor_key, raw, hashlib.sha256
+        ).digest()
         if not hmac.compare_digest(signature, expected):
             raise ValueError("cursor integrity check failed")
         try:
