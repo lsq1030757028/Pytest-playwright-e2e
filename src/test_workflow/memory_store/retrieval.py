@@ -294,6 +294,28 @@ class ProgressiveMemoryRetriever:
             if offset < 0:
                 raise ValueError("cursor offset is invalid")
 
+        eligible_refs = set(eligible_map)
+        unresolved_reasons: list[str] = []
+        if not set(request.exact_refs) <= eligible_refs:
+            unresolved_reasons.append("EXACT_REF_UNRESOLVED")
+        if not set(request.required_refs) <= eligible_refs:
+            unresolved_reasons.append("REQUIRED_REF_UNRESOLVED")
+        if unresolved_reasons:
+            status = (
+                RetrievalStatus.DEGRADED
+                if degraded
+                else RetrievalStatus.INSUFFICIENT_EVIDENCE
+            )
+            return self._empty_result(
+                request=request,
+                status=status,
+                stage=RetrievalStage.HOT,
+                omitted=tuple(omitted) + tuple(unresolved_reasons),
+                started=started,
+                primary_snapshot=primary_snapshot,
+                index_snapshot=index_snapshot,
+            )
+
         if not eligible:
             status = (
                 RetrievalStatus.DEGRADED
@@ -305,29 +327,6 @@ class ProgressiveMemoryRetriever:
                 status=status,
                 stage=RetrievalStage.HOT,
                 omitted=tuple(omitted) or ("NO_EFFECTIVE_MEMORY",),
-                started=started,
-                primary_snapshot=primary_snapshot,
-                index_snapshot=index_snapshot,
-            )
-
-        strong_refs = set(request.required_refs) | set(request.exact_refs)
-        if not strong_refs <= set(eligible_map):
-            missing_exact = not set(request.exact_refs) <= set(eligible_map)
-            reason = (
-                "EXACT_REF_UNRESOLVED"
-                if missing_exact
-                else "REQUIRED_REF_UNRESOLVED"
-            )
-            status = (
-                RetrievalStatus.DEGRADED
-                if degraded
-                else RetrievalStatus.INSUFFICIENT_EVIDENCE
-            )
-            return self._empty_result(
-                request=request,
-                status=status,
-                stage=RetrievalStage.HOT,
-                omitted=tuple(omitted) + (reason,),
                 started=started,
                 primary_snapshot=primary_snapshot,
                 index_snapshot=index_snapshot,
@@ -351,7 +350,8 @@ class ProgressiveMemoryRetriever:
             if stage is not RetrievalStage.HOT and not index_available:
                 break
             if stage is RetrievalStage.COLD and not request.cold_escalation_reason:
-                omitted.append("COLD_ESCALATION_REASON_REQUIRED")
+                if "COLD_ESCALATION_REASON_REQUIRED" not in omitted:
+                    omitted.append("COLD_ESCALATION_REASON_REQUIRED")
                 break
 
             budget = DEFAULT_BUDGETS[stage]
@@ -404,6 +404,8 @@ class ProgressiveMemoryRetriever:
                 status = RetrievalStatus.DEGRADED
                 break
             if stage is RetrievalStage.WARM and not request.cold_escalation_reason:
+                if "COLD_ESCALATION_REASON_REQUIRED" not in omitted:
+                    omitted.append("COLD_ESCALATION_REASON_REQUIRED")
                 status = (
                     RetrievalStatus.DEGRADED
                     if degraded
