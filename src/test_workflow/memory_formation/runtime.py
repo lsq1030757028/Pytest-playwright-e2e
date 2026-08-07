@@ -31,11 +31,7 @@ from .models import (
     FormationStatus,
     SourceClass,
 )
-from .resolver import (
-    ArtifactFormationResolver,
-    FormationAdmissionError,
-    ResolvedFormationInputs,
-)
+from .resolver import ArtifactFormationResolver, FormationAdmissionError, ResolvedFormationInputs
 
 
 _PROTECTED_AUTHORITY_KEYS = frozenset(
