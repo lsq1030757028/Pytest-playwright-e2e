@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 70,
+  "revision": 71,
   "claim_sequence": 7,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -15,9 +15,9 @@
       "target_pr": 63,
       "expected_head_sha": "59bb81a6c82af992e9951117200d3202733cddd8",
       "started_at": "2026-08-06T14:03:00Z",
-      "heartbeat_at": "2026-08-07T02:06:12Z",
-      "expires_at": "2026-08-07T04:06:12Z",
-      "last_checkpoint": "OWNER_MEMORY_FIRST_PREEMPTED_INTEGRATION_FULL_CI_STILL_QUEUED_RETURNED_TO_WAITING"
+      "heartbeat_at": "2026-08-07T03:12:30Z",
+      "expires_at": "2026-08-07T05:12:30Z",
+      "last_checkpoint": "R70_RESUMED_INTEGRATION_WAITING_M1B_OWNS_INTEGRATION_FULL_CI_SECRET_STILL_QUEUED_ZERO_JOBS"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
       "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
