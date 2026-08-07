@@ -8,6 +8,17 @@ from tests.integration.test_m1b_sqlite_store import make_second_revision, make_s
 from tests.memory_contract_fixtures import make_namespace, make_owner
 
 
+def _append_racing_candidate(item):
+    store, revision, gate, owner, expected_head_revision_id = item
+    gate.wait()
+    return store.compare_and_append_revision(
+        actor=owner,
+        revision=revision,
+        expected_head_revision_id=expected_head_revision_id,
+        correlation_id=revision.idempotency_key,
+    )
+
+
 def test_cas_and_outbox_atomicity_across_100_coordinated_races(tmp_path) -> None:
     db_path = tmp_path / "memory.db"
     owner = make_owner()
@@ -45,25 +56,20 @@ def test_cas_and_outbox_atomicity_across_100_coordinated_races(tmp_path) -> None
                 value=f"winner candidate B {repetition}",
             ),
         )
-        barrier = Barrier(2)
-
-        def append(item):
-            store, revision = item
-            barrier.wait()
-            return store.compare_and_append_revision(
-                actor=owner,
-                revision=revision,
-                expected_head_revision_id=initial.revision_id,
-                correlation_id=revision.idempotency_key,
+        gate = Barrier(2)
+        work = tuple(
+            (
+                store,
+                revision,
+                gate,
+                owner,
+                initial.revision_id,
             )
+            for store, revision in zip((left, right), candidates, strict=True)
+        )
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            results = tuple(
-                executor.map(
-                    append,
-                    zip((left, right), candidates, strict=True),
-                )
-            )
+            results = tuple(executor.map(_append_racing_candidate, work))
 
         decisions = [result.decision for result in results]
         assert decisions.count(Decision.ACCEPTED) == 1
