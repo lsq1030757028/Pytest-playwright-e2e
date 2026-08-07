@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 import time
 from contextlib import closing
@@ -32,7 +31,11 @@ from .models import (
     FormationStatus,
     SourceClass,
 )
-from .resolver import ArtifactFormationResolver, FormationAdmissionError, ResolvedFormationInputs
+from .resolver import (
+    ArtifactFormationResolver,
+    FormationAdmissionError,
+    ResolvedFormationInputs,
+)
 
 
 _PROTECTED_AUTHORITY_KEYS = frozenset(
@@ -561,7 +564,9 @@ class FormationRuntime:
                 else:
                     connection.execute(
                         """
-                        INSERT INTO formation_events(event_id, request_digest, event_hash, payload_json)
+                        INSERT INTO formation_events(
+                            event_id, request_digest, event_hash, payload_json
+                        )
                         VALUES (?, ?, ?, ?)
                         """,
                         (
