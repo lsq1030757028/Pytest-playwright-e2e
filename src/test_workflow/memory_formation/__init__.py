@@ -1,3 +1,14 @@
+from .consolidation import (
+    ConsolidationAdmissionError,
+    ConsolidationBudgetConsumption,
+    ConsolidationEvent,
+    ConsolidationReplayEvidence,
+    ConsolidationRequest,
+    ConsolidationResult,
+    ConsolidationStatus,
+    ParentSnapshot,
+)
+from .consolidation_guarded import BackgroundConsolidator
 from .models import (
     EvidenceDescriptor,
     FormationBudgetConsumption,
@@ -15,6 +26,14 @@ from .runtime_guarded import FormationRuntime
 
 __all__ = [
     "ArtifactFormationResolver",
+    "BackgroundConsolidator",
+    "ConsolidationAdmissionError",
+    "ConsolidationBudgetConsumption",
+    "ConsolidationEvent",
+    "ConsolidationReplayEvidence",
+    "ConsolidationRequest",
+    "ConsolidationResult",
+    "ConsolidationStatus",
     "EvidenceDescriptor",
     "FormationAdmissionError",
     "FormationBudgetConsumption",
@@ -25,6 +44,7 @@ __all__ = [
     "FormationResult",
     "FormationRuntime",
     "FormationStatus",
+    "ParentSnapshot",
     "SourceClass",
     "SourceDescriptor",
 ]
