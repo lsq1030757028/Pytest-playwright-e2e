@@ -18,6 +18,7 @@ class FormationAdmissionError(RuntimeError):
 class ResolvedFormationInputs:
     resolved_sources: dict[str, str]
     resolved_evidence: tuple[str, ...]
+    source_text_by_ref: dict[str, str]
     source_evidence_digest: str
     estimated_tokens: int
 
@@ -37,6 +38,7 @@ class ArtifactFormationResolver:
     def resolve(self, request: FormationRequest) -> ResolvedFormationInputs:
         resolved_sources: dict[str, str] = {}
         resolved_evidence: list[str] = []
+        source_text_by_ref: dict[str, str] = {}
         digest_sources: list[dict[str, object]] = []
         digest_evidence: list[dict[str, object]] = []
         estimated_bytes = len(canonical_json_bytes(request.candidate_content))
@@ -65,6 +67,7 @@ class ArtifactFormationResolver:
 
             resolved_sources[source.source_ref] = source.source_hash
             encoded = canonical_json_bytes(envelope.content)
+            source_text_by_ref[source.source_ref] = encoded.decode("utf-8")
             estimated_bytes += len(encoded)
             digest_sources.append(
                 {
@@ -113,6 +116,7 @@ class ArtifactFormationResolver:
         return ResolvedFormationInputs(
             resolved_sources=resolved_sources,
             resolved_evidence=tuple(resolved_evidence),
+            source_text_by_ref=source_text_by_ref,
             source_evidence_digest=source_evidence_digest,
             estimated_tokens=estimated_tokens,
         )
