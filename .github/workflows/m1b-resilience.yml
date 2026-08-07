@@ -8,6 +8,7 @@ on:
       - "tests/integration/test_m1b_recovery.py"
       - "tests/integration/test_m1b_migration.py"
       - "tests/integration/test_m1b_benchmark.py"
+      - "tests/integration/test_m1b_atomicity_stress.py"
       - ".github/workflows/m1b-resilience.yml"
   push:
     branches: [main]
@@ -17,6 +18,7 @@ on:
       - "tests/integration/test_m1b_recovery.py"
       - "tests/integration/test_m1b_migration.py"
       - "tests/integration/test_m1b_benchmark.py"
+      - "tests/integration/test_m1b_atomicity_stress.py"
       - ".github/workflows/m1b-resilience.yml"
   workflow_dispatch:
 
@@ -43,7 +45,8 @@ jobs:
             tests/integration/test_m1b_resilience.py \
             tests/integration/test_m1b_recovery.py \
             tests/integration/test_m1b_migration.py \
-            tests/integration/test_m1b_benchmark.py
+            tests/integration/test_m1b_benchmark.py \
+            tests/integration/test_m1b_atomicity_stress.py
 
       - name: Prove resilience migration benchmark and prior M1B invariants
         run: |
@@ -52,6 +55,7 @@ jobs:
             tests/integration/test_m1b_recovery.py \
             tests/integration/test_m1b_migration.py \
             tests/integration/test_m1b_benchmark.py \
+            tests/integration/test_m1b_atomicity_stress.py \
             tests/integration/test_m1b_progressive_retrieval.py \
             tests/integration/test_m1b_sqlite_store.py \
             tests/integration/test_memory_contract_reference.py \
