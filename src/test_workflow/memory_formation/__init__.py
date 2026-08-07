@@ -9,6 +9,12 @@ from .consolidation import (
     ParentSnapshot,
 )
 from .consolidation_guarded import BackgroundConsolidator
+from .contamination import (
+    ContaminationClass,
+    ContaminationRecord,
+    MemoryContaminationRegistry,
+)
+from .integrity import verify_formation_integrity
 from .models import (
     EvidenceDescriptor,
     FormationBudgetConsumption,
@@ -34,6 +40,8 @@ __all__ = [
     "ConsolidationRequest",
     "ConsolidationResult",
     "ConsolidationStatus",
+    "ContaminationClass",
+    "ContaminationRecord",
     "EvidenceDescriptor",
     "FormationAdmissionError",
     "FormationBudgetConsumption",
@@ -44,7 +52,9 @@ __all__ = [
     "FormationResult",
     "FormationRuntime",
     "FormationStatus",
+    "MemoryContaminationRegistry",
     "ParentSnapshot",
     "SourceClass",
     "SourceDescriptor",
+    "verify_formation_integrity",
 ]
