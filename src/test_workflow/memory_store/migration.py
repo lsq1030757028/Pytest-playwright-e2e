@@ -26,6 +26,14 @@ class StoreManifest(FrozenModel):
     idempotency_digests: tuple[str, ...]
     tombstone_digests: tuple[str, ...]
     outbox_event_digests: tuple[str, ...]
+    formation_event_digests: tuple[str, ...]
+    formation_idempotency_digests: tuple[str, ...]
+    formation_replay_digests: tuple[str, ...]
+    consolidation_event_digests: tuple[str, ...]
+    consolidation_idempotency_digests: tuple[str, ...]
+    consolidation_replay_digests: tuple[str, ...]
+    contamination_record_digests: tuple[str, ...]
+    contamination_checkpoint_digests: tuple[str, ...]
     digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
@@ -43,7 +51,7 @@ class SQLiteMigrationController:
     The source remains the rollback path. Cutover is allowed only when source
     and target manifests are byte/hash-equivalent. Rollback is blocked if the
     target diverged after cutover, preventing loss or resurrection of newer
-    governed state (especially Forget Tombstones).
+    governed state (especially Forget Tombstones and M1C formation evidence).
     """
 
     def __init__(self, source_path: Path | str) -> None:
@@ -79,7 +87,11 @@ class SQLiteMigrationController:
                 "SELECT payload_json FROM state_events ORDER BY sequence"
             ).fetchall()
             acl_rows = connection.execute(
-                "SELECT namespace, rule_id, payload_json FROM acl_events ORDER BY sequence"
+                """
+                SELECT namespace, rule_id, payload_json
+                FROM acl_events
+                ORDER BY sequence
+                """
             ).fetchall()
             audit_rows = connection.execute(
                 "SELECT event_hash FROM audit_events ORDER BY sequence"
@@ -96,12 +108,83 @@ class SQLiteMigrationController:
             ).fetchall()
             outbox_rows = connection.execute(
                 """
-                SELECT sequence, event_id, event_type, memory_id, namespace,
+                SELECT event_id, event_type, memory_id, namespace,
                        payload_json, applied
                 FROM outbox
                 ORDER BY sequence
                 """
             ).fetchall()
+
+            formation_event_digests = _optional_row_digests(
+                connection,
+                table="formation_events",
+                columns=("event_id", "request_digest", "event_hash", "payload_json"),
+                order_by="event_id",
+            )
+            formation_idempotency_digests = _optional_row_digests(
+                connection,
+                table="formation_idempotency",
+                columns=(
+                    "idempotency_key",
+                    "request_fingerprint",
+                    "request_digest",
+                    "state",
+                    "result_json",
+                ),
+                order_by="idempotency_key",
+            )
+            formation_replay_digests = _optional_row_digests(
+                connection,
+                table="formation_replay",
+                columns=("request_digest", "manifest_digest", "payload_json"),
+                order_by="request_digest",
+            )
+            consolidation_event_digests = _optional_row_digests(
+                connection,
+                table="consolidation_events",
+                columns=("event_id", "request_digest", "event_hash", "payload_json"),
+                order_by="event_id",
+            )
+            consolidation_idempotency_digests = _optional_row_digests(
+                connection,
+                table="consolidation_idempotency",
+                columns=(
+                    "idempotency_key",
+                    "request_fingerprint",
+                    "request_digest",
+                    "state",
+                    "result_json",
+                ),
+                order_by="idempotency_key",
+            )
+            consolidation_replay_digests = _optional_row_digests(
+                connection,
+                table="consolidation_replay",
+                columns=("request_digest", "manifest_digest", "payload_json"),
+                order_by="request_digest",
+            )
+            contamination_record_digests = _optional_row_digests(
+                connection,
+                table="memory_contamination",
+                columns=(
+                    "memory_ref",
+                    "contamination_class",
+                    "evidence_digest",
+                    "inherited_from_ref",
+                    "record_digest",
+                ),
+                order_by="memory_ref, contamination_class",
+            )
+            contamination_checkpoint_digests = _optional_row_digests(
+                connection,
+                table="memory_contamination_checkpoints",
+                columns=(
+                    "manifest_digest",
+                    "previous_checkpoint_hash",
+                    "checkpoint_hash",
+                ),
+                order_by="sequence",
+            )
 
         revision_payloads = [json.loads(row["payload_json"]) for row in revision_rows]
         revision_refs = tuple(
@@ -149,13 +232,12 @@ class SQLiteMigrationController:
         outbox_event_digests = tuple(
             canonical_sha256(
                 {
-                    "sequence": int(row["sequence"]),
                     "event_id": row["event_id"],
                     "event_type": row["event_type"],
                     "memory_id": row["memory_id"],
                     "namespace": row["namespace"],
                     "payload": json.loads(row["payload_json"]),
-                    "applied": bool(row["applied"]),
+                    "applied": int(row["applied"]),
                 }
             )
             for row in outbox_rows
@@ -171,6 +253,14 @@ class SQLiteMigrationController:
             "idempotency_digests": idempotency_digests,
             "tombstone_digests": tombstone_digests,
             "outbox_event_digests": outbox_event_digests,
+            "formation_event_digests": formation_event_digests,
+            "formation_idempotency_digests": formation_idempotency_digests,
+            "formation_replay_digests": formation_replay_digests,
+            "consolidation_event_digests": consolidation_event_digests,
+            "consolidation_idempotency_digests": consolidation_idempotency_digests,
+            "consolidation_replay_digests": consolidation_replay_digests,
+            "contamination_record_digests": contamination_record_digests,
+            "contamination_checkpoint_digests": contamination_checkpoint_digests,
         }
         return StoreManifest(**payload, digest=canonical_sha256(payload))
 
@@ -180,13 +270,18 @@ class SQLiteMigrationController:
         if target.resolve() == self.source_path.resolve():
             raise ValueError("migration target must differ from source")
 
+        _verify_optional_m1c_integrity(self.source_path)
         with closing(sqlite3.connect(self.source_path)) as source, closing(
             sqlite3.connect(target)
         ) as destination:
             source.backup(destination)
 
-        # Loading the copied Store proves schema, Head/history and Audit chain integrity.
+        # Loading the copied Store proves schema, Head/history and Audit chain
+        # integrity. The optional M1C verifier additionally proves formation,
+        # consolidation, replay and contamination evidence when those surfaces
+        # exist in this Store.
         SQLiteMemoryStore(target)
+        _verify_optional_m1c_integrity(target)
         source_manifest = self.manifest(self.source_path)
         target_manifest = self.manifest(target)
         equivalent = source_manifest.digest == target_manifest.digest
@@ -207,6 +302,8 @@ class SQLiteMigrationController:
                 ErrorCode.INTEGRITY_FAILED,
                 "migration target has not been verified",
             )
+        _verify_optional_m1c_integrity(self.source_path)
+        _verify_optional_m1c_integrity(self.target_path)
         current_source = self.manifest(self.source_path)
         current_target = self.manifest(self.target_path)
         if (
@@ -224,6 +321,8 @@ class SQLiteMigrationController:
         if self.target_path is None:
             self.active_path = self.source_path
             return self.active_path
+        _verify_optional_m1c_integrity(self.source_path)
+        _verify_optional_m1c_integrity(self.target_path)
         source_manifest = self.manifest(self.source_path)
         target_manifest = self.manifest(self.target_path)
         if source_manifest.digest != target_manifest.digest:
@@ -233,3 +332,39 @@ class SQLiteMigrationController:
             )
         self.active_path = self.source_path
         return self.active_path
+
+
+def _optional_row_digests(
+    connection: sqlite3.Connection,
+    *,
+    table: str,
+    columns: tuple[str, ...],
+    order_by: str,
+) -> tuple[str, ...]:
+    if not _table_exists(connection, table):
+        return ()
+    column_sql = ", ".join(columns)
+    rows = connection.execute(
+        f"SELECT {column_sql} FROM {table} ORDER BY {order_by}"
+    ).fetchall()
+    return tuple(
+        canonical_sha256({column: row[column] for column in columns})
+        for row in rows
+    )
+
+
+def _table_exists(connection: sqlite3.Connection, table: str) -> bool:
+    return (
+        connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table,),
+        ).fetchone()
+        is not None
+    )
+
+
+def _verify_optional_m1c_integrity(db_path: Path | str) -> None:
+    # Lazy import avoids an import cycle during memory_store package startup.
+    from ..memory_formation.integrity import verify_formation_integrity
+
+    verify_formation_integrity(db_path)
