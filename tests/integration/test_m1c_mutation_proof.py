@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import timedelta
 
 import pytest
 
@@ -9,7 +8,6 @@ from test_workflow.memory_contracts import ErrorCode, MemoryContractError, Memor
 from test_workflow.memory_formation import (
     BackgroundConsolidator,
     ConsolidationStatus,
-    FormationRuntime,
     FormationStatus,
 )
 from test_workflow.memory_formation.contamination import (
