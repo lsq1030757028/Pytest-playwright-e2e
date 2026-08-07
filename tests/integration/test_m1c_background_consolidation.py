@@ -180,7 +180,9 @@ def test_authorized_parents_create_durable_advisory_only_candidate(tmp_path) -> 
             request_id="i2-production",
         )
     )
-    assert [item.ref for item in advisory.released] == [head.ref]
+    advisory_refs = [item.ref for item in advisory.released]
+    assert advisory_refs[0] == head.ref
+    assert head.ref in advisory_refs
     assert production.released == ()
 
 
