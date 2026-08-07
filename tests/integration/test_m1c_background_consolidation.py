@@ -1,7 +1,6 @@
 import sqlite3
 from datetime import timedelta
 
-from test_workflow.harness.artifacts import InMemoryArtifactStore
 from test_workflow.memory_contracts import (
     Decision,
     LifecycleState,
