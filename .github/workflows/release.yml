@@ -24,7 +24,7 @@ jobs:
         run: uv build
 
       - name: Upload Python distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-distribution
           path: dist/*
