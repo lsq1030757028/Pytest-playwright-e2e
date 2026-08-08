@@ -49,6 +49,12 @@ jobs:
             "spec/ux0-synthetic-user-agent"
             "spec/ux1-todomvc-ux-mutation-proof"
             "chore/final-branch-cleanup"
+            "spec/m1b-store-progressive-retrieval"
+            "feat/m1b-durable-store"
+            "feat/m1b-progressive-retrieval"
+            "fix/m1b-exact-ref-window"
+            "feat/m1b-resilience"
+            "docs/m1b-runtime-closure"
           )
 
           for branch in "${branches[@]}"; do

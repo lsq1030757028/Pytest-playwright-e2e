@@ -104,6 +104,7 @@ def test_mandate_does_not_claim_m1_gate_completion() -> None:
 
     assert "M1.0 Memory Benchmark Harness：MERGED / CLOSED" in status
     assert "M1A Runtime Contracts：MERGED / CLOSED" in status
-    assert "M1B Store & Progressive Retrieval：NEXT / SPEC" in status
-    assert "M1 Memory Gate：0 / 1" in status
+    assert "M1B Store & Progressive Retrieval：MERGED / CLOSED" in status
+    assert "M1C Memory Formation：NEXT / SPEC" in status
+    assert "M1 Memory Gate：OPEN (0 / 1)" in status
     assert "Stage Delivery：NOT_READY" in status
