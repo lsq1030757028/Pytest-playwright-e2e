@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 123,
-  "claim_sequence": 8,
+  "revision": 124,
+  "claim_sequence": 9,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -32,6 +32,20 @@
       "heartbeat_at": "2026-08-08T06:35:00Z",
       "expires_at": "2026-08-08T08:35:00Z",
       "last_checkpoint": "M1C_MIGRATION_GATE_FILTER_FIXED_WAITING_LATEST_HEAD_CI"
+    },
+    "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
+      "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
+      "claim_token": "claim-test-agent-runtime-beta-architecture-spec-9-20260808T063700Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "IN_PROGRESS",
+      "exclusive_domain": "beta-product-architecture",
+      "target_branch": "spec/test-agent-runtime-beta-clean",
+      "target_pr": null,
+      "expected_head_sha": "a58cf35c8687f932493480cf4f23baf4b34e92e2",
+      "started_at": "2026-08-08T06:37:00Z",
+      "heartbeat_at": "2026-08-08T06:37:00Z",
+      "expires_at": "2026-08-08T08:37:00Z",
+      "last_checkpoint": "OWNER_CLEAN_SPEC_RECOVERY_FROM_CURRENT_MAIN_AFTER_STALE_PR67"
     }
   },
   "recovered_claims": [
