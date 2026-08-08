@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 121,
-  "claim_sequence": 7,
+  "revision": 122,
+  "claim_sequence": 8,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -18,6 +18,20 @@
       "heartbeat_at": "2026-08-08T05:07:25Z",
       "expires_at": "2026-08-08T07:07:25Z",
       "last_checkpoint": "R118_FINAL_REPLAN_REQUIRED_PR63_HEAD_FENCED_123_BEHIND_MAIN_UX_CODEQL_GREEN_FULL_CI_SECRET_QUEUED_FOREIGN_M1B_CONTROL_STALE_PR68_MERGED_GOAL62_CLOSED_PRODUCT_MAP_REPLAN_REQUIRED"
+    },
+    "M1C-MEMORY-FORMATION": {
+      "work_item_id": "M1C-MEMORY-FORMATION",
+      "claim_token": "claim-m1c-memory-formation-8-20260808T063200Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "IN_PROGRESS",
+      "exclusive_domain": "memory-formation",
+      "target_branch": "fix/m1c-migration-evidence",
+      "target_pr": 85,
+      "expected_head_sha": "60211b766614789db05baa904270cad784a890cf",
+      "started_at": "2026-08-08T06:32:00Z",
+      "heartbeat_at": "2026-08-08T06:32:00Z",
+      "expires_at": "2026-08-08T08:32:00Z",
+      "last_checkpoint": "OWNER_REPLAN_AFTER_M1B_CLOSED_PR85_MIGRATION_GATE_REPAIR"
     }
   },
   "recovered_claims": [
