@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "revision": 21,
+  "revision": 22,
   "sequence": 5,
-  "status": "ACTIVE",
-  "integration_token": "m1b-spec-integration-5",
-  "work_item_id": "M1B-STORE-RETRIEVAL-SPEC",
-  "started_at": "2026-08-07T02:59:30Z",
-  "expires_at": "2026-08-07T03:59:30Z"
+  "status": "IDLE",
+  "integration_token": null,
+  "work_item_id": null,
+  "started_at": null,
+  "expires_at": null
 }
