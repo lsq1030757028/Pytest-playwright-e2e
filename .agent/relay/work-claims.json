@@ -2,8 +2,8 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 125,
-  "claim_sequence": 9,
+  "revision": 126,
+  "claim_sequence": 10,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -40,12 +40,26 @@
       "state": "IN_PROGRESS",
       "exclusive_domain": "beta-product-architecture",
       "target_branch": "spec/test-agent-runtime-beta-clean",
-      "target_pr": null,
+      "target_pr": 87,
       "expected_head_sha": "03e5f7712b3a54da55b8cde6957e0eefea5e929f",
       "started_at": "2026-08-08T06:37:00Z",
-      "heartbeat_at": "2026-08-08T06:41:00Z",
-      "expires_at": "2026-08-08T08:41:00Z",
-      "last_checkpoint": "CLEAN_BETA_SPEC_REBUILT_ON_CURRENT_MAIN_WAITING_PR_CI"
+      "heartbeat_at": "2026-08-08T06:46:00Z",
+      "expires_at": "2026-08-08T08:46:00Z",
+      "last_checkpoint": "CLEAN_BETA_SPEC_PR87_OPEN_WAITING_LATEST_HEAD_CI"
+    },
+    "PARALLEL-WORK-CLAIMS-IMPLEMENTATION": {
+      "work_item_id": "PARALLEL-WORK-CLAIMS-IMPLEMENTATION",
+      "claim_token": "claim-parallel-work-claims-implementation-10-20260808T064600Z",
+      "surface": "HUMAN_CONTROL",
+      "state": "INTEGRATION_WAITING",
+      "exclusive_domain": "parallel-delivery-control",
+      "target_branch": "fix/relay-stale-integration-recovery",
+      "target_pr": 86,
+      "expected_head_sha": "a4e088b1a328c31fbe5c29dee43c1213f332c072",
+      "started_at": "2026-08-08T06:46:00Z",
+      "heartbeat_at": "2026-08-08T06:46:00Z",
+      "expires_at": "2026-08-08T08:46:00Z",
+      "last_checkpoint": "PR86_ALL_GATES_GREEN_REVIEW_THREADS_ZERO_INTEGRATION_WAITING"
     }
   },
   "recovered_claims": [
@@ -98,6 +112,14 @@
       "state": "INTEGRATED",
       "reconciled_at": "2026-08-08T06:26:00Z",
       "result": "PR68_MERGED_GOAL62_CLOSED"
+    },
+    {
+      "work_item_id": "PARALLEL-WORK-CLAIMS-IMPLEMENTATION",
+      "claim_token": "claim-parallel-work-claims-implementation-10-20260808T064600Z",
+      "enqueued_at": "2026-08-08T06:46:00Z",
+      "security_or_correctness_repair": true,
+      "dependency_unblocking": true,
+      "state": "INTEGRATION_WAITING"
     }
   ]
 }
