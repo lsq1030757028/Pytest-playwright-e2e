@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 120,
+  "revision": 121,
   "claim_sequence": 7,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -18,12 +18,14 @@
       "heartbeat_at": "2026-08-08T05:07:25Z",
       "expires_at": "2026-08-08T07:07:25Z",
       "last_checkpoint": "R118_FINAL_REPLAN_REQUIRED_PR63_HEAD_FENCED_123_BEHIND_MAIN_UX_CODEQL_GREEN_FULL_CI_SECRET_QUEUED_FOREIGN_M1B_CONTROL_STALE_PR68_MERGED_GOAL62_CLOSED_PRODUCT_MAP_REPLAN_REQUIRED"
-    },
-    "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
+    }
+  },
+  "recovered_claims": [
+    {
       "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
       "claim_token": "claim-test-agent-runtime-beta-architecture-spec-6-20260806T152700Z",
       "surface": "HUMAN_CONTROL",
-      "state": "IN_PROGRESS",
+      "state": "STALE_RECOVERED",
       "exclusive_domain": "beta-product-architecture",
       "target_branch": "spec/test-agent-runtime-beta",
       "target_pr": 67,
@@ -31,13 +33,14 @@
       "started_at": "2026-08-06T15:27:00Z",
       "heartbeat_at": "2026-08-06T16:12:00Z",
       "expires_at": "2026-08-06T18:12:00Z",
-      "last_checkpoint": "OWNER_RETRIGGERED_FULL_CI_AND_CODEQL_AFTER_RUNNER_ONLY_FAILURES"
+      "last_checkpoint": "OWNER_RETRIGGERED_FULL_CI_AND_CODEQL_AFTER_RUNNER_ONLY_FAILURES",
+      "recovered_at": "2026-08-08T06:26:00Z"
     },
-    "M1B-STORE-RETRIEVAL-SPEC": {
+    {
       "work_item_id": "M1B-STORE-RETRIEVAL-SPEC",
       "claim_token": "claim-m1b-store-retrieval-spec-7-20260806T161200Z",
       "surface": "HUMAN_CONTROL",
-      "state": "INTEGRATING",
+      "state": "STALE_RECOVERED",
       "exclusive_domain": "memory-store-retrieval",
       "target_branch": "spec/m1b-store-progressive-retrieval",
       "target_pr": 68,
@@ -45,10 +48,10 @@
       "started_at": "2026-08-06T16:12:00Z",
       "heartbeat_at": "2026-08-07T02:59:30Z",
       "expires_at": "2026-08-07T04:59:30Z",
-      "last_checkpoint": "INTEGRATION_LEASE_M1B_SPEC_INTEGRATION_5_PR68_ALL_GATES_GREEN_REVIEW_ZERO"
+      "last_checkpoint": "INTEGRATION_LEASE_M1B_SPEC_INTEGRATION_5_PR68_ALL_GATES_GREEN_REVIEW_ZERO",
+      "recovered_at": "2026-08-08T06:26:00Z"
     }
-  },
-  "recovered_claims": [],
+  ],
   "integration_queue": [
     {
       "work_item_id": "UX-FP-FN-BENCHMARK-SPEC",
@@ -64,7 +67,9 @@
       "enqueued_at": "2026-08-07T02:56:30Z",
       "security_or_correctness_repair": false,
       "dependency_unblocking": true,
-      "state": "INTEGRATING"
+      "state": "INTEGRATED",
+      "reconciled_at": "2026-08-08T06:26:00Z",
+      "result": "PR68_MERGED_GOAL62_CLOSED"
     }
   ]
 }
