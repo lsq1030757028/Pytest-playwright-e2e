@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 128,
+  "revision": 129,
   "claim_sequence": 10,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -41,11 +41,11 @@
       "exclusive_domain": "beta-product-architecture",
       "target_branch": "spec/test-agent-runtime-beta-clean",
       "target_pr": 87,
-      "expected_head_sha": "c8a268cc34ce223b342d9d3ed3c4a42b854c1f93",
+      "expected_head_sha": "6d15f85a5d1b22f1016dbec33a99f298617ce60e",
       "started_at": "2026-08-08T06:37:00Z",
-      "heartbeat_at": "2026-08-08T06:50:00Z",
-      "expires_at": "2026-08-08T08:50:00Z",
-      "last_checkpoint": "PR87_SYNCED_TO_PR86_MAIN_WAITING_FINAL_HEAD_CI"
+      "heartbeat_at": "2026-08-08T06:45:00Z",
+      "expires_at": "2026-08-08T08:45:00Z",
+      "last_checkpoint": "PR87_SYNCED_TO_SECRET_GATE_REPAIR_MAIN_WAITING_FINAL_HEAD_CI"
     },
     "PARALLEL-WORK-CLAIMS-IMPLEMENTATION": {
       "work_item_id": "PARALLEL-WORK-CLAIMS-IMPLEMENTATION",
@@ -57,9 +57,9 @@
       "target_pr": 86,
       "expected_head_sha": "a4e088b1a328c31fbe5c29dee43c1213f332c072",
       "started_at": "2026-08-08T06:46:00Z",
-      "heartbeat_at": "2026-08-08T06:47:00Z",
-      "expires_at": "2026-08-08T08:47:00Z",
-      "last_checkpoint": "INTEGRATION_LEASE_INTEGRATION_6_20260808T064700Z"
+      "heartbeat_at": "2026-08-08T06:45:00Z",
+      "expires_at": "2026-08-08T08:45:00Z",
+      "last_checkpoint": "PR88_EXACT_SECRET_FALSE_POSITIVE_REPAIR_MERGED_MAIN_VERIFYING"
     }
   },
   "recovered_claims": [
