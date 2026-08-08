@@ -78,10 +78,19 @@ def test_dependencies_exist_and_are_acyclic() -> None:
 def test_current_business_dependencies_are_truthful() -> None:
     work_map = load_yaml(WORK_MAP_PATH)
     items = {item["work_item_id"]: item for item in work_map["work_items"]}
-    assert items["M1A-RUNTIME-CONTRACTS-CLOSE"]["state"] == "READY"
+    assert items["RELAY-CONVERSATION-ISOLATION-CLOSE"]["state"] == "CLOSED"
+    assert items["M1A-RUNTIME-CONTRACTS-CLOSE"]["state"] == "CLOSED"
     assert items["UX-FP-FN-BENCHMARK-SPEC"]["state"] == "READY"
-    assert items["M1B-STORE-RETRIEVAL-SPEC"]["state"] == "BLOCKED"
+    assert items["UX-FP-FN-BENCHMARK-SPEC"]["authority_issue"] == 60
+    assert items["UX-FP-FN-BENCHMARK-SPEC"]["target_pr"] == 63
+    assert items["M1B-STORE-RETRIEVAL-SPEC"]["state"] == "CLOSED"
+    assert items["M1B-STORE-RETRIEVAL-SPEC"]["authority_issue"] == 62
+    assert items["M1B-STORE-RETRIEVAL-SPEC"]["target_pr"] == 68
     assert items["M1B-STORE-RETRIEVAL-SPEC"]["dependencies"] == ["M1A-RUNTIME-CONTRACTS-CLOSE"]
+    assert items["M1C-MEMORY-FORMATION"]["state"] == "READY"
+    assert items["M1C-MEMORY-FORMATION"]["phase"] == "CLOSURE"
+    assert items["M1C-MEMORY-FORMATION"]["authority_issue"] == 74
+    assert items["M1C-MEMORY-FORMATION"]["target_pr"] == 85
     assert items["M2A-MODEL-CAPABILITY-PROFILE"]["dependencies"] == ["M1F-MEMORY-GATE"]
     assert items["M3A-PROJECT-ARCHITECTURE-CONTRACTS"]["dependencies"] == ["M2E-ROUTING-ESCALATION"]
     assert "M4" not in {item["milestone"] for item in items.values()}
