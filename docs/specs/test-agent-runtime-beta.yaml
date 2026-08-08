@@ -1,0 +1,295 @@
+spec_id: SPEC-TEST-AGENT-RUNTIME-BETA
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 66
+parent_campaign_issue: 65
+work_item_id: TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC
+authority:
+  type: explicit_repository_owner_scope_extension
+  issue_refs: [65, 66]
+  m1_m3_mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+  m1_m3_mandate_extended: false
+assurance:
+  development: DEV3
+  ux: UX3
+product:
+  name: TEST_AGENT_RUNTIME_BETA
+  lifecycle_claim: SPEC_ONLY
+  operational_entrypoint: CLI
+  initial_deployment: SINGLE_NODE_DURABLE
+  final_campaign_state: USER_RUNNABLE_BETA
+supported_profile:
+  project_sources: [GITHUB_PINNED_COMMIT]
+  languages: [PYTHON]
+  test_frameworks: [PYTEST, PLAYWRIGHT]
+  browsers: [CHROMIUM]
+  data: SYNTHETIC_OR_REPOSITORY_OWNED_NON_PRODUCTION
+explicit_exclusions:
+  - multi_tenant_production_claim
+  - arbitrary_shell_service
+  - private_repository_secret_acquisition
+  - production_or_personal_data
+  - real_secret_copy_or_disclosure
+  - autonomous_product_code_repair
+  - real_device_or_mobile_execution
+  - direct_main_write
+  - ai_only_release_authority
+  - unbounded_retry_duration_workers_or_spend
+entrypoint:
+  commands:
+    submit: test-agent job submit
+    status: test-agent job status
+    result: test-agent job result
+    cancel: test-agent job cancel
+    events: test-agent job events
+  submission_required_fields:
+    - idempotency_key
+    - project_repository
+    - commit_sha
+    - project_profile_ref
+    - objective_manifest_ref
+    - permitted_test_paths
+    - permitted_capabilities
+    - oracle_refs
+    - environment_profile_ref
+    - budget_profile_ref
+    - evidence_profile_ref
+  rejects:
+    - floating_project_ref
+    - missing_oracle_authority
+    - unsupported_capability
+    - unbounded_budget
+verdicts:
+  - VERIFIED_SUCCESS
+  - PRODUCT_DEFECT
+  - TEST_DEFECT
+  - ENVIRONMENT_FAILURE
+  - INSUFFICIENT_EVIDENCE
+  - ORACLE_CONFLICT
+  - POLICY_BLOCKED
+  - CANCELLED
+  - TIMED_OUT
+success_authority: DETERMINISTIC_VERIFIER
+model_output_authority: CANDIDATE_ONLY
+job_lifecycle:
+  states:
+    - DRAFT
+    - ACCEPTED
+    - PLANNING
+    - PLAN_READY
+    - GENERATING
+    - READY_TO_EXECUTE
+    - EXECUTING
+    - DIAGNOSING
+    - REPAIRING
+    - READY_TO_REEXECUTE
+    - REEXECUTING
+    - VERDICT_READY
+    - SUCCEEDED
+    - FAILED
+    - BLOCKED
+    - CANCELLED
+    - TIMED_OUT
+  terminal_states: [SUCCEEDED, FAILED, BLOCKED, CANCELLED, TIMED_OUT]
+  concurrency:
+    append_only_events: true
+    expected_revision_required: true
+    stale_write_result: EXPLICIT_CONFLICT
+    duplicate_delivery: IDEMPOTENT
+durable_runtime:
+  beta_job_store:
+    backend: SQLITE_WAL
+    persistent_volume_required: true
+    purpose: JOB_STATE_NOT_GOVERNED_MEMORY
+  artifact_store:
+    backend: CONTENT_ADDRESSED_FILESYSTEM
+    persistent_volume_required: true
+    hash: SHA256
+  startup_recovery:
+    reconcile_worker_leases: true
+    reconcile_artifact_manifests: true
+    duplicate_uncertain_side_effect_forbidden: true
+  future_compatible_profiles: [POSTGRESQL_OBJECT_STORE]
+components:
+  - CLI_CLIENT
+  - CONTROL_PLANE
+  - PLANNER
+  - PROJECT_ADAPTER
+  - TEST_AUTHORING_CAPABILITY
+  - EXECUTION_WORKER
+  - EVIDENCE_COLLECTOR
+  - DETERMINISTIC_VERIFIER
+  - DIAGNOSIS_REPAIR_CONTROLLER
+  - DURABLE_JOB_STORE_QUEUE
+  - GOVERNED_MEMORY_ADAPTER
+  - RELEASE_SMOKE_VERIFIER
+workspace:
+  pinned_commit_required: true
+  base_project_agent_read_only: true
+  product_source_write_allowed: false
+  allowed_write_scope: DECLARED_TEST_FIXTURE_EVIDENCE_PATHS
+  model_shell_interpolation_allowed: false
+  network_default: DENY
+  path_traversal_or_symlink_escape: REJECT
+test_generation:
+  traceability_required:
+    - job_id
+    - objective_ref
+    - plan_ref
+    - run_token
+  fixed_sleep_allowed: false
+  blind_retry_allowed: false
+  lint_and_collection_before_execution: true
+  patch_manifest_and_hashes_required: true
+  initial_product_source_repair_allowed: false
+execution_manifest:
+  required_pins:
+    - base_commit
+    - test_patch_hash
+    - project_adapter_version
+    - dependency_lock_revision
+    - pytest_version
+    - playwright_browser_revision
+    - environment_image
+    - selected_test_nodes
+    - seed
+    - timeouts
+    - evidence_profile
+    - worker_identity_and_lease
+evidence_bundle:
+  required:
+    - job_plan_attempt_run_manifests
+    - project_and_patch_hashes
+    - command_manifest
+    - redacted_stdout_stderr
+    - junit
+    - environment_manifest
+    - deterministic_verifier_output
+    - artifact_index_and_hashes
+    - reset_cleanup_result
+    - replay_instructions
+  conditional:
+    - playwright_screenshots_trace_video
+    - dom_accessibility_network_console
+diagnosis_repair:
+  classification_before_repair: true
+  maximum_repair_cycles: 2
+  maximum_execution_attempts: 3
+  allowed_scope: DECLARED_TEST_FIXTURE_HARNESS_PATHS
+  product_defect_repair_action: STOP_AND_REPORT
+  oracle_conflict_action: STOP
+  preserve_original_failure_evidence: true
+memory:
+  early_slice_control: MEMORY_OFF
+  governed_adapter_required_for_restart_reuse_acceptance: true
+  authority_order_before_relevance: true
+  excluded_states:
+    - CONFLICTING
+    - QUARANTINED
+    - REVOKED
+    - EXPIRED
+    - FORGOTTEN
+  memory_may_override_oracle_policy_permission: false
+budgets:
+  wall_clock_job_minutes: 45
+  planning_minutes: 5
+  execution_attempt_minutes: 15
+  repair_cycles: 2
+  execution_attempts: 3
+  concurrent_workers_per_job: 1
+  browser_contexts_per_attempt: 1
+  generated_patch_changed_lines: 2000
+  artifact_mebibytes_per_job: 500
+protected_invariants:
+  critical_false_green_count: 0
+  unauthorized_product_source_repair_count: 0
+  unauthorized_oracle_policy_permission_change_count: 0
+  cross_project_data_or_memory_leak_count: 0
+  unbounded_retry_or_spend_count: 0
+  unverifiable_success_verdict_count: 0
+  secret_or_personal_data_exposure_count: 0
+  duplicate_uncertain_side_effect_after_restart_count: 0
+  ai_only_release_authority_count: 0
+vertical_slices:
+  - id: BETA-A
+    title: Existing governed pack execution
+    depends_on: []
+    operational_result: submit_durable_job_execute_existing_pack_return_evidence_verdict
+    proves:
+      - intake
+      - durable_state
+      - execution_worker
+      - evidence
+      - deterministic_verdict
+      - cancellation
+      - release_smoke
+  - id: BETA-B
+    title: Requirement-to-generated-test execution
+    depends_on: [BETA-A]
+    operational_result: plan_generate_validate_execute_reviewable_test_patch
+    proves:
+      - project_inspection
+      - oracle_bound_planning
+      - pytest_playwright_generation
+      - patch_traceability
+  - id: BETA-C
+    title: Diagnosis repair and re-run
+    depends_on: [BETA-B]
+    operational_result: classify_seeded_failure_repair_test_only_rerun_preserve_evidence
+    proves:
+      - product_vs_test_vs_environment_classification
+      - bounded_test_repair
+      - regression
+      - product_defect_not_masked
+  - id: BETA-D
+    title: Restart recovery and governed context
+    depends_on: [BETA-A, BETA-C]
+    operational_result: resume_same_job_after_restart_without_duplicate_or_loss
+    proves:
+      - durable_recovery
+      - worker_lease_fencing
+      - governed_memory
+      - memory_off_control
+  - id: BETA-E
+    title: Two-project Beta acceptance
+    depends_on: [BETA-B, BETA-C, BETA-D]
+    operational_result: two_materially_different_projects_complete_user_journey
+    proves:
+      - seeded_product_defect_detected
+      - healthy_scenario_not_falsely_reported
+      - deployment
+      - documentation
+      - human_uat
+milestone_mapping:
+  M1: [BETA-D]
+  M2: [BETA-B, BETA-C, BETA-E]
+  M3: [BETA-E]
+  M4: [BETA-B, BETA-C]
+  M5: [BETA-A, BETA-D]
+  M6: [BETA-E]
+acceptance:
+  spec_phase:
+    machine_markdown_consistent: true
+    threat_model_complete: true
+    test_and_uat_design_complete: true
+    runtime_implementation_absent: true
+    dedicated_gate_green: true
+    full_ci_green: true
+    secret_scan_green: true
+    codeql_green: true
+    review_threads: 0
+  product_campaign:
+    real_entrypoint: true
+    restart_recovery: true
+    full_agent_loop: true
+    direct_evidence_references: true
+    supported_projects: 2
+    seeded_product_defect_detected: true
+    healthy_scenario_false_positive_count: 0
+    critical_false_green_count: 0
+    release_deployment_smoke: true
+    human_uat_complete: true
+implementation_gate:
+  runtime_may_begin_after_spec_merge: true
+  first_goal_must_deliver: BETA-A
+  unused_horizontal_subsystem_first: false
