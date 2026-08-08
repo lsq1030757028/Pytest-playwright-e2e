@@ -7,3 +7,5 @@
 18909950453ea74f2c1dc082dd49d29a04450c81:.agent/relay/leases/integration.json:generic-api-key:6
 # Exact fingerprint for the public integration coordination ID created during M1A closure; no credential was present.
 12870202e18b4266dd279633390ab9e3710d38a6:.agent/relay/leases/integration.json:generic-api-key:6
+# Exact fingerprint for the public integration coordination ID created during PR #86 control-plane recovery; no credential was present.
+2cd8935b760083567008eba113d0eb337b332b7c:.agent/relay/leases/integration.json:generic-api-key:6
