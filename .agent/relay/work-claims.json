@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 124,
+  "revision": 125,
   "claim_sequence": 9,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -41,11 +41,11 @@
       "exclusive_domain": "beta-product-architecture",
       "target_branch": "spec/test-agent-runtime-beta-clean",
       "target_pr": null,
-      "expected_head_sha": "a58cf35c8687f932493480cf4f23baf4b34e92e2",
+      "expected_head_sha": "03e5f7712b3a54da55b8cde6957e0eefea5e929f",
       "started_at": "2026-08-08T06:37:00Z",
-      "heartbeat_at": "2026-08-08T06:37:00Z",
-      "expires_at": "2026-08-08T08:37:00Z",
-      "last_checkpoint": "OWNER_CLEAN_SPEC_RECOVERY_FROM_CURRENT_MAIN_AFTER_STALE_PR67"
+      "heartbeat_at": "2026-08-08T06:41:00Z",
+      "expires_at": "2026-08-08T08:41:00Z",
+      "last_checkpoint": "CLEAN_BETA_SPEC_REBUILT_ON_CURRENT_MAIN_WAITING_PR_CI"
     }
   },
   "recovered_claims": [
