@@ -28,7 +28,7 @@ work_items:
     milestone: M1
     outcome: close and merge the dedicated Relay Runtime conversation isolation design
     phase: CLOSURE
-    state: IN_PROGRESS
+    state: CLOSED
     priority: 100
     dependencies: []
     authority_issue: 49
@@ -82,7 +82,7 @@ work_items:
     milestone: M1
     outcome: close executable governed-memory domain contracts
     phase: CLOSURE
-    state: READY
+    state: CLOSED
     priority: 100
     dependencies: []
     authority_issue: 43
@@ -103,10 +103,10 @@ work_items:
     state: READY
     priority: 80
     dependencies: []
-    authority_issue: null
+    authority_issue: 60
     required_spec: self
-    target_branch: null
-    target_pr: null
+    target_branch: spec/ux-fp-fn-benchmark
+    target_pr: 63
     exclusive_domain: ux-benchmark
     observation_domains: [integration-main]
     scope: {paths: [docs/specs, tests, .github/workflows], shared_mutable_external_boundary: false}
@@ -118,13 +118,13 @@ work_items:
     milestone: M1
     outcome: define deterministic memory storage and progressive retrieval
     phase: SPEC
-    state: BLOCKED
+    state: CLOSED
     priority: 90
     dependencies: [M1A-RUNTIME-CONTRACTS-CLOSE]
-    authority_issue: null
-    required_spec: self
-    target_branch: null
-    target_pr: null
+    authority_issue: 62
+    required_spec: SPEC-M1B-STORE-PROGRESSIVE-RETRIEVAL@0.1.0
+    target_branch: spec/m1b-store-progressive-retrieval
+    target_pr: 68
     exclusive_domain: memory-store-retrieval
     observation_domains: [memory-runtime-contracts, integration-main]
     scope: {paths: [docs/specs, tests], shared_mutable_external_boundary: false}
@@ -135,14 +135,14 @@ work_items:
   - work_item_id: M1C-MEMORY-FORMATION
     milestone: M1
     outcome: form candidate memories through hot-path and background consolidation
-    phase: SPEC
-    state: BLOCKED
+    phase: CLOSURE
+    state: READY
     priority: 70
     dependencies: [M1B-STORE-RETRIEVAL-SPEC]
-    authority_issue: null
-    required_spec: self
-    target_branch: null
-    target_pr: null
+    authority_issue: 74
+    required_spec: SPEC-M1C-MEMORY-FORMATION@0.1.0
+    target_branch: fix/m1c-migration-evidence
+    target_pr: 85
     exclusive_domain: memory-formation
     observation_domains: [memory-store-retrieval, integration-main]
     scope: {paths: [docs/specs, src, tests], shared_mutable_external_boundary: false}
