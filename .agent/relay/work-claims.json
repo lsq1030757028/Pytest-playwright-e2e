@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 126,
+  "revision": 127,
   "claim_sequence": 10,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -51,15 +51,15 @@
       "work_item_id": "PARALLEL-WORK-CLAIMS-IMPLEMENTATION",
       "claim_token": "claim-parallel-work-claims-implementation-10-20260808T064600Z",
       "surface": "HUMAN_CONTROL",
-      "state": "INTEGRATION_WAITING",
+      "state": "INTEGRATING",
       "exclusive_domain": "parallel-delivery-control",
       "target_branch": "fix/relay-stale-integration-recovery",
       "target_pr": 86,
       "expected_head_sha": "a4e088b1a328c31fbe5c29dee43c1213f332c072",
       "started_at": "2026-08-08T06:46:00Z",
-      "heartbeat_at": "2026-08-08T06:46:00Z",
-      "expires_at": "2026-08-08T08:46:00Z",
-      "last_checkpoint": "PR86_ALL_GATES_GREEN_REVIEW_THREADS_ZERO_INTEGRATION_WAITING"
+      "heartbeat_at": "2026-08-08T06:47:00Z",
+      "expires_at": "2026-08-08T08:47:00Z",
+      "last_checkpoint": "INTEGRATION_LEASE_INTEGRATION_6_20260808T064700Z"
     }
   },
   "recovered_claims": [
@@ -119,7 +119,7 @@
       "enqueued_at": "2026-08-08T06:46:00Z",
       "security_or_correctness_repair": true,
       "dependency_unblocking": true,
-      "state": "INTEGRATION_WAITING"
+      "state": "INTEGRATING"
     }
   ]
 }
