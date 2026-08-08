@@ -2,7 +2,7 @@
   "schema_version": 1,
   "control_id": "PARALLEL-WORK-CLAIMS",
   "enabled": true,
-  "revision": 129,
+  "revision": 130,
   "claim_sequence": 10,
   "claims": {
     "UX-FP-FN-BENCHMARK-SPEC": {
@@ -27,11 +27,11 @@
       "exclusive_domain": "memory-formation",
       "target_branch": "fix/m1c-migration-evidence",
       "target_pr": 85,
-      "expected_head_sha": "5b498a6f16ddef665b8b4f04ee9d40db541e8c2a",
+      "expected_head_sha": "f64f0cf2d55f2123e10df471a16d13a74e04cba2",
       "started_at": "2026-08-08T06:32:00Z",
-      "heartbeat_at": "2026-08-08T06:35:00Z",
-      "expires_at": "2026-08-08T08:35:00Z",
-      "last_checkpoint": "M1C_MIGRATION_GATE_FILTER_FIXED_WAITING_LATEST_HEAD_CI"
+      "heartbeat_at": "2026-08-08T06:52:00Z",
+      "expires_at": "2026-08-08T08:52:00Z",
+      "last_checkpoint": "PR85_SYNCED_TO_RESTORED_SECURITY_MAIN_FINAL_HEAD_CI_RUNNING"
     },
     "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC": {
       "work_item_id": "TEST-AGENT-RUNTIME-BETA-ARCHITECTURE-SPEC",
@@ -43,23 +43,9 @@
       "target_pr": 87,
       "expected_head_sha": "6d15f85a5d1b22f1016dbec33a99f298617ce60e",
       "started_at": "2026-08-08T06:37:00Z",
-      "heartbeat_at": "2026-08-08T06:45:00Z",
-      "expires_at": "2026-08-08T08:45:00Z",
-      "last_checkpoint": "PR87_SYNCED_TO_SECRET_GATE_REPAIR_MAIN_WAITING_FINAL_HEAD_CI"
-    },
-    "PARALLEL-WORK-CLAIMS-IMPLEMENTATION": {
-      "work_item_id": "PARALLEL-WORK-CLAIMS-IMPLEMENTATION",
-      "claim_token": "claim-parallel-work-claims-implementation-10-20260808T064600Z",
-      "surface": "HUMAN_CONTROL",
-      "state": "INTEGRATING",
-      "exclusive_domain": "parallel-delivery-control",
-      "target_branch": "fix/relay-stale-integration-recovery",
-      "target_pr": 86,
-      "expected_head_sha": "a4e088b1a328c31fbe5c29dee43c1213f332c072",
-      "started_at": "2026-08-08T06:46:00Z",
-      "heartbeat_at": "2026-08-08T06:45:00Z",
-      "expires_at": "2026-08-08T08:45:00Z",
-      "last_checkpoint": "PR88_EXACT_SECRET_FALSE_POSITIVE_REPAIR_MERGED_MAIN_VERIFYING"
+      "heartbeat_at": "2026-08-08T06:52:00Z",
+      "expires_at": "2026-08-08T08:52:00Z",
+      "last_checkpoint": "PR87_FINAL_HEAD_BETA_SPEC_SECRET_CODEQL_GREEN_FULL_CI_RUNNING"
     }
   },
   "recovered_claims": [
@@ -119,7 +105,9 @@
       "enqueued_at": "2026-08-08T06:46:00Z",
       "security_or_correctness_repair": true,
       "dependency_unblocking": true,
-      "state": "INTEGRATING"
+      "state": "INTEGRATED",
+      "reconciled_at": "2026-08-08T06:52:00Z",
+      "result": "PR86_MERGED_PR88_SECRET_REPAIR_MAIN_FULL_CI_SECRET_CODEQL_RELEASE_GREEN"
     }
   ]
 }
