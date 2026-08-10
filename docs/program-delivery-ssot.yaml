@@ -4,7 +4,7 @@ program_delivery:
   status: ACTIVE
   source_role: AUTHORITATIVE_DELIVERY
   delivery_selection_authoritative: true
-  updated_at: 2026-08-10T11:24:00+08:00
+  updated_at: 2026-08-10T11:30:00+08:00
   governing_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
   goal_issue: 91
 
@@ -185,7 +185,7 @@ work_items:
     authority_issue: 91
     required_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
     target_branch: feat/program-delivery-ssot
-    target_pr: null
+    target_pr: 93
     exclusive_domain: program-delivery-control
     blocks_slice: BETA-A
     supports_slices: [BETA-A, BETA-B, BETA-C, BETA-D, BETA-E]
