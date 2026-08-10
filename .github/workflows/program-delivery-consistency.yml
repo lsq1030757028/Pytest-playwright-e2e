@@ -19,6 +19,7 @@ on:
       - "docs/specs/hourly-github-relay-prompt.md"
       - "src/test_workflow/program_delivery.py"
       - "tests/unit/test_program_delivery.py"
+      - "tests/unit/test_program_delivery_mutation_proof.py"
       - "tests/unit/test_program_delivery_source_consistency.py"
       - ".github/workflows/program-delivery-consistency.yml"
   push:
@@ -40,6 +41,7 @@ on:
       - "docs/specs/hourly-github-relay-prompt.md"
       - "src/test_workflow/program_delivery.py"
       - "tests/unit/test_program_delivery.py"
+      - "tests/unit/test_program_delivery_mutation_proof.py"
       - "tests/unit/test_program_delivery_source_consistency.py"
       - ".github/workflows/program-delivery-consistency.yml"
   workflow_dispatch:
@@ -65,12 +67,14 @@ jobs:
           uv run ruff check \
             src/test_workflow/program_delivery.py \
             tests/unit/test_program_delivery.py \
+            tests/unit/test_program_delivery_mutation_proof.py \
             tests/unit/test_program_delivery_source_consistency.py
 
-      - name: Prove canonical delivery state and deterministic selection
+      - name: Prove canonical delivery state deterministic selection and critical mutations
         run: |
           uv run pytest \
             tests/unit/test_program_delivery.py \
+            tests/unit/test_program_delivery_mutation_proof.py \
             tests/unit/test_program_delivery_source_consistency.py \
             tests/unit/test_program_delivery_ssot_spec.py \
             -q
