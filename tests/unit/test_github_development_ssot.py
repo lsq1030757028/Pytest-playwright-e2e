@@ -14,16 +14,20 @@ def test_repository_has_one_active_github_development_ssot() -> None:
     policy = load_policy()
 
     assert policy["status"] == "ACTIVE"
-    assert policy["version"] == 1.2
+    assert policy["version"] == 1.3
     assert policy["source_of_truth"]["cloud_first"] is True
     assert policy["source_of_truth"]["authoritative_code_branch"] == "main"
     assert policy["source_of_truth"]["authoritative_verification"] == "github_actions"
     assert policy["source_of_truth"]["direct_main_write_allowed"] is False
+    assert policy["entrypoints"]["program_delivery"] == "docs/program-delivery-ssot.yaml"
+    assert policy["entrypoints"]["project_status_role"] == "GENERATED_VIEW"
 
     required_paths = {
         "AGENTS.md",
         "docs/github-development-ssot.md",
         "docs/github-development-ssot.yaml",
+        "docs/program-delivery-ssot.md",
+        "docs/program-delivery-ssot.yaml",
         "docs/specs/autonomous-execution-mandate-spec.md",
         "docs/specs/autonomous-execution-mandate.yaml",
         "docs/testing/github-development-ssot-test-design.md",
@@ -33,6 +37,26 @@ def test_repository_has_one_active_github_development_ssot() -> None:
     }
     for relative_path in required_paths:
         assert (ROOT / relative_path).is_file(), relative_path
+
+
+def test_authorization_is_separate_from_delivery_selection() -> None:
+    policy = load_policy()
+    authorization = policy["authorization"]
+    delivery = policy["delivery_selection"]
+
+    assert authorization["answers"] == "MAY_DO"
+    assert authorization["delivery_ssot_may_expand_authority"] is False
+    assert "explicit_owner_authority" in authorization["authority_order"]
+    assert "roadmap_status_and_ledgers" not in authorization["authority_order"]
+
+    assert delivery["answers"] == "SHOULD_DO_NEXT"
+    assert delivery["authoritative_source"] == "docs/program-delivery-ssot.yaml"
+    assert delivery["claim_registry_answers"] == "WHO_DOES_IT"
+    assert delivery["claim_registry_may_define_product_priority"] is False
+    assert delivery["claim_registry_may_define_product_completion_truth"] is False
+    assert delivery["status_and_roadmaps_may_select_next_work"] is False
+    assert delivery["conflict_action"] == "REPLAN_REQUIRED"
+    assert delivery["chat_fallback_allowed"] is False
 
 
 def test_spec_gate_precedes_runtime_implementation() -> None:
@@ -60,9 +84,14 @@ def test_spec_gate_precedes_runtime_implementation() -> None:
     assert spec_gate["exceptions"]["DEV0"]["lightweight_inline_spec_allowed"] is True
     assert spec_gate["exceptions"]["DEV-E"]["emergency_spec_required_before_action"] is True
     assert planning["spec_before_runtime_implementation"] is True
+    assert planning["delivery_selection_source"] == "docs/program-delivery-ssot.yaml"
     assert "runtime_implementation_before_required_spec_merged" in autonomy["prohibited"]
+    assert "deprecated_delivery_source_selection" in autonomy["prohibited"]
+    assert "claim_registry_as_product_priority_source" in autonomy["prohibited"]
     assert invariants["runtime_implementation_without_approved_spec"] == 0
     assert invariants["silent_spec_semantic_overwrite"] == 0
+    assert invariants["delivery_source_split_brain"] == 0
+    assert invariants["claim_registry_product_priority_ownership"] == 0
 
 
 def test_assurance_profiles_are_risk_adaptive_not_mechanical() -> None:
@@ -177,11 +206,16 @@ def test_ssot_changes_cannot_relax_governance_silently() -> None:
         "permission",
         "production_approval",
         "mandate_scope",
+        "delivery_selection_authority",
     }
-    assert self_policy["owner_authorization_for_current_change"]["issue"] == 23
+    assert self_policy["owner_authorization_for_current_change"]["issue"] == 91
+    assert "docs/program-delivery-ssot.yaml" in self_policy["required_consistency_files"]
     assert "tests/unit/test_github_development_ssot.py" in (
         self_policy["required_consistency_files"]
     )
     assert "tests/unit/test_autonomous_execution_mandate.py" in (
+        self_policy["required_consistency_files"]
+    )
+    assert "tests/unit/test_program_delivery.py" in (
         self_policy["required_consistency_files"]
     )
