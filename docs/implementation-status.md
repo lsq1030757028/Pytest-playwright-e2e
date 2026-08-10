@@ -196,6 +196,7 @@ M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED
 M1A Runtime Contracts：MERGED / CLOSED
 M1B Store & Progressive Retrieval：NEXT / SPEC
+UX0 Synthetic User Runtime：MERGED / CLOSED
 TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
 UX Mutation Proof Runner：MERGED / CLOSED
 Five-mutation Campaign：5 / 5 KILLED
