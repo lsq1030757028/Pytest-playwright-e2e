@@ -75,7 +75,10 @@ def test_mutant_unmapped_horizontal_not_last_is_killed() -> None:
     data = deepcopy(load_raw())
     classes = data["selection_policy"]["classes_in_order"]
     classes[-1], classes[-2] = classes[-2], classes[-1]
-    with pytest.raises(ProgramDeliveryError, match="unmapped horizontal infrastructure must be last"):
+    with pytest.raises(
+        ProgramDeliveryError,
+        match="unmapped horizontal infrastructure must be last",
+    ):
         validate_program_delivery(data)
 
 
