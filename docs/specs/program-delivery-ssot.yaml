@@ -144,6 +144,7 @@ planned_source_roles:
   docs/agent-os-roadmap.yaml: REFERENCE_ARCHITECTURE
   docs/agent-os-evolution-roadmap.md: REFERENCE_ARCHITECTURE_AND_RESEARCH
   docs/product-work-map.yaml: SUPERSEDED_DELIVERY_MAP_OR_COMPATIBILITY_VIEW
+  docs/test-agent-runtime-beta-roadmap.yaml: APPROVED_PRODUCT_SLICE_INPUT_TO_BE_FOLDED_OR_VALIDATED
   ops/hourly-github-relay-control:.agent/relay/work-claims.json: OPERATIONAL_EXECUTION_STATE_ONLY
 
 planned_implementation_changes:
@@ -159,11 +160,13 @@ planned_implementation_changes:
   - prove_relay_enablement_gate
 
 transition_expectation:
+  observed_at: 2026-08-10T03:15:00Z
   live_state_must_be_reconciled_during_implementation: true
   expected_items:
     beta_architecture:
       pr: 87
-      role: PRODUCT_CRITICAL_PATH_DEPENDENCY
+      role: MERGED_PRODUCT_ARCHITECTURE_BASELINE
+      merge_commit: 9fa07d59f57a7d4bffd25e7252c5172bb97c9933
     m1c_migration_evidence:
       pr: 85
       role: PARALLEL_MEMORY_CLOSURE
@@ -173,6 +176,8 @@ transition_expectation:
     old_work_map_reconciliation:
       pr: 89
       role: NOT_LONG_TERM_CONTROL_MODEL
+  beta_a_architecture_dependency_satisfied: true
+  governance_migration_required_before_automated_beta_a_selection: true
   next_runtime_slice_after_beta_architecture_approval: BETA-A
   scheduled_relay_must_remain_disabled: true
 
