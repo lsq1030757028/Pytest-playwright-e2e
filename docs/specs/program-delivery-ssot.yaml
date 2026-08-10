@@ -1,0 +1,250 @@
+spec:
+  id: SPEC-PROGRAM-DELIVERY-SSOT
+  version: 1.0.0
+  status: CANDIDATE
+  goal_issue: 91
+  parent_campaign_issue: 65
+  architecture_goal_issue: 66
+  relay_goal_issue: 49
+  parallel_control_goal_issue: 55
+  assurance:
+    development: DEV3
+    ux: UX0
+  phase: SPEC_ONLY
+
+business_outcome:
+  statement: one authoritative repository source decides what should be delivered next
+  canonical_runtime_path_planned: docs/program-delivery-ssot.yaml
+  canonical_human_path_planned: docs/program-delivery-ssot.md
+  scheduled_relay_reenabled_by_this_spec: false
+
+responsibility_planes:
+  authorization:
+    answers: MAY_DO
+    ordered_inputs:
+      - legal_privacy_security_organization_policy
+      - confirmed_oracle_production_invariant_permission_release_protection
+      - explicit_owner_authority
+      - active_mandate
+      - approved_goal
+      - approved_module_spec
+    delivery_ssot_may_expand_authority: false
+  delivery:
+    answers: SHOULD_DO_NEXT
+    future_authoritative_source: docs/program-delivery-ssot.yaml
+    owns:
+      - top_level_product
+      - product_lifecycle_state
+      - active_slice
+      - next_slice
+      - critical_path
+      - slice_dependency_graph
+      - capability_lane_mapping
+      - work_item_product_priority
+      - blocker_relationships
+      - next_work_selection_policy
+      - relay_enablement_transition
+  execution_ownership:
+    answers: WHO_DOES_IT
+    source: ops/hourly-github-relay-control:.agent/relay/work-claims.json
+    owns:
+      - claim_token
+      - executor_surface
+      - target_branch
+      - target_pr
+      - expected_head_fence
+      - heartbeat
+      - expiry
+      - operational_checkpoint
+      - integration_queue
+    may_define_product_priority: false
+    may_define_product_completion_truth: false
+
+product:
+  id: TEST_AGENT_RUNTIME_BETA
+  campaign_issue: 65
+  architecture_goal_issue: 66
+  delivery_principle: VERTICAL_OPERATING_SLICE_BEFORE_UNUSED_HORIZONTAL_SUBSYSTEM
+  slices:
+    BETA-A:
+      title: execute_existing_governed_test_pack
+      dependencies: []
+      user_outcome: durable_job_returns_evidence_backed_verdict
+    BETA-B:
+      title: generate_and_execute_bounded_test
+      dependencies: [BETA-A]
+      user_outcome: requirement_becomes_reviewable_executed_test_patch
+    BETA-C:
+      title: diagnose_repair_and_rerun
+      dependencies: [BETA-B]
+      user_outcome: test_defect_repaired_product_defect_not_masked
+    BETA-D:
+      title: restart_and_resume_with_governed_context
+      dependencies: [BETA-A, BETA-C]
+      user_outcome: durable_resume_without_duplicate_uncertain_effects
+    BETA-E:
+      title: two_project_beta_acceptance
+      dependencies: [BETA-B, BETA-C, BETA-D]
+      user_outcome: two_supported_projects_complete_operating_beta
+
+capability_lanes:
+  M1_MEMORY:
+    primary_slices: [BETA-D]
+  M2_MODEL_GENERALIZATION:
+    primary_slices: [BETA-B, BETA-C, BETA-E]
+  M3_PROJECT_GENERALIZATION:
+    primary_slices: [BETA-E]
+  M4_BOUNDED_ORCHESTRATION:
+    primary_slices: [BETA-B, BETA-C]
+    only_when_slice_requires: true
+  M5_DURABLE_RUNTIME:
+    primary_slices: [BETA-A, BETA-D]
+  M6_INTEGRATED_BETA:
+    primary_slices: [BETA-E]
+  UX_FP_FN_ASSURANCE:
+    primary_slices: [BETA-C, BETA-E]
+
+critical_path_contract:
+  work_item_requires_any_mapping:
+    - blocks_slice
+    - closes_slice
+    - unblocks_integration
+  unmapped_horizontal_default_class: PARALLEL_SUPPORT
+  milestone_number_may_imply_priority: false
+
+selection_policy:
+  authorization_before_selection: true
+  safety_before_selection: true
+  active_foreign_claim_conflicts_removed_before_selection: true
+  classes_in_order:
+    - SECURITY_CORRECTNESS_REPAIR
+    - ACTIVE_SLICE_BLOCKER
+    - ACTIVE_SLICE_CLOSER
+    - DEPENDENCY_UNBLOCKING_INTEGRATION
+    - ACTIVE_OR_NEXT_SLICE_PARALLEL_CAPABILITY
+    - NEXT_SLICE_REQUIRED_PREPARATION
+    - UNMAPPED_HORIZONTAL_INFRASTRUCTURE
+  tie_break:
+    - explicit_priority_desc
+    - work_item_id_asc
+  forbidden_priority_signals:
+    - milestone_number
+    - file_age
+    - pr_number
+    - discussion_volume
+    - claim_registry_sequence
+
+planned_source_roles:
+  docs/program-delivery-ssot.yaml: AUTHORITATIVE_DELIVERY
+  docs/program-delivery-ssot.md: AUTHORITATIVE_DELIVERY_HUMAN_COMPANION
+  docs/github-development-ssot.yaml: AUTHORITATIVE_PROCESS_AND_SAFETY
+  docs/github-development-ssot.md: AUTHORITATIVE_PROCESS_AND_SAFETY_HUMAN_COMPANION
+  docs/specs/autonomous-execution-mandate.yaml: AUTHORITATIVE_STANDING_AUTHORITY
+  docs/implementation-status.md: GENERATED_VIEW
+  docs/agent-os-roadmap.yaml: REFERENCE_ARCHITECTURE
+  docs/agent-os-evolution-roadmap.md: REFERENCE_ARCHITECTURE_AND_RESEARCH
+  docs/product-work-map.yaml: SUPERSEDED_DELIVERY_MAP_OR_COMPATIBILITY_VIEW
+  docs/test-agent-runtime-beta-roadmap.yaml: APPROVED_PRODUCT_SLICE_INPUT_TO_BE_FOLDED_OR_VALIDATED
+  ops/hourly-github-relay-control:.agent/relay/work-claims.json: OPERATIONAL_EXECUTION_STATE_ONLY
+
+planned_implementation_changes:
+  - add_program_delivery_ssot_markdown_and_yaml
+  - update_agents_read_order_and_delivery_source_rule
+  - split_github_development_authority_from_delivery_selection
+  - migrate_parallel_work_claims_selector_source
+  - migrate_hourly_relay_prompt_and_selector_source
+  - mark_old_status_roadmap_work_map_source_roles
+  - add_deterministic_program_delivery_validator_and_selector
+  - add_ci_consistency_gate
+  - validate_or_generate_human_status_view
+  - prove_relay_enablement_gate
+
+transition_expectation:
+  observed_at: 2026-08-10T03:15:00Z
+  live_state_must_be_reconciled_during_implementation: true
+  expected_items:
+    beta_architecture:
+      pr: 87
+      role: MERGED_PRODUCT_ARCHITECTURE_BASELINE
+      merge_commit: 9fa07d59f57a7d4bffd25e7252c5172bb97c9933
+    m1c_migration_evidence:
+      pr: 85
+      role: PARALLEL_MEMORY_CLOSURE
+    ux_fp_fn_spec:
+      pr: 63
+      role: PARALLEL_UX_ASSURANCE
+    old_work_map_reconciliation:
+      pr: 89
+      role: NOT_LONG_TERM_CONTROL_MODEL
+  beta_a_architecture_dependency_satisfied: true
+  governance_migration_required_before_automated_beta_a_selection: true
+  next_runtime_slice_after_beta_architecture_approval: BETA-A
+  scheduled_relay_must_remain_disabled: true
+
+consistency_invariants:
+  authoritative_delivery_sources_max: 1
+  independent_authoritative_next_execution_sequence_outside_program_ssot: 0
+  human_machine_active_next_slice_disagreement: 0
+  critical_path_item_without_slice_mapping: 0
+  ready_item_without_goal_spec_authority: 0
+  claim_registry_product_priority_ownership: 0
+  relay_selector_program_selector_disagreement: 0
+  unknown_slice_dependency: 0
+  slice_dependency_cycle: 0
+  closed_slice_with_unsatisfied_gate: 0
+  relay_enableable_before_all_enablement_gates: 0
+
+relay_reenable_gate:
+  required:
+    - implementation_merged_to_main
+    - main_full_quality_green
+    - main_security_gates_green
+    - source_consistency_gate_green
+    - deterministic_selector_proof_green
+    - current_claims_and_integration_queue_reconciled
+    - beta_a_selected_after_architecture_dependency_satisfied
+    - relay_prompt_uses_program_delivery_ssot
+    - bounded_acceptance_run_green
+  spec_merge_enables_relay: false
+
+failure_behavior:
+  conflicting_delivery_sources: REPLAN_REQUIRED
+  stale_transition_snapshot: REPLAN_REQUIRED
+  dependency_disagreement: REPLAN_REQUIRED
+  missing_goal_spec_authority: BLOCKED
+  failed_required_evidence: BLOCKED
+  missing_authorization: OUT_OF_MANDATE
+  execution_fence_loss: LOST_CLAIM
+  chat_history_fallback_allowed: false
+  deprecated_roadmap_fallback_allowed: false
+
+rollback:
+  before_reenable:
+    - keep_scheduled_relay_disabled
+    - preserve_claims_branches_prs_and_evidence
+    - revert_unmerged_implementation_if_needed
+  after_future_reenable:
+    - disable_scheduled_relay_first
+    - stop_new_claims
+    - preserve_claim_registry_and_github_audit
+    - reviewed_change_event_for_selector_source_rollback
+    - never_force_reset_active_branches
+
+spec_acceptance:
+  required:
+    - dedicated_spec_validation_green
+    - markdown_yaml_contract_consistent
+    - threat_model_complete
+    - deterministic_test_design_complete
+    - full_quality_green
+    - secret_scan_green
+    - codeql_green
+    - review_threads_zero
+    - blockers_zero
+    - spec_only_diff
+  forbidden_in_this_pr:
+    - runtime_selector_change
+    - existing_ssot_authority_change
+    - relay_prompt_change
+    - scheduled_task_reenable
+    - product_runtime_implementation

@@ -1,0 +1,43 @@
+name: program-delivery-ssot-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/program-delivery-ssot-spec.md"
+      - "docs/specs/program-delivery-ssot.yaml"
+      - "docs/security/program-delivery-ssot-threat-model.md"
+      - "docs/testing/program-delivery-ssot-test-design.md"
+      - "tests/unit/test_program_delivery_ssot_spec.py"
+      - ".github/workflows/program-delivery-ssot-spec.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/program-delivery-ssot-spec.md"
+      - "docs/specs/program-delivery-ssot.yaml"
+      - "docs/security/program-delivery-ssot-threat-model.md"
+      - "docs/testing/program-delivery-ssot-test-design.md"
+      - "tests/unit/test_program_delivery_ssot_spec.py"
+      - ".github/workflows/program-delivery-ssot-spec.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-program-delivery-ssot-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint dedicated SPEC checks
+        run: uv run ruff check tests/unit/test_program_delivery_ssot_spec.py
+
+      - name: Validate Program Delivery SSOT SPEC package
+        run: uv run pytest tests/unit/test_program_delivery_ssot_spec.py -q
