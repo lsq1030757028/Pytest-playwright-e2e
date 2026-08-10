@@ -79,6 +79,35 @@ def _validate_slice_graph(slices: dict[str, Any]) -> None:
         raise ProgramDeliveryError("product slice dependency graph contains a cycle")
 
 
+def _validate_work_item_graph(items: dict[str, dict[str, Any]]) -> None:
+    incoming = {work_item_id: 0 for work_item_id in items}
+    outgoing: dict[str, list[str]] = {work_item_id: [] for work_item_id in items}
+    for work_item_id, item in items.items():
+        dependencies = item.get("dependencies", [])
+        if not isinstance(dependencies, list):
+            raise ProgramDeliveryError(f"{work_item_id} dependencies must be a list")
+        for dependency in dependencies:
+            if dependency not in items:
+                raise ProgramDeliveryError(
+                    f"{work_item_id} references unknown work dependency {dependency}"
+                )
+            incoming[work_item_id] += 1
+            outgoing[dependency].append(work_item_id)
+
+    queue = sorted(item_id for item_id, count in incoming.items() if count == 0)
+    visited = 0
+    while queue:
+        work_item_id = queue.pop(0)
+        visited += 1
+        for child in sorted(outgoing[work_item_id]):
+            incoming[child] -= 1
+            if incoming[child] == 0:
+                queue.append(child)
+                queue.sort()
+    if visited != len(items):
+        raise ProgramDeliveryError("Work Item dependency graph contains a cycle")
+
+
 def validate_program_delivery(data: dict[str, Any]) -> None:
     header = _require_mapping(data.get("program_delivery"), "program_delivery")
     if header.get("source_role") != "AUTHORITATIVE_DELIVERY":
@@ -116,6 +145,7 @@ def validate_program_delivery(data: dict[str, Any]) -> None:
         raise ProgramDeliveryError("forbidden priority signals are incomplete")
 
     items = _work_items_by_id(data)
+    _validate_work_item_graph(items)
     dependency_closed_states = set(policy.get("dependency_closed_states", []))
     claimable_states = set(policy.get("claimable_states", []))
     critical_mapping_keys = tuple(policy.get("critical_path_requires_any", []))
@@ -123,14 +153,6 @@ def validate_program_delivery(data: dict[str, Any]) -> None:
         raise ProgramDeliveryError("critical path mapping rule is missing")
 
     for work_item_id, item in items.items():
-        dependencies = item.get("dependencies", [])
-        if not isinstance(dependencies, list):
-            raise ProgramDeliveryError(f"{work_item_id} dependencies must be a list")
-        for dependency in dependencies:
-            if dependency not in items:
-                raise ProgramDeliveryError(
-                    f"{work_item_id} references unknown work dependency {dependency}"
-                )
         selection_class = item.get("selection_class")
         if selection_class not in class_order:
             raise ProgramDeliveryError(
@@ -156,7 +178,7 @@ def validate_program_delivery(data: dict[str, Any]) -> None:
                 raise ProgramDeliveryError(
                     f"READY work item lacks authority/spec: {work_item_id}"
                 )
-            for dependency in dependencies:
+            for dependency in item.get("dependencies", []):
                 dependency_state = items[dependency].get("state")
                 if dependency_state not in dependency_closed_states:
                     raise ProgramDeliveryError(
