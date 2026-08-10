@@ -4,7 +4,7 @@ program_delivery:
   status: ACTIVE
   source_role: AUTHORITATIVE_DELIVERY
   delivery_selection_authoritative: true
-  updated_at: 2026-08-10T11:30:00+08:00
+  updated_at: 2026-08-10T12:30:00+08:00
   governing_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
   goal_issue: 91
 
@@ -12,7 +12,7 @@ program:
   id: TEST_AGENT_RUNTIME_BETA
   campaign_issue: 65
   architecture_goal_issue: 66
-  state: CONTROL_MIGRATION
+  state: PRE_BETA_A
   delivery_principle: VERTICAL_OPERATING_SLICE_BEFORE_UNUSED_HORIZONTAL_SUBSYSTEM
 
 responsibility_planes:
@@ -97,17 +97,16 @@ product_slices:
 
 execution_pointer:
   active_slice: BETA-A
-  current_focus: PROGRAM-DELIVERY-SSOT-IMPLEMENTATION
+  current_focus: BETA-A-SPEC
   next_slice_after_active: BETA-B
   critical_path:
-    - PROGRAM-DELIVERY-SSOT-IMPLEMENTATION
     - BETA-A-SPEC
     - BETA-A-IMPLEMENTATION
     - BETA-A-ACCEPTANCE
   rationale: >-
-    Beta architecture is merged. The temporary control-plane migration is the
-    owner-directed prerequisite for deterministic automated BETA-A selection;
-    after it closes, BETA-A SPEC is the next product implementation action.
+    Program Delivery control migration is merged and main-verified. The
+    deterministic selector can now advance product delivery to BETA-A SPEC;
+    capability lanes remain parallel unless they unblock the active slice.
 
 capability_lanes:
   M1_MEMORY:
@@ -177,7 +176,7 @@ selection_policy:
 work_items:
   - work_item_id: PROGRAM-DELIVERY-SSOT-IMPLEMENTATION
     outcome: migrate all delivery selection to one authoritative source
-    state: IN_PROGRESS
+    state: CLOSED
     phase: IMPLEMENTATION
     selection_class: ACTIVE_SLICE_BLOCKER
     priority: 1000
@@ -197,7 +196,7 @@ work_items:
       - main_quality_security_release_green
   - work_item_id: BETA-A-SPEC
     outcome: define the first user-runnable durable execution slice implementation contract
-    state: BLOCKED
+    state: READY
     phase: SPEC
     selection_class: ACTIVE_SLICE_BLOCKER
     priority: 900
