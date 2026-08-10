@@ -91,7 +91,8 @@ def test_old_sources_are_explicitly_non_authoritative() -> None:
     architecture = load_yaml(ARCHITECTURE_ROADMAP)
     assert architecture["source_role"] == "REFERENCE_ARCHITECTURE"
     assert architecture["delivery_selection_authoritative"] is False
-    assert "next_execution_sequence" not in architecture
+    assert architecture["next_execution_sequence_authoritative"] is False
+    assert architecture["canonical_delivery_ssot"] == "docs/program-delivery-ssot.yaml"
 
     evolution = EVOLUTION_ROADMAP.read_text(encoding="utf-8")
     assert "Source Role: `REFERENCE_ARCHITECTURE_AND_RESEARCH`" in evolution
