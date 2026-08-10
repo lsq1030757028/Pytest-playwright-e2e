@@ -6,6 +6,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from test_workflow.program_delivery import (
+    ProgramDeliveryError,
+    select_next_work_item,
+    validate_program_delivery,
+)
+
 ACTIVE_CLAIM_STATES = frozenset(
     {"CLAIMED", "IN_PROGRESS", "EVIDENCE_READY", "INTEGRATION_WAITING", "INTEGRATING"}
 )
@@ -78,7 +84,7 @@ def _items_by_id(work_map: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     return indexed
 
 
-def validate_work_map(work_map: Mapping[str, Any]) -> None:
+def _validate_legacy_work_map(work_map: Mapping[str, Any]) -> None:
     indexed = _items_by_id(work_map)
     groups = work_map.get("integration_groups")
     if not isinstance(groups, dict) or not groups:
@@ -103,13 +109,17 @@ def validate_work_map(work_map: Mapping[str, Any]) -> None:
         if not isinstance(item["exclusive_domain"], str) or not item["exclusive_domain"]:
             raise ClaimControlError(f"{work_item_id} needs one exclusive_domain")
         if item["integration_group"] not in groups:
-            raise ClaimControlError(f"{work_item_id} references an unknown integration group")
+            raise ClaimControlError(
+                f"{work_item_id} references an unknown integration group"
+            )
         dependencies = item["dependencies"]
         if not isinstance(dependencies, list):
             raise ClaimControlError(f"{work_item_id} dependencies must be a list")
         for dependency in dependencies:
             if dependency not in indexed:
-                raise ClaimControlError(f"{work_item_id} has unknown dependency {dependency}")
+                raise ClaimControlError(
+                    f"{work_item_id} has unknown dependency {dependency}"
+                )
 
     visiting: set[str] = set()
     visited: set[str] = set()
@@ -129,12 +139,25 @@ def validate_work_map(work_map: Mapping[str, Any]) -> None:
         visit(work_item_id)
 
 
+def validate_work_map(work_map: Mapping[str, Any]) -> None:
+    if "program_delivery" in work_map:
+        try:
+            validate_program_delivery(dict(work_map))
+        except ProgramDeliveryError as error:
+            raise ClaimControlError(str(error)) from error
+        return
+    _validate_legacy_work_map(work_map)
+
+
 def validate_registry(registry: Mapping[str, Any]) -> None:
     if registry.get("schema_version") != 1:
         raise ClaimControlError("unsupported claim registry schema")
     if not isinstance(registry.get("revision"), int) or registry["revision"] < 0:
         raise ClaimControlError("registry revision must be a non-negative integer")
-    if not isinstance(registry.get("claim_sequence"), int) or registry["claim_sequence"] < 0:
+    if (
+        not isinstance(registry.get("claim_sequence"), int)
+        or registry["claim_sequence"] < 0
+    ):
         raise ClaimControlError("claim_sequence must be a non-negative integer")
     if not isinstance(registry.get("claims"), dict):
         raise ClaimControlError("claims must be an object")
@@ -147,31 +170,133 @@ def validate_registry(registry: Mapping[str, Any]) -> None:
 def _require_revision(registry: Mapping[str, Any], expected_revision: int) -> None:
     if registry["revision"] != expected_revision:
         raise RegistryRevisionConflict(
-            f"expected registry revision {expected_revision}, found {registry['revision']}"
+            f"expected registry revision {expected_revision}, "
+            f"found {registry['revision']}"
         )
 
 
 def _blocking_claims(registry: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [
-        claim for claim in registry["claims"].values() if claim.get("state") in ACTIVE_CLAIM_STATES
+        claim
+        for claim in registry["claims"].values()
+        if claim.get("state") in ACTIVE_CLAIM_STATES
     ]
 
 
-def select_work_item(work_map: Mapping[str, Any], registry: Mapping[str, Any]) -> SelectionResult:
-    validate_work_map(work_map)
-    validate_registry(registry)
+def _program_ownership_conflicts(
+    program_delivery: Mapping[str, Any],
+    registry: Mapping[str, Any],
+) -> tuple[set[str], dict[str, str]]:
+    indexed = _items_by_id(program_delivery)
+    active = _blocking_claims(registry)
+    active_domains = {claim.get("exclusive_domain") for claim in active}
+    active_branches = {
+        claim.get("target_branch") for claim in active if claim.get("target_branch")
+    }
+    active_prs = {
+        claim.get("target_pr")
+        for claim in active
+        if claim.get("target_pr") is not None
+    }
+    claimed_items = {claim.get("work_item_id") for claim in active}
+    incompatibilities = program_delivery.get("domain_incompatibilities", {})
+    if not isinstance(incompatibilities, dict):
+        raise ClaimControlError("domain_incompatibilities must be a mapping")
+
+    unavailable: set[str] = set()
+    reasons: dict[str, str] = {}
+    for work_item_id, item in indexed.items():
+        if work_item_id in claimed_items:
+            unavailable.add(work_item_id)
+            reasons[work_item_id] = "already_claimed"
+            continue
+
+        domain = item.get("exclusive_domain")
+        if domain in active_domains:
+            unavailable.add(work_item_id)
+            reasons[work_item_id] = f"domain_conflict:{domain}"
+            continue
+
+        incompatible = set(incompatibilities.get(domain, []))
+        reverse_incompatible = {
+            other_domain
+            for other_domain, blocked in incompatibilities.items()
+            if isinstance(blocked, list) and domain in blocked
+        }
+        conflicting_domains = sorted(
+            (incompatible | reverse_incompatible) & active_domains
+        )
+        if conflicting_domains:
+            unavailable.add(work_item_id)
+            reasons[work_item_id] = (
+                f"incompatible_domain:{','.join(conflicting_domains)}"
+            )
+            continue
+
+        target_branch = item.get("target_branch")
+        if target_branch and target_branch in active_branches:
+            unavailable.add(work_item_id)
+            reasons[work_item_id] = f"branch_conflict:{target_branch}"
+            continue
+
+        target_pr = item.get("target_pr")
+        if target_pr is not None and target_pr in active_prs:
+            unavailable.add(work_item_id)
+            reasons[work_item_id] = f"pr_conflict:{target_pr}"
+
+    return unavailable, reasons
+
+
+def _select_program_work_item(
+    program_delivery: Mapping[str, Any],
+    registry: Mapping[str, Any],
+) -> SelectionResult:
+    unavailable, ownership_reasons = _program_ownership_conflicts(
+        program_delivery, registry
+    )
+    try:
+        decision = select_next_work_item(
+            dict(program_delivery),
+            unavailable_work_item_ids=unavailable,
+        )
+    except ProgramDeliveryError as error:
+        raise ClaimControlError(str(error)) from error
+
+    rejected = dict(decision.excluded)
+    for work_item_id, reason in tuple(rejected.items()):
+        if reason == "execution_ownership_unavailable":
+            rejected[work_item_id] = ownership_reasons[work_item_id]
+    return SelectionResult(
+        work_item_id=decision.selected_work_item_id,
+        rejected=rejected,
+    )
+
+
+def _select_legacy_work_item(
+    work_map: Mapping[str, Any],
+    registry: Mapping[str, Any],
+) -> SelectionResult:
     indexed = _items_by_id(work_map)
     active = _blocking_claims(registry)
     active_domains = {claim.get("exclusive_domain") for claim in active}
-    active_branches = {claim.get("target_branch") for claim in active if claim.get("target_branch")}
-    active_prs = {claim.get("target_pr") for claim in active if claim.get("target_pr") is not None}
+    active_branches = {
+        claim.get("target_branch") for claim in active if claim.get("target_branch")
+    }
+    active_prs = {
+        claim.get("target_pr")
+        for claim in active
+        if claim.get("target_pr") is not None
+    }
     claimed_items = {claim.get("work_item_id") for claim in active}
     incompatibilities = work_map.get("domain_incompatibilities", {})
-    closed_items = {item_id for item_id, item in indexed.items() if item.get("state") == "CLOSED"}
+    closed_items = {
+        item_id for item_id, item in indexed.items() if item.get("state") == "CLOSED"
+    }
 
     rejected: dict[str, str] = {}
     ordered = sorted(
-        indexed.values(), key=lambda item: (-int(item["priority"]), str(item["work_item_id"]))
+        indexed.values(),
+        key=lambda item: (-int(item["priority"]), str(item["work_item_id"])),
     )
     for item in ordered:
         work_item_id = item["work_item_id"]
@@ -194,11 +319,17 @@ def select_work_item(work_map: Mapping[str, Any], registry: Mapping[str, Any]) -
             continue
         incompatible = set(incompatibilities.get(domain, []))
         reverse_incompatible = {
-            other_domain for other_domain, blocked in incompatibilities.items() if domain in blocked
+            other_domain
+            for other_domain, blocked in incompatibilities.items()
+            if domain in blocked
         }
-        conflicting_domains = sorted((incompatible | reverse_incompatible) & active_domains)
+        conflicting_domains = sorted(
+            (incompatible | reverse_incompatible) & active_domains
+        )
         if conflicting_domains:
-            rejected[work_item_id] = f"incompatible_domain:{','.join(conflicting_domains)}"
+            rejected[work_item_id] = (
+                f"incompatible_domain:{','.join(conflicting_domains)}"
+            )
             continue
         target_branch = item.get("target_branch")
         if target_branch and target_branch in active_branches:
@@ -210,6 +341,17 @@ def select_work_item(work_map: Mapping[str, Any], registry: Mapping[str, Any]) -
             continue
         return SelectionResult(work_item_id=work_item_id, rejected=rejected)
     return SelectionResult(work_item_id=None, rejected=rejected)
+
+
+def select_work_item(
+    work_map: Mapping[str, Any],
+    registry: Mapping[str, Any],
+) -> SelectionResult:
+    validate_work_map(work_map)
+    validate_registry(registry)
+    if "program_delivery" in work_map:
+        return _select_program_work_item(work_map, registry)
+    return _select_legacy_work_item(work_map, registry)
 
 
 def allocate_next(
@@ -265,7 +407,11 @@ def allocate_next(
     updated["revision"] = int(registry["revision"]) + 1
     updated["claim_sequence"] = sequence
     updated["claims"][selection.work_item_id] = claim
-    return AllocationResult(registry=updated, claim=claim, rejected=selection.rejected)
+    return AllocationResult(
+        registry=updated,
+        claim=claim,
+        rejected=selection.rejected,
+    )
 
 
 def assert_claim_fence(
@@ -374,7 +520,10 @@ def enqueue_integration(
         raise ClaimFenceViolation("claim ownership changed")
     if claim.get("state") != "EVIDENCE_READY":
         raise ClaimControlError("only EVIDENCE_READY work can enter integration")
-    if any(entry.get("work_item_id") == work_item_id for entry in updated["integration_queue"]):
+    if any(
+        entry.get("work_item_id") == work_item_id
+        for entry in updated["integration_queue"]
+    ):
         raise ClaimControlError("Work Item is already in the integration queue")
     updated["integration_queue"].append(
         {
@@ -392,7 +541,9 @@ def enqueue_integration(
     return updated
 
 
-def select_integration_entry(registry: Mapping[str, Any]) -> dict[str, Any] | None:
+def select_integration_entry(
+    registry: Mapping[str, Any],
+) -> dict[str, Any] | None:
     validate_registry(registry)
     eligible = [
         entry

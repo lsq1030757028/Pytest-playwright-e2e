@@ -18,9 +18,12 @@ on:
       - "docs/specs/parallel-work-claims.yaml"
       - "docs/specs/hourly-github-relay-prompt.md"
       - "src/test_workflow/program_delivery.py"
+      - "src/test_workflow/relay_claims.py"
       - "tests/unit/test_program_delivery.py"
       - "tests/unit/test_program_delivery_mutation_proof.py"
       - "tests/unit/test_program_delivery_source_consistency.py"
+      - "tests/unit/test_relay_program_delivery.py"
+      - "tests/unit/test_parallel_work_claims_spec.py"
       - ".github/workflows/program-delivery-consistency.yml"
   push:
     branches: [main]
@@ -40,9 +43,12 @@ on:
       - "docs/specs/parallel-work-claims.yaml"
       - "docs/specs/hourly-github-relay-prompt.md"
       - "src/test_workflow/program_delivery.py"
+      - "src/test_workflow/relay_claims.py"
       - "tests/unit/test_program_delivery.py"
       - "tests/unit/test_program_delivery_mutation_proof.py"
       - "tests/unit/test_program_delivery_source_consistency.py"
+      - "tests/unit/test_relay_program_delivery.py"
+      - "tests/unit/test_parallel_work_claims_spec.py"
       - ".github/workflows/program-delivery-consistency.yml"
   workflow_dispatch:
 
@@ -66,9 +72,12 @@ jobs:
         run: |
           uv run ruff check \
             src/test_workflow/program_delivery.py \
+            src/test_workflow/relay_claims.py \
             tests/unit/test_program_delivery.py \
             tests/unit/test_program_delivery_mutation_proof.py \
-            tests/unit/test_program_delivery_source_consistency.py
+            tests/unit/test_program_delivery_source_consistency.py \
+            tests/unit/test_relay_program_delivery.py \
+            tests/unit/test_parallel_work_claims_spec.py
 
       - name: Prove canonical delivery state deterministic selection and critical mutations
         run: |
@@ -77,4 +86,7 @@ jobs:
             tests/unit/test_program_delivery_mutation_proof.py \
             tests/unit/test_program_delivery_source_consistency.py \
             tests/unit/test_program_delivery_ssot_spec.py \
+            tests/unit/test_relay_program_delivery.py \
+            tests/unit/test_relay_claims.py \
+            tests/unit/test_parallel_work_claims_spec.py \
             -q
