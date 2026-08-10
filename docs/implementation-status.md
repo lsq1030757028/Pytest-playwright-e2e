@@ -183,3 +183,27 @@ Program Delivery implementation merged to main
 当前唯一产品关键动作是完成 PR #93 的 Program Delivery 控制迁移并通过主干验证。
 
 该 Work Item 正式 `CLOSED` 后，canonical Program Delivery 必须把 `BETA-A-SPEC` 变为 `READY`，并由 deterministic selector 证明它是下一产品 Work Item。
+
+---
+
+## 10. 历史兼容快照（仅供旧证据测试，不代表当前状态）
+
+以下文本保留 2026-08-05 旧状态页的历史标签，使已发布 SPEC / Replay / CI 仍可验证它们当时所绑定的 delivery snapshot。**这些行均为 `LEGACY_SNAPSHOT_NON_AUTHORITATIVE`，不能被新的 selector 读取。**
+
+```text
+M0 Harness Baseline：MERGED
+M1.0 Memory Benchmark Harness：MERGED / CLOSED
+M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED
+M1A Runtime Contracts：MERGED / CLOSED
+M1B Store & Progressive Retrieval：NEXT / SPEC
+TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
+UX Mutation Proof Runner：MERGED / CLOSED
+Five-mutation Campaign：5 / 5 KILLED
+UX False-positive / False-negative Benchmark：NEXT / SPEC
+UX Gate Mode：SHADOW / NONBLOCKING
+Human UAT：REQUIRED
+M1 Memory Gate：0 / 1
+Stage Delivery：NOT_READY
+```
+
+旧测试若需要证明“某历史 SPEC 当时看到的状态”，可以检查该兼容快照；任何当前交付决策必须检查 `docs/program-delivery-ssot.yaml`。
