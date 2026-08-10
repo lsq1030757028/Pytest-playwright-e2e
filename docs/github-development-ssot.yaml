@@ -1,7 +1,7 @@
 name: github-cloud-development-ssot
-version: 1.2
+version: 1.3
 status: ACTIVE
-updated_at: 2026-08-05T12:41:00+08:00
+updated_at: 2026-08-10T11:34:00+08:00
 
 scope:
   repository: lsq1030757028/Pytest-playwright-e2e
@@ -17,8 +17,12 @@ entrypoints:
   normative_process: docs/github-development-ssot.md
   machine_policy: docs/github-development-ssot.yaml
   autonomy_mandate: docs/specs/autonomous-execution-mandate.yaml
+  program_delivery: docs/program-delivery-ssot.yaml
+  program_delivery_human: docs/program-delivery-ssot.md
   project_status: docs/implementation-status.md
+  project_status_role: GENERATED_VIEW
   product_roadmap: docs/agent-os-evolution-roadmap.md
+  product_roadmap_role: REFERENCE_ARCHITECTURE_AND_RESEARCH
 
 active_autonomous_mandate:
   id: MANDATE-AUTONOMY-M1-M3
@@ -41,13 +45,38 @@ source_of_truth:
   authority_order:
     - legal_privacy_security_and_organization_policy
     - confirmed_production_invariants_oracle_permission_release_controls
+    - explicit_owner_authority
     - github_development_ssot
     - active_autonomous_mandate
-    - roadmap_status_and_ledgers
     - approved_goal_or_issue
     - approved_module_spec
     - pull_request_plan_and_evidence
     - chat_comments_model_output_and_assumptions
+
+authorization:
+  answers: MAY_DO
+  authority_order:
+    - legal_privacy_security_and_organization_policy
+    - confirmed_production_invariants_oracle_permission_release_controls
+    - explicit_owner_authority
+    - github_development_ssot
+    - active_autonomous_mandate
+    - approved_goal_or_issue
+    - approved_module_spec
+    - pull_request_plan_and_evidence
+  delivery_ssot_may_expand_authority: false
+  missing_authority_action: OUT_OF_MANDATE
+
+delivery_selection:
+  answers: SHOULD_DO_NEXT
+  authoritative_source: docs/program-delivery-ssot.yaml
+  human_companion: docs/program-delivery-ssot.md
+  claim_registry_answers: WHO_DOES_IT
+  claim_registry_may_define_product_priority: false
+  claim_registry_may_define_product_completion_truth: false
+  status_and_roadmaps_may_select_next_work: false
+  conflict_action: REPLAN_REQUIRED
+  chat_fallback_allowed: false
 
 principles:
   - spec_before_implementation
@@ -62,6 +91,8 @@ principles:
   - reversible_changes_and_explicit_recovery
   - github_auditability
   - model_proposes_policy_decides
+  - program_delivery_decides_next_work
+  - claims_coordinate_ownership_not_product_priority
 
 github_objects:
   goal_issue:
@@ -90,6 +121,17 @@ github_objects:
       - revocation_and_expiry
     must_be_versioned: true
     must_be_scope_limited: true
+  program_delivery_ssot:
+    owns:
+      - top_level_product_state
+      - active_and_next_product_slice
+      - critical_path
+      - capability_lane_mapping
+      - work_item_product_priority
+      - blocker_relationships
+      - deterministic_next_work_policy
+    may_expand_authority: false
+    source: docs/program-delivery-ssot.yaml
   branch:
     owns:
       - isolated_implementation
@@ -124,8 +166,9 @@ github_objects:
       - immutable_deployable_release
   status_and_ledgers:
     owns:
-      - truthful_project_state
+      - truthful_project_state_views
       - capability_and_asset_index
+    may_select_next_work: false
 
 lifecycle:
   states:
@@ -167,6 +210,7 @@ lifecycle:
     - impact_expansion
     - evidence_invalidation
     - review_scope_gap
+    - program_delivery_source_conflict
   blocked_triggers:
     - missing_authority
     - missing_or_inactive_mandate_for_autonomous_dev3
@@ -368,6 +412,8 @@ required_invariants:
   direct_main_write: 0
   main_or_release_failure_marked_closed: 0
   model_confidence_used_as_final_evidence: 0
+  delivery_source_split_brain: 0
+  claim_registry_product_priority_ownership: 0
 
 planning:
   required_outputs_for_nontrivial_change:
@@ -381,6 +427,7 @@ planning:
     - asset_plan
     - deployment_and_rollback_impact
     - assumptions_risks_and_blockers
+  delivery_selection_source: docs/program-delivery-ssot.yaml
   spec_before_runtime_implementation: true
   dev2_dev3_spec_separate_pr_by_default: true
   dev2_dev3_test_design_before_implementation: true
@@ -455,6 +502,7 @@ agent_autonomy:
     - evidence_conflict
     - goal_or_mandate_scope_expansion
     - dev_e_production_action
+    - program_delivery_source_conflict
   explicit_human_approval_required_for:
     - dev3_not_covered_by_active_mandate
     - DEV-E_production_action
@@ -474,6 +522,8 @@ agent_autonomy:
     - assertion_deletion_for_green
     - fixed_sleep_or_blind_retry_for_green
     - chat_state_as_repository_ssot
+    - deprecated_delivery_source_selection
+    - claim_registry_as_product_priority_source
     - candidate_asset_direct_production_promotion
     - unrecorded_release_change
 
@@ -496,6 +546,7 @@ pull_request:
 review:
   must_consider:
     - goal_spec_and_mandate_drift
+    - program_delivery_and_product_priority_drift
     - business_truth_and_oracle
     - assurance_underclassification
     - evidence_observability
@@ -528,6 +579,7 @@ release_policy:
 
 closure:
   required_updates:
+    - program_delivery_when_product_state_changes
     - project_status
     - implementation_or_experiment_ledger
     - goal_spec_mandate_pr_commit_ci_release_artifact_mapping
@@ -558,15 +610,23 @@ self_change_policy:
     - permission
     - production_approval
     - mandate_scope
+    - delivery_selection_authority
   owner_authorization_for_current_change:
-    issue: 23
-    mandate_spec: SPEC-AUTONOMY-M1-M3@1.0.0
+    issue: 91
+    mandate_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
   required_consistency_files:
     - AGENTS.md
     - docs/github-development-ssot.md
     - docs/github-development-ssot.yaml
+    - docs/program-delivery-ssot.md
+    - docs/program-delivery-ssot.yaml
     - docs/specs/autonomous-execution-mandate.yaml
+    - docs/specs/parallel-work-claims.md
+    - docs/specs/parallel-work-claims.yaml
+    - docs/specs/hourly-github-relay-prompt.md
     - .github/ISSUE_TEMPLATE/goal.yml
     - .github/pull_request_template.md
     - tests/unit/test_github_development_ssot.py
     - tests/unit/test_autonomous_execution_mandate.py
+    - tests/unit/test_program_delivery.py
+    - tests/unit/test_program_delivery_source_consistency.py
