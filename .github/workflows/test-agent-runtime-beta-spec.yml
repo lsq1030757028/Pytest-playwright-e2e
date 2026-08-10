@@ -1,0 +1,47 @@
+name: test-agent-runtime-beta-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/test-agent-runtime-beta.md"
+      - "docs/specs/test-agent-runtime-beta.yaml"
+      - "docs/security/test-agent-runtime-beta-threat-model.md"
+      - "docs/testing/test-agent-runtime-beta-test-design.md"
+      - "docs/test-agent-runtime-beta-roadmap.yaml"
+      - "tests/unit/test_test_agent_runtime_beta_spec.py"
+      - ".github/workflows/test-agent-runtime-beta-spec.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/test-agent-runtime-beta.md"
+      - "docs/specs/test-agent-runtime-beta.yaml"
+      - "docs/security/test-agent-runtime-beta-threat-model.md"
+      - "docs/testing/test-agent-runtime-beta-test-design.md"
+      - "docs/test-agent-runtime-beta-roadmap.yaml"
+      - "tests/unit/test_test_agent_runtime_beta_spec.py"
+      - ".github/workflows/test-agent-runtime-beta-spec.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-beta-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint dedicated SPEC checks
+        run: |
+          uv run ruff check tests/unit/test_test_agent_runtime_beta_spec.py
+
+      - name: Validate TEST_AGENT_RUNTIME_BETA SPEC package
+        run: |
+          uv run pytest tests/unit/test_test_agent_runtime_beta_spec.py -q
