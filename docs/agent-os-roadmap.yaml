@@ -1,6 +1,9 @@
 project: AI Test Harness
 roadmap_version: 3.5
-updated_at: 2026-08-06T22:35:00+08:00
+source_role: REFERENCE_ARCHITECTURE
+delivery_selection_authoritative: false
+canonical_delivery_ssot: docs/program-delivery-ssot.yaml
+reference_snapshot_updated_at: 2026-08-06T22:35:00+08:00
 current_state: FOUNDATION_BASELINE
 stage_delivery_status: NOT_READY
 next_milestone: M1
@@ -19,6 +22,7 @@ principles:
 
 active_governance:
   development_ssot: docs/github-development-ssot.yaml
+  program_delivery_ssot: docs/program-delivery-ssot.yaml
   autonomy_mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
   mandate_status: ACTIVE
   mandate_scope: [M1, M2, M3]
@@ -265,22 +269,25 @@ milestones:
       - Multi-tenant project spaces
       - Infrastructure sandbox
 
-next_execution_sequence:
-  - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
-  - M1B_IMPLEMENTATION
-  - M1C
-  - M1D
-  - M1E
-  - M1F
-  - M2A
-  - M2B
-  - M2C
-  - M2D
-  - M2E
-  - M3A
-  - M3B
-  - M3C
-  - M3D
-  - M3E
-  - M3F
-  - M4
+historical_reference_sequence:
+  authoritative: false
+  superseded_by: docs/program-delivery-ssot.yaml
+  sequence:
+    - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+    - M1B_IMPLEMENTATION
+    - M1C
+    - M1D
+    - M1E
+    - M1F
+    - M2A
+    - M2B
+    - M2C
+    - M2D
+    - M2E
+    - M3A
+    - M3B
+    - M3C
+    - M3D
+    - M3E
+    - M3F
+    - M4
