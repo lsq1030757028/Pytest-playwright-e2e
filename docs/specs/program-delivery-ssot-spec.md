@@ -23,7 +23,7 @@ The repository currently contains several durable assets that can imply a delive
 - `docs/implementation-status.md`;
 - `docs/agent-os-roadmap.yaml` and `docs/agent-os-evolution-roadmap.md`;
 - `docs/product-work-map.yaml`;
-- the TEST_AGENT_RUNTIME_BETA vertical roadmap in PR #87;
+- the merged `docs/test-agent-runtime-beta-roadmap.yaml` vertical product roadmap;
 - `.agent/relay/work-claims.json` on the Relay control branch.
 
 Those assets have different update cadence and different semantic roles. They can disagree without a deterministic authority rule. In particular, an executor following the older horizontal M1→M3 sequence can make a different next-work decision from an executor following Campaign #65 / Goal #66 and the Beta vertical slices.
@@ -196,14 +196,20 @@ The final schema may add fields but must preserve one authoritative execution po
 
 ## 10. Current transition snapshot
 
-The migration implementation must reconcile live GitHub before writing final state. The SPEC records the expected transition, not an immutable claim that the future state cannot move:
+The migration implementation must reconcile live GitHub before writing final state. The SPEC records the latest observed transition, not an immutable claim that future state cannot move.
 
-- PR #87 — Beta architecture clean rebuild; product critical-path dependency and intended source for the approved vertical architecture;
-- PR #85 — M1C migration-evidence closure; parallel Memory lane;
-- PR #63 — UX FP/FN SPEC; parallel UX assurance lane;
-- PR #89 — bounded repair of the old product work map; it must not make the old map the long-term delivery authority;
-- scheduled `Pytest GitHub Relay` — remains disabled during governance migration;
-- first runtime product slice after Beta architecture approval — `BETA-A`.
+Observed 2026-08-10 after this SPEC work began:
+
+- PR #87 **merged** to `main` as `9fa07d59f57a7d4bffd25e7252c5172bb97c9933`; the Beta vertical architecture is now an approved repository baseline rather than a pending dependency;
+- `docs/test-agent-runtime-beta-roadmap.yaml` is now present on `main` and is an approved product-slice input to be folded into or continuously validated against Program Delivery SSOT;
+- the architecture dependency for `BETA-A` is therefore satisfied;
+- PR #85 remains the parallel M1C migration-evidence closure lane unless live GitHub changes;
+- PR #63 remains the parallel UX FP/FN assurance lane unless live GitHub changes;
+- PR #89 remains a bounded repair of the old product work map and must not establish that map as the long-term delivery authority;
+- scheduled `Pytest GitHub Relay` remains disabled during governance migration;
+- after the Program Delivery control migration, the next runtime product slice is `BETA-A`.
+
+The Program Delivery governance migration is a prerequisite for **automated** BETA-A selection, not evidence that BETA-A has an unresolved architecture dependency.
 
 If live GitHub differs during implementation, the migration enters `REPLAN_REQUIRED` and records the new truth rather than copying this snapshot blindly.
 
@@ -221,7 +227,7 @@ The implementation phase must assign each durable source exactly one role:
 | `docs/agent-os-roadmap.yaml` | `REFERENCE_ARCHITECTURE` / superseded delivery sequence |
 | `docs/agent-os-evolution-roadmap.md` | `REFERENCE_ARCHITECTURE_AND_RESEARCH` |
 | `docs/product-work-map.yaml` | `SUPERSEDED_DELIVERY_MAP` or generated compatibility view |
-| Beta vertical roadmap | merged into / validated against Program Delivery SSOT |
+| `docs/test-agent-runtime-beta-roadmap.yaml` | approved product-slice input folded into / validated against Program Delivery SSOT |
 | `.agent/relay/work-claims.json` | `OPERATIONAL_EXECUTION_STATE_ONLY` |
 
 History must be preserved. Existing approved documents are marked superseded/reference/generated; they are not silently rewritten to pretend they never governed delivery.
