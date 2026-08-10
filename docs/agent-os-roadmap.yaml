@@ -9,6 +9,26 @@ stage_delivery_status: NOT_READY
 next_milestone: M1
 active_module: M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
 active_phase: SPEC_NEXT
+next_execution_sequence_authoritative: false
+next_execution_sequence:
+  - M1B_STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC
+  - M1B_IMPLEMENTATION
+  - M1C
+  - M1D
+  - M1E
+  - M1F
+  - M2A
+  - M2B
+  - M2C
+  - M2D
+  - M2E
+  - M3A
+  - M3B
+  - M3C
+  - M3D
+  - M3E
+  - M3F
+  - M4
 
 principles:
   - memory_before_multi_agent
