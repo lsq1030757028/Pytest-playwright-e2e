@@ -1,6 +1,9 @@
 roadmap_id: TEST_AGENT_RUNTIME_BETA-VERTICAL-SLICES
 version: 0.1.0
 status: CANDIDATE
+source_role: APPROVED_PRODUCT_SLICE_INPUT
+delivery_selection_authoritative: false
+canonical_delivery_ssot: docs/program-delivery-ssot.yaml
 spec_ref: SPEC-TEST-AGENT-RUNTIME-BETA@0.1.0
 goal_issue: 66
 parent_campaign_issue: 65

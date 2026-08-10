@@ -5,56 +5,72 @@ goal_issue: 55
 parent_relay_issue: 49
 authority: OWNER-AUTH-PARALLEL-WORK-CLAIMS-M1-M3@1.0.0
 mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+delivery_selection_contract: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
+delivery_selection_goal: 91
 assurance:
   development: DEV3
   ux: UX0
 classification:
   kind: engineering_delivery_control_plane
   product_m4_claim: false
-  milestones_supported: [M1, M2, M3]
+  standing_mandate_milestones: [M1, M2, M3]
+  explicit_owner_authority_items_allowed: true
+  explicit_owner_authority_does_not_expand_mandate: true
 outcome:
-  statement: independent non-conflicting Work Items can be developed concurrently and integrated through serialized gates
+  statement: independent non-conflicting authorized Work Items can be developed concurrently and integrated through serialized gates
   chat_history_authoritative: false
   github_authoritative: true
 sources:
-  work_map: docs/product-work-map.yaml
-  work_map_human: docs/product-work-map.md
+  program_delivery: docs/program-delivery-ssot.yaml
+  program_delivery_human: docs/program-delivery-ssot.md
+  product_work_map: docs/product-work-map.yaml
+  product_work_map_role: SUPERSEDED_COMPATIBILITY_VIEW
+  product_work_map_may_select_next_work: false
   goal: issue:55
   control_branch: ops/hourly-github-relay-control
   claim_registry: .agent/relay/work-claims.json
+  claim_registry_role: OPERATIONAL_EXECUTION_STATE_ONLY
   integration_lease: .agent/relay/leases/integration.json
 work_item:
-  required_fields:
+  definitions_source: docs/program-delivery-ssot.yaml
+  required_for_claimable_item:
     - work_item_id
-    - milestone
     - outcome
     - phase
     - state
+    - selection_class
     - priority
     - dependencies
     - authority_issue
     - required_spec
     - exclusive_domain
-    - scope
-    - assurance
-    - integration_group
     - completion_checks
-    - rollback
+  product_mapping_requires_any:
+    - blocks_slice
+    - closes_slice
+    - unblocks_integration
+    - supports_slices
   phases: [SPEC, IMPLEMENTATION, EVIDENCE, INTEGRATION, CLOSURE]
   states:
-    normal: [PLANNED, BLOCKED, READY, CLAIMED, IN_PROGRESS, EVIDENCE_READY, INTEGRATION_WAITING, INTEGRATING, MERGED, RELEASE_VERIFYING, CLOSED]
+    normal: [PLANNED, BLOCKED, READY, CLAIMED, IN_PROGRESS, EVIDENCE_READY, INTEGRATION_WAITING, INTEGRATING, MERGED, RELEASE_VERIFYING, CLOSED, FUTURE]
     exceptional: [REPLAN_REQUIRED, OUT_OF_MANDATE, FAILED, CANCELLED]
 claiming:
   registry_cas: required
   claim_sequence: monotonic
   max_selection_retries_after_cas_conflict: 1
   selection:
+    delivery_order_source: docs/program-delivery-ssot.yaml
+    delivery_class_order_source: selection_policy.classes_in_order
+    delivery_tie_break_source: selection_policy.tie_break
     dependency_satisfied: required
-    authority_satisfied: required
+    authorization_evaluated_separately: required
+    approved_spec_when_required: required
     unclaimed: required
     exclusive_domain_free: required
     incompatible_domains_free: required
-    order: [priority_desc, work_item_id_asc]
+    claim_registry_may_change_product_priority: false
+    claim_registry_may_change_product_readiness: false
+    claim_registry_only_filters_execution_ownership: true
   token_format: claim-<work-item-id>-<sequence>-<utc-start>
   lease_minutes: 120
   heartbeat_max_minutes: 45
@@ -71,6 +87,7 @@ conflicts:
     - same_pull_request
     - main_integration
     - package_or_image_release
+    - program_delivery_closure
     - implementation_status_and_ledger
     - active_branch_cleanup
     - shared_mutable_external_boundary
@@ -93,14 +110,19 @@ integration:
   queue_entry_requires_state: EVIDENCE_READY
   queue_priority: [security_or_correctness_repair, dependency_unblocking, oldest_eligible, work_item_id]
   failure_action: REPLAN_REQUIRED_OR_BLOCKED
+  integration_may_change_product_truth_directly: false
+  post_integration_product_state_source: docs/program-delivery-ssot.yaml
 verification:
   levels: [MODULE, INTEGRATION_GROUP, FINAL_STAGE]
   parallelism_may_lower_evidence: false
   critical_false_green: 0
 migration:
+  program_delivery_is_new_selector_source: true
+  old_product_work_map_selector_disabled: true
   legacy_global_lease_initially_retained: true
-  claim_aware_writes_initially_disabled: true
+  scheduled_claim_writes_remain_disabled_until_program_delivery_reenable_gate: true
   acceptance_requires:
+    program_delivery_selector_agreement: true
     independent_concurrent_claims: 2
     conflicting_claim_rejections: 1
     bounded_write_probe: true
@@ -108,6 +130,8 @@ migration:
   integration_serialized_from_start: true
 acceptance:
   deterministic_selection: required
+  program_delivery_is_only_priority_source: required
+  claim_registry_product_priority_influence: 0
   atomic_one_winner_contention: required
   concurrent_different_domains: required
   reject_same_domain: required
@@ -122,6 +146,6 @@ rollback:
   disable_claim_aware_task: true
   stop_new_claims: true
   preserve_registry_and_evidence: true
-  restore_global_lease_mode: true
+  program_delivery_remains_authoritative_until_reviewed_change_event: true
   force_reset_active_branches: false
   change_event_required_for_redesign: true

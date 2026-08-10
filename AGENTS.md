@@ -7,17 +7,37 @@ This file is the mandatory entrypoint for every human or AI agent that changes t
 Before planning or editing, read:
 
 1. `docs/github-development-ssot.md` — normative GitHub development lifecycle.
-2. `docs/github-development-ssot.yaml` — machine-readable policy invariants.
+2. `docs/github-development-ssot.yaml` — machine-readable process and safety invariants.
 3. `docs/user-communication-ssot.md` — normative cloud-development user communication standard.
 4. `docs/user-communication-ssot.yaml` — machine-readable communication invariants.
 5. `docs/ux-assurance-ssot.md` — normative user-experience acceptance addendum.
 6. `docs/ux-assurance-ssot.yaml` — machine-readable UX assurance policy.
 7. `docs/specs/autonomous-execution-mandate.yaml` — active standing authorization.
-8. `docs/implementation-status.md` — current project state and next milestone.
-9. `docs/agent-os-evolution-roadmap.md` — product and research roadmap.
-10. The relevant architecture, SPEC, test-design, and implementation documents for the touched area.
+8. `docs/program-delivery-ssot.yaml` — **only machine-readable authority for `SHOULD_DO_NEXT` delivery selection**.
+9. `docs/program-delivery-ssot.md` — human-readable companion to the Program Delivery SSOT.
+10. `docs/implementation-status.md` — generated/non-authoritative current-state view.
+11. `docs/agent-os-evolution-roadmap.md` — reference architecture and research roadmap; not delivery selection authority.
+12. The relevant architecture, Goal, SPEC, test-design, and implementation documents for the touched area.
 
 A chat instruction may define or change a Goal, but durable authority must be recorded through a repository Goal, Change Event, SPEC, mandate, or approved policy asset.
+
+### 1.1 Authority, delivery selection, and execution ownership
+
+Do not collapse three different questions into one source:
+
+```text
+MAY_DO          → authorization plane
+SHOULD_DO_NEXT  → docs/program-delivery-ssot.yaml
+WHO_DOES_IT     → operational claim registry / integration lease
+```
+
+Rules:
+
+- Authorization comes from higher policy/Oracle/Permission boundaries, explicit owner authority, active Mandate, approved Goal and approved SPEC. Program Delivery cannot widen that authority.
+- `docs/program-delivery-ssot.yaml` is the only repository source allowed to select the active/next product slice, critical path, delivery priority or next product Work Item.
+- `.agent/relay/work-claims.json` and integration leases only coordinate ownership, fencing, heartbeat, expiry and integration. They cannot create product readiness, priority or completion truth.
+- `docs/implementation-status.md`, `docs/agent-os-roadmap.yaml`, `docs/agent-os-evolution-roadmap.md`, `docs/product-work-map.yaml`, and `docs/test-agent-runtime-beta-roadmap.yaml` are generated/reference/superseded/input views according to Program Delivery `source_roles`; none may independently select next work.
+- When delivery sources disagree, do not choose one by intuition and do not fall back to chat history. Stop product selection as `REPLAN_REQUIRED` until the canonical Program Delivery state is reconciled.
 
 ## 2. Repository operating model
 
@@ -43,7 +63,7 @@ Never push directly to `main`.
 
 ## 3. Standing autonomous mandate
 
-`MANDATE-AUTONOMY-M1-M3@1.0.0` authorizes the Agent to execute the approved M1–M3 roadmap without requesting repeated per-module human approval.
+`MANDATE-AUTONOMY-M1-M3@1.0.0` authorizes the Agent to execute Program Delivery Work Items that fall within the approved M1–M3 scope without requesting repeated per-module human approval.
 
 Within a covered Goal and approved SPEC, the Agent may autonomously:
 
@@ -66,7 +86,7 @@ Autonomy changes authorization cadence, not safety requirements. The Agent must 
 - failed CI, evidence, replay, mutation, benchmark, rollback, or review gates;
 - `DEV-E` production action.
 
-The mandate is versioned and revocable. A revoked or non-covering mandate cannot authorize a new autonomous DEV3 merge.
+The mandate is versioned and revocable. A revoked or non-covering mandate cannot authorize a new autonomous DEV3 merge. Program Delivery may identify M4–M6 work as desirable, but desirability never makes that work covered by the M1–M3 mandate; explicit recorded authority and an approved relevant SPEC remain required.
 
 ## 4. SPEC-first module rule
 
@@ -207,7 +227,7 @@ A PR is ready only when:
 - unresolved review threads and blockers are zero;
 - assets, deployment, rollback, recovery, Human UAT needs, status, and ledgers are truthful.
 
-The Agent may auto-merge `DEV0`—`DEV3` when the active mandate covers the Goal, profile, and SPEC and all SSOT gates pass. `DEV-E` production actions and out-of-mandate boundaries are never covered by routine auto-merge.
+The Agent may auto-merge `DEV0`—`DEV3` when the active mandate or separate explicit authority covers the Goal, profile, and SPEC and all SSOT gates pass. `DEV-E` production actions and out-of-mandate boundaries are never covered by routine auto-merge.
 
 ## 11. User-facing cloud development communication
 
@@ -237,4 +257,4 @@ Report completion using concise business language first, then the minimum eviden
 
 Goal, SPEC, mandate, branch, PR, merge commit, run IDs, artifacts, and hashes belong in the evidence portion or a technical appendix rather than the opening narrative.
 
-The full normative development process is `docs/github-development-ssot.md`. The communication standard is `docs/user-communication-ssot.md`. The UX addendum is `docs/ux-assurance-ssot.md`.
+The full normative development process is `docs/github-development-ssot.md`. Delivery selection is `docs/program-delivery-ssot.yaml`. The communication standard is `docs/user-communication-ssot.md`. The UX addendum is `docs/ux-assurance-ssot.md`.

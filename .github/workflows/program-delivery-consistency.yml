@@ -1,0 +1,92 @@
+name: program-delivery-consistency
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "docs/program-delivery-ssot.md"
+      - "docs/program-delivery-ssot.yaml"
+      - "docs/github-development-ssot.md"
+      - "docs/github-development-ssot.yaml"
+      - "docs/implementation-status.md"
+      - "docs/agent-os-roadmap.yaml"
+      - "docs/agent-os-evolution-roadmap.md"
+      - "docs/product-work-map.md"
+      - "docs/product-work-map.yaml"
+      - "docs/test-agent-runtime-beta-roadmap.yaml"
+      - "docs/specs/parallel-work-claims.md"
+      - "docs/specs/parallel-work-claims.yaml"
+      - "docs/specs/hourly-github-relay-prompt.md"
+      - "src/test_workflow/program_delivery.py"
+      - "src/test_workflow/relay_claims.py"
+      - "tests/unit/test_program_delivery.py"
+      - "tests/unit/test_program_delivery_mutation_proof.py"
+      - "tests/unit/test_program_delivery_source_consistency.py"
+      - "tests/unit/test_relay_program_delivery.py"
+      - "tests/unit/test_parallel_work_claims_spec.py"
+      - ".github/workflows/program-delivery-consistency.yml"
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - "docs/program-delivery-ssot.md"
+      - "docs/program-delivery-ssot.yaml"
+      - "docs/github-development-ssot.md"
+      - "docs/github-development-ssot.yaml"
+      - "docs/implementation-status.md"
+      - "docs/agent-os-roadmap.yaml"
+      - "docs/agent-os-evolution-roadmap.md"
+      - "docs/product-work-map.md"
+      - "docs/product-work-map.yaml"
+      - "docs/test-agent-runtime-beta-roadmap.yaml"
+      - "docs/specs/parallel-work-claims.md"
+      - "docs/specs/parallel-work-claims.yaml"
+      - "docs/specs/hourly-github-relay-prompt.md"
+      - "src/test_workflow/program_delivery.py"
+      - "src/test_workflow/relay_claims.py"
+      - "tests/unit/test_program_delivery.py"
+      - "tests/unit/test_program_delivery_mutation_proof.py"
+      - "tests/unit/test_program_delivery_source_consistency.py"
+      - "tests/unit/test_relay_program_delivery.py"
+      - "tests/unit/test_parallel_work_claims_spec.py"
+      - ".github/workflows/program-delivery-consistency.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  program-delivery-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint Program Delivery selector and tests
+        run: |
+          uv run ruff check \
+            src/test_workflow/program_delivery.py \
+            src/test_workflow/relay_claims.py \
+            tests/unit/test_program_delivery.py \
+            tests/unit/test_program_delivery_mutation_proof.py \
+            tests/unit/test_program_delivery_source_consistency.py \
+            tests/unit/test_relay_program_delivery.py \
+            tests/unit/test_parallel_work_claims_spec.py
+
+      - name: Prove canonical delivery state deterministic selection and critical mutations
+        run: |
+          uv run pytest \
+            tests/unit/test_program_delivery.py \
+            tests/unit/test_program_delivery_mutation_proof.py \
+            tests/unit/test_program_delivery_source_consistency.py \
+            tests/unit/test_program_delivery_ssot_spec.py \
+            tests/unit/test_relay_program_delivery.py \
+            tests/unit/test_relay_claims.py \
+            tests/unit/test_parallel_work_claims_spec.py \
+            -q

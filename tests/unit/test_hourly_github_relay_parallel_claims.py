@@ -30,19 +30,25 @@ def test_parallel_claim_addendum_is_in_effective_protocol() -> None:
     assert addendum["compatibility_lease"]["ordinary_module_work_acquires"] is False
 
 
-def test_runtime_bootstrap_uses_claim_registry_and_serialized_integration() -> None:
+def test_runtime_bootstrap_separates_program_delivery_from_claim_ownership() -> None:
     prompt = (SPEC_DIR / "hourly-github-relay-prompt.md").read_text(encoding="utf-8")
 
     required = {
         "execution_profile: PARALLEL_WORK_CLAIMS",
-        "docs/product-work-map.yaml",
+        "docs/program-delivery-ssot.yaml",
         ".agent/relay/work-claims.json",
         ".agent/relay/leases/integration.json",
-        "Resume the unexpired claim",
+        "SHOULD_DO_NEXT",
+        "WHO_DOES_IT",
+        "resume it",
         "Different non-conflicting Work Items may run concurrently",
         "SESSION_ISOLATION_FAILED",
     }
-    assert required <= set(prompt.splitlines()) or all(value in prompt for value in required)
+    assert all(value in prompt for value in required)
+    assert "SUPERSEDED_DELIVERY_MAP_OR_COMPATIBILITY_VIEW" in prompt
+    assert "must never select or reorder work" in prompt
+    assert "cannot make a blocked Work Item ready" in prompt
+    assert "A Work Item claim alone never authorizes integration or product closure" in prompt
 
 
 def test_foundation_work_items_are_closed_before_activation() -> None:

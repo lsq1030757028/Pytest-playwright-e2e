@@ -1,22 +1,194 @@
-# AI Test Harness / Test Agent OS 实现状态
+# AI Test Harness / Test Agent Runtime 实现状态
 
-> 文档角色：项目状态单一事实源  
-> 最近更新：2026-08-05  
-> 当前状态：`FOUNDATION_BASELINE`  
-> 阶段产品交付：`NOT_READY`  
-> 当前里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`  
-> 已关闭主模块：`M1A RUNTIME_CONTRACTS`  
-> 当前主模块：`M1B STORE_AND_PROGRESSIVE_RETRIEVAL_SPEC`  
-> 当前主模块阶段：`SPEC_NEXT`  
-> 并行跨切面：`UX Assurance Plane`  
-> 下一 UX 模块：`UX2 FALSE_POSITIVE_FALSE_NEGATIVE_BENCHMARK_SPEC`  
-> UX Gate：`SHADOW_NONBLOCKING`  
-> Human UAT：`REQUIRED`  
-> 当前自治授权：`MANDATE-AUTONOMY-M1-M3@1.0.0 ACTIVE`
+> Source Role: `GENERATED_VIEW`  
+> Delivery Selection Authoritative: `false`  
+> Canonical Delivery SSOT: `docs/program-delivery-ssot.yaml`  
+> 最近同步：2026-08-10  
+> 当前产品：`TEST_AGENT_RUNTIME_BETA`  
+> Program State：`CONTROL_MIGRATION`  
+> Active Product Slice：`BETA-A`  
+> 当前 Focus：`PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` / PR #93  
+> Scheduled Relay：`DISABLED_GOVERNANCE_MIGRATION`
+
+本文件只用于人类快速阅读当前状态。它不得独立决定下一步、Work Item priority、Product Slice 或 Relay claim。若本文件与 `docs/program-delivery-ssot.yaml` 不一致，以 Program Delivery SSOT 为准，并由 consistency gate 阻止静默漂移。
 
 ---
 
-## 1. 状态结论
+## 1. 当前业务结论
+
+项目已经越过“只做 Pytest + Playwright 框架”的阶段，当前目标是交付一个真正可运行的 `TEST_AGENT_RUNTIME_BETA`。
+
+已批准的产品主轴是：
+
+```text
+BETA-A  Existing governed test pack → durable job → execute → evidence → verdict
+→ BETA-B  Requirement → generated/reviewable test → execute
+→ BETA-C  Diagnose → bounded test-workflow repair → re-run
+→ BETA-D  Restart → durable state + governed Memory → resume
+→ BETA-E  Two materially different projects → Beta acceptance
+```
+
+Beta 产品/架构 SPEC 已通过 PR #87 合入 `main`。因此 `BETA-A` 的产品架构依赖已经满足。
+
+当前正在先完成统一 Program Delivery 控制迁移，目的是让人类 Agent、定时 Relay 和后续执行器对“下一步是什么”得到唯一、确定性的答案。该迁移关闭后，产品关键路径进入：
+
+```text
+BETA-A-SPEC
+→ BETA-A-IMPLEMENTATION
+→ BETA-A-ACCEPTANCE
+```
+
+---
+
+## 2. 当前关键路径
+
+| Work Item | 状态 | 产品作用 |
+|---|---|---|
+| `PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` | `IN_PROGRESS` | 统一 delivery truth / selector / Relay source，解除 BETA-A 自动推进控制面 blocker |
+| `BETA-A-SPEC` | `BLOCKED` | Program Delivery 迁移关闭后立即进入，定义首个 durable runtime slice |
+| `BETA-A-IMPLEMENTATION` | `BLOCKED` | 实现 durable CLI job + existing governed pack execution + evidence-backed verdict |
+| `BETA-A-ACCEPTANCE` | `BLOCKED` | package/container/replay/main-release 证明并关闭 BETA-A |
+
+这里的状态和顺序来自 `docs/program-delivery-ssot.yaml`，不是本文件计算出来的。
+
+---
+
+## 3. 并行能力泳道
+
+### M1 Memory
+
+M1 Memory 现在是 BETA-D 的能力泳道，而不是阻塞 BETA-A 的全局串行前置。
+
+已实现事实包括：
+
+- M1A Governed Memory Runtime Contracts 已关闭；
+- M1B durable SQLite Store、progressive retrieval、resilience/replay/migration 已实现并完成主线交付；
+- M1C Hot Formation、Background Consolidation、poisoning/replay/concurrency gate 核心实现已合入；
+- PR #85 正在收尾 M1C migration evidence，目标是迁移/切换/回滚时不丢 Formation、Consolidation、Replay 和 contamination 证据。
+
+当前 Program Delivery 将 #85 视为 `PARALLEL_MEMORY_CLOSURE`，主要支撑未来 BETA-D。
+
+### UX False-positive / False-negative Assurance
+
+PR #63 仍是并行 UX 质量泳道，主要服务 BETA-C / BETA-E。它不替代 Human UAT，也不阻塞当前 BETA-A 控制迁移。
+
+### M2 / M3 / M4 / M5 / M6
+
+- M2：跨模型 normalization / safe degradation / routing，主要服务 BETA-B/C/E；
+- M3：项目/架构 adapter 泛化，主要服务 BETA-E；
+- M4：只在 BETA-B/C 的实际 slice 需要时引入 bounded orchestration；
+- M5：durable control plane / worker state / recovery，直接服务 BETA-A/D；
+- M6：通过 BETA-E 做 integrated Beta acceptance。
+
+这些编号不再天然代表产品执行顺序。
+
+---
+
+## 4. Delivery / Authority / Ownership 分工
+
+```text
+MAY_DO          → Development SSOT + Owner Authority + Mandate + Goal + SPEC
+SHOULD_DO_NEXT  → docs/program-delivery-ssot.yaml
+WHO_DOES_IT     → control-branch Claim Registry / Integration Lease
+```
+
+关键边界：
+
+- Program Delivery 可以说明 M5/BETA-A 很重要，但不能把它自动纳入 M1–M3 mandate；
+- Claim Registry 可以说明某 Work Item 已被谁持有，但不能把 BLOCKED 变 READY；
+- 旧 status/roadmap/product-work-map 不能再作为 fallback selector；
+- durable delivery sources 冲突时必须 `REPLAN_REQUIRED`。
+
+---
+
+## 5. 已交付基础能力摘要
+
+### Harness Baseline
+
+已具备需求/测试计划、Pytest、Playwright、真实浏览器、证据、诊断、回归、Replay、Mutation、Quality Gate、Python package / container 等基础能力。
+
+### Governed Memory
+
+当前已经具备：
+
+- Namespace / ACL / lifecycle / provenance / immutable revision / CAS / idempotency；
+- durable SQLite primary Store；
+- authority-first Hot/Warm/Cold progressive retrieval；
+- exact-ref recall、cursor binding、primary revalidation；
+- index drift detection/rebuild、Outbox recovery、fail-closed outage；
+- migration/rollback manifest verification；
+- Hot Formation / Background Consolidation；
+- parent dependency fencing、contamination propagation、tamper/replay detection。
+
+这些能力是产品子系统，不再被单独视为最终交付终点。
+
+---
+
+## 6. 当前治理变更
+
+Goal #91 / `SPEC-PROGRAM-DELIVERY-SSOT@1.0.0` 已批准并通过 PR #92 合入主干。
+
+当前 PR #93 正在实施：
+
+- `docs/program-delivery-ssot.{yaml,md}`；
+- deterministic selector / validator；
+- AGENTS / Development SSOT 入口迁移；
+- Parallel Claims 和 Hourly Relay prompt 迁移；
+- 旧 status / roadmap / product-work-map 降权；
+- source consistency / selector evidence。
+
+`Pytest GitHub Relay` 在此期间必须保持关闭。
+
+---
+
+## 7. Relay 恢复条件
+
+只有以下全部满足后，Scheduled Relay 才允许单独进入 re-enable 动作：
+
+```text
+Program Delivery implementation merged to main
++ main Full Quality green
++ Secret Scan / CodeQL green
++ source consistency green
++ deterministic selector proof green
++ current claims / integration queue reconciled
++ post-migration selector resolves BETA-A-SPEC
++ Relay prompt uses Program Delivery
++ bounded acceptance run green
+```
+
+**SPEC merge 或 implementation merge 都不等于 Relay 自动恢复。**
+
+---
+
+## 8. 产品完成条件
+
+`TEST_AGENT_RUNTIME_BETA` 只有在产品 Slice 的真实 operating evidence 完成后才能关闭，包括：
+
+- 一个真实 submission/status/result/cancel 入口；
+- durable restart recovery；
+- plan → test generation → execution → diagnosis → bounded repair/re-run → verdict；
+- 直接 Evidence references；
+- 至少两个 materially different projects；
+- seeded product defect 被检测，healthy control 不误报；
+- Critical False Green = `0`；
+- release/deployment smoke、文档和 Human UAT 完成。
+
+更大的六项目/多设备矩阵仍可作为后续泛化和生产成熟度目标，但不再被本状态页解释为 BETA-A 的前置条件。
+
+---
+
+## 9. 下一动作
+
+当前唯一产品关键动作是完成 PR #93 的 Program Delivery 控制迁移并通过主干验证。
+
+该 Work Item 正式 `CLOSED` 后，canonical Program Delivery 必须把 `BETA-A-SPEC` 变为 `READY`，并由 deterministic selector 证明它是下一产品 Work Item。
+
+---
+
+## 10. 历史兼容快照（仅供旧证据测试，不代表当前状态）
+
+以下文本保留 2026-08-05 旧状态页的历史标签，使已发布 SPEC / Replay / CI 仍可验证它们当时所绑定的 delivery snapshot。**这些行均为 `LEGACY_SNAPSHOT_NON_AUTHORITATIVE`，不能被新的 selector 读取。**
 
 ```text
 M0 Harness Baseline：MERGED
@@ -24,6 +196,7 @@ M1.0 Memory Benchmark Harness：MERGED / CLOSED
 M1A Memory Contracts & Namespaces SPEC：MERGED / CLOSED
 M1A Runtime Contracts：MERGED / CLOSED
 M1B Store & Progressive Retrieval：NEXT / SPEC
+UX0 Synthetic User Runtime：MERGED / CLOSED
 TodoMVC UX Mutation Proof SPEC：MERGED / CLOSED
 UX Mutation Proof Runner：MERGED / CLOSED
 Five-mutation Campaign：5 / 5 KILLED
@@ -34,171 +207,4 @@ M1 Memory Gate：0 / 1
 Stage Delivery：NOT_READY
 ```
 
-当前项目已经具备需求到测试执行、证据、诊断、回归、重放和发布的基础闭环，也具备真实 Playwright 用户体验 Shadow 验证、UX Mutation 证明，以及可执行的治理型 Memory 领域契约。
-
-项目仍未达到阶段产品交付标准：当前没有生产 Memory Store，尚未验证渐进式检索、跨模型泛化和跨项目架构能力，M1 Memory Gate 仍保持 OPEN。
-
----
-
-## 2. 当前推进链
-
-```mermaid
-flowchart LR
-    A[✅ M0 Harness Baseline]
-    --> B[✅ M1.0 Memory Benchmark]
-    --> C[✅ M1A Memory SPEC]
-    --> D[✅ M1A Runtime Contracts]
-    --> E[🟡 M1B Store / Retrieval SPEC]
-    --> F[⬜ M1B Implementation]
-    --> G[⬜ M1C Formation]
-    --> H[⬜ M1D Shared Governance]
-    --> I[⬜ M1E Controlled Evolution]
-    --> J[⬜ M1F Memory Gate]
-
-    B --> U1[✅ UX0 Shadow Runtime]
-    U1 --> U2[✅ UX1 Mutation Proof]
-    U2 --> U3[🟡 UX2 False-positive / False-negative Benchmark SPEC]
-    U3 --> U4[⬜ Advisory Gate Candidate]
-    U4 --> U5[⬜ Blocking Policy Candidate]
-```
-
-Memory 仍是主执行路径。UX Assurance 是跨 M1—M3 的并行质量面，不改变 M1B SPEC 的当前执行优先级。
-
----
-
-## 3. 已交付基础能力
-
-### M0 Harness Baseline
-
-已具备：Capability Contract、Registry、不可变 Artifact Store、Policy、Permission、Budget、Workflow Compiler、Orchestrator、Requirement Revision、Impact、Campaign、Generation、Diagnosis、Regression、Verdict、Replay、功能 Mutation Proof、Browser、Pinned Target、Python Package 与 GHCR 发布。
-
-### M1.0 Memory Benchmark Harness
-
-已完成 16 个 Memory 场景、60 次运行、独立 Replay 和安全优先判定；Critical False Green 为 0。该模块证明了 Memory 价值和威胁评估基线，但不实现生产 Memory Store，也不关闭 M1 Memory Gate。
-
-### M1A Memory Contracts & Namespaces SPEC
-
-已明确五类 Memory、Namespace、ACL、Provenance、Revision、Lifecycle、Promotion、CAS、Conflict、Forget、Compatibility 和厂商无关 Port 的规范边界。
-
-### M1A Runtime Contracts
-
-已把上述规范变成可执行代码与证据：
-
-- 稳定 Canonical JSON、Memory ID、Revision ID 与 SHA-256；
-- Revision 和嵌套 Provenance JSON 不可原地修改，Revision 只允许 Append；
-- Project、Campaign、Agent、Organization、Shared Namespace 精确隔离；
-- 委派范围和过期时间强制执行；
-- ACL 默认拒绝、DENY 优先，相关性和向量相似度不能授权；
-- Candidate、Verified、Promoted、Conflicting、Quarantined、Superseded、Revoked、Expired、Forgotten 状态机；
-- Promotion 必须绑定真实 Actor、Evidence、Benchmark 和 Revision Provenance；
-- CAS、Idempotency、显式 Conflict 和禁止最后写入静默覆盖；
-- 过期、撤销、遗忘后的内容不会进入有效读取；
-- Procedural / Skill 必须通过代码、Schema、Capability、权限和环境兼容性检查；
-- 六类厂商无关 Port 与确定性内存参考适配器；
-- Artifact Manifest、15 项确定性 Proof、独立 Replay 和 Tamper 拒绝。
-
-最终交付事实：
-
-```text
-Goal：Issue #43 — CLOSED
-Base Implementation PR：#44 — MERGED (`0585e357aebda650ee50ee95ff962b3ac81f6d4c`)
-Closure Remediation PR：#45 — MERGED (`ef681c3b679305d7b88d17f776926dc25b76e49f`)
-Integration Secret-scan Repair PR：#61 — MERGED (`bd673cb1cab3edc6d16eca2aded4dcfe4bd45957`)
-PR M1A Runtime Gate：31107607723 — SUCCESS
-PR Full Quality：31107611134 — SUCCESS
-PR Secret Scan：31107608110 — SUCCESS
-PR CodeQL：31107607912 — SUCCESS
-Main M1A Runtime Gate：31108111384 — SUCCESS
-Final Main Full Quality：31108781025 — SUCCESS
-Final Main Secret Scan：31108779724 — SUCCESS
-Final Main CodeQL：31108779549 — SUCCESS
-Release：31108779552 — SUCCESS
-Cleanup：31108781076 — SUCCESS
-Python Distribution Artifact：8970728772 (`sha256:4cba37b10f909bbb6d6123c75dbb140cfd652064bfecda63a010fb7cd2fd0d35`)
-GHCR Build Record：8970756802 (`sha256:140cabd09cb6c5c983d77c22ad846a753db8b05595c6294115d80eb2d48ec0c3`)
-Focused Tests：29 / 29 PASS
-Deterministic Proof：15 / 15 PASS
-Critical False Green：0
-Unauthorized Namespace Actions：0
-Unauthorized Promotion Actions：0
-Review Threads：0
-M1B Goal：Issue #62
-```
-
-M1A Runtime Contracts 已满足实现、CI、Review、Merge、Release、证据与 Cleanup 条件。M1A 已由本台账正式关闭；M1B Goal #62 已解锁进入 SPEC。
-
----
-
-## 4. 当前主模块：M1B Store & Progressive Retrieval SPEC
-
-M1B 现在只进入 SPEC 阶段，尚未进入实现，也没有选定数据库、向量引擎、Embedding、Ranking 或索引方案。
-
-SPEC 必须定义：
-
-- 哪些 M1A Port 由生产 Store 实现，哪些仍保持纯领域逻辑；
-- 事务边界、Append-only Revision、Head CAS、Conflict 与 Idempotency 的持久化语义；
-- Project、Campaign、Agent、Organization、Shared Namespace 的物理与逻辑隔离；
-- Hot / Warm / Cold 渐进式检索阶梯和每级预算；
-- ACL、Lifecycle、Retention、Compatibility 在检索前的 Fail-closed 顺序；
-- Keyword、Metadata、Vector、Graph 等召回信号如何组合，但绝不能授予权限；
-- 删除、撤销、过期、遗忘和 Tombstone 的一致性、审计与恢复边界；
-- 故障、超时、索引陈旧、部分不可用和回滚策略；
-- Benchmark、迁移、Replay、Tamper、性能和安全验收标准。
-
-M1B 实现继续被阻塞，直到该 SPEC 完成 Review、Approval、Merge 和 Evidence Gate。
-
----
-
-## 5. UX Assurance 当前事实
-
-UX0 Synthetic User Runtime：MERGED / CLOSED。它能够通过真实 Playwright Journey 生成体验证据，但 Release Effect 固定为 `NONBLOCKING_SHADOW`，不能替代 Human UAT。
-
-UX1 已完成五类真实体验退化证明：
-
-```text
-MISSING_FEEDBACK
-VISIBLE_SUCCESS_STATE_LOSS
-KEYBOARD_FOCUS_SEMANTIC_BARRIER
-INTERRUPTED_RESUME_FAILURE
-FILTER_ROUTE_STATE_DRIFT
-```
-
-当前结果为 5 / 5 Mutation Killed、正常基线零误报、精确恢复 100%、独立 Replay 100%、Critical False Green 0。Advisory 和 Blocking 仍未启用。
-
----
-
-## 6. 当前自治与安全边界
-
-`MANDATE-AUTONOMY-M1-M3@1.0.0` 覆盖 M1—M3 范围内的 Goal、SPEC、实现、测试、Benchmark、Review、Merge、Release、Ledger 和 Cleanup。
-
-仍不覆盖：真实生产数据、个人数据和 Secret；破坏性生产迁移；不可逆外部写或费用；危险设备动作；更高权威、Oracle、Experience Oracle、Policy 或 Permission 冲突；DEV-E；绕过失败的 CI、Evidence、Review 或 Release Gate。
-
-Synthetic User / UX Mutation 额外禁止：真实客户账号、敏感属性和生物识别推断、无限制网页探索、AI-only Blocker 或 Kill、修改生产目标、替代 Human UAT。
-
----
-
-## 7. 近期执行顺序
-
-```text
-1. M1B Store & Progressive Retrieval SPEC
-2. M1B implementation / verification / closure
-3. UX False-positive / False-negative Benchmark SPEC
-4. M1C Memory Formation
-```
-
-UX 与 Memory 可以交错推进，但不能通过并行降低各自 Evidence Gate。
-
----
-
-## 8. 阶段交付条件
-
-项目只有在以下全部通过后，才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
-
-```text
-M1 Memory Gate：PASS
-M2 Model Generalization Gate：PASS
-M3 Project / Architecture Gate：PASS
-Global Safety Gate：PASS
-```
-
-全局要求继续是：Critical False Green 0、未授权 Oracle / Experience Oracle / Policy / Permission 修改 0、Out-of-Mandate 动作 0、关键 Evidence 可重放率 100%、Memory / Model / Device / UX Asset 可追溯、自动晋升资产可回滚。
+旧测试若需要证明“某历史 SPEC 当时看到的状态”，可以检查该兼容快照；任何当前交付决策必须检查 `docs/program-delivery-ssot.yaml`。

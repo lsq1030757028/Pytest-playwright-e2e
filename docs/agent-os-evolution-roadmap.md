@@ -1,9 +1,14 @@
 # AI Test Harness → Test Agent OS 演进路线
 
 > 路线版本：v3.0  
-> 当前阶段：`M0 FOUNDATION_BASELINE`  
-> 阶段交付状态：`NOT_READY`  
-> 下一里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`
+> Source Role: `REFERENCE_ARCHITECTURE_AND_RESEARCH`  
+> Delivery Selection Authoritative: `false`  
+> Canonical Delivery SSOT: `docs/program-delivery-ssot.yaml`  
+> 历史快照阶段：`M0 FOUNDATION_BASELINE`  
+> 历史阶段交付状态：`NOT_READY`  
+> 历史下一里程碑：`M1 MEMORY_AND_CONTROLLED_EVOLUTION`
+
+> **Program Delivery notice**：本路线保留 M1—M6 的架构研究目标、能力依赖和更高成熟度验证矩阵，但不再决定当前产品执行顺序，也不再定义 `TEST_AGENT_RUNTIME_BETA` 的唯一验收门槛。Campaign #65 / Goal #66 的 BETA-A→E 产品切片已经成为 approved product architecture；当前/下一工作必须读取 `docs/program-delivery-ssot.yaml`。
 
 ---
 
@@ -29,10 +34,10 @@
 
 ```text
 已完成：测试领域 Agent OS 微内核与可信执行基线
-未完成：可对外宣称的跨模型、跨项目、跨终端阶段产品
+未完成：可对外宣称的跨模型、跨项目、跨终端成熟产品
 ```
 
-`docs/final-delivery-report.md` 仅代表 v0.1 微内核基线的工程收口，不代表 Test Agent OS 产品达到阶段性交付条件。
+`docs/final-delivery-report.md` 仅代表 v0.1 微内核基线的工程收口，不代表 Test Agent OS 产品达到更高成熟度条件。
 
 ---
 
@@ -41,6 +46,8 @@
 ### 2.1 记忆先于多 Agent
 
 没有稳定记忆时，多 Agent 只会放大上下文丢失、重复工作和错误传播。先建立可审计的长期记忆与经验晋升机制，再扩展任务拆分和并行协作。
+
+该原则现在解释为 capability maturity 原则，不代表 BETA-A 必须等待所有 Memory 模块完成。
 
 ### 2.2 受控迭代，不允许无边界自修改
 
@@ -99,11 +106,11 @@ Agent 不可直接修改：
 
 ### 2.5 先验证单 Agent 稳定性，再做并行提效
 
-多 Agent、任务拆分和并行执行是效率层，不是正确性基础。只有记忆、跨模型和跨项目 Gate 全部通过后，才进入多 Agent 编排。
+多 Agent、任务拆分和并行执行是效率层，不是正确性基础。只有相关 Product Slice 实际需要且质量基础足够时才引入 bounded orchestration；是否进入该工作由 Program Delivery 决定。
 
 ---
 
-## 3. 总体里程碑
+## 3. 架构能力里程碑参考
 
 ```mermaid
 flowchart LR
@@ -111,13 +118,15 @@ flowchart LR
     --> M1[🟡 M1 记忆与受控自主迭代]
     --> M2[⬜ M2 跨模型泛化]
     --> M3[⬜ M3 跨项目与跨终端泛化]
-    --> G1{阶段交付 Gate}
+    --> G1{成熟度 Gate}
     G1 --> M4[⬜ M4 任务拆分与多 Agent 并行]
     M4 --> M5[⬜ M5 Durable Runtime 与控制面]
-    M5 --> M6[⬜ M6 Test Agent OS Beta]
+    M5 --> M6[⬜ M6 Test Agent OS 平台化]
 ```
 
-首个阶段产品交付条件不是 M0，而是：
+这张图现在是**能力成熟度参考**，不是产品 delivery dependency graph。BETA-A→E 的实际依赖见 `docs/test-agent-runtime-beta-roadmap.yaml`，当前执行指针见 `docs/program-delivery-ssot.yaml`。
+
+历史阶段成熟度 Gate 为：
 
 ```text
 M1 Memory Gate
@@ -126,7 +135,7 @@ M1 Memory Gate
 + 全局 Safety Gate
 ```
 
-M4 之后属于效率和平台化扩展，不阻塞第一版“可验证 Test Agent Runtime”阶段交付。
+这些 Gate 仍可用于更高泛化成熟度证明，但不能被解释为 BETA-A 的全部前置条件。
 
 ---
 
@@ -458,9 +467,9 @@ Device Inventory
 - 开始和结束状态；
 - 恢复结果。
 
-## 6.4 M3 最小验证矩阵
+## 6.4 M3 高成熟度验证矩阵
 
-首个阶段交付至少需要六个代表性项目：
+本路线曾将以下六项目矩阵定义为阶段交付要求。Program Delivery 建立后，它继续作为跨架构成熟度目标，但**不再自动阻塞 BETA-A 或替代 Campaign #65 的 BETA-E 两项目产品验收**：
 
 | 架构族 | 最低数量 | 最低要求 |
 |---|---:|---|
@@ -475,7 +484,7 @@ Device Inventory
 - 至少两个复杂业务领域；
 - 至少一个金额、权限或不可逆状态场景；
 - Android 实机和嵌入式实板必须进入 Device Lease；
-- iOS 实机受 macOS、签名和设备条件影响，可作为 1.0 Production Gate，不阻塞第一版 Beta，但必须完成可行性报告。
+- iOS 实机受 macOS、签名和设备条件影响，可作为更高成熟度 Production Gate。
 
 ## 6.5 M3 Gate
 
@@ -491,9 +500,9 @@ Device Inventory
 
 ---
 
-# 7. 首个阶段产品交付 Gate
+# 7. 历史阶段成熟度 Gate（非当前 Beta delivery gate）
 
-只有以下条件全部满足，项目才从 `FOUNDATION_BASELINE` 晋升为 `TEST_AGENT_RUNTIME_BETA`：
+本路线历史上要求：
 
 ```text
 M1 Memory Gate：PASS
@@ -502,7 +511,9 @@ M3 Project / Architecture Gate：PASS
 Safety Gate：PASS
 ```
 
-全局 Safety Gate：
+这组条件现在保留为**高泛化成熟度参考 Gate**。当前 `TEST_AGENT_RUNTIME_BETA` 的产品 acceptance 由 Campaign #65、Goal #66、approved Beta roadmap 和 Program Delivery BETA-A→E 共同约束。
+
+全局 Safety Gate 仍然有效：
 
 - Critical False Green：`0`；
 - 未授权 Oracle / Policy / Permission 修改：`0`；
@@ -516,7 +527,7 @@ Safety Gate：PASS
 
 # 8. M4：任务拆分与多 Agent 并行
 
-M1—M3 通过后再实现：
+能力目标包括：
 
 - `TaskGraph` 与任务所有权；
 - Planner 只生成候选任务图；
@@ -537,12 +548,7 @@ Task Contract
 + Deterministic Join Gate
 ```
 
-验收重点不是“并行了多少 Agent”，而是：
-
-- 总时长是否下降；
-- 重复上下文是否下降；
-- 冲突是否可检测；
-- 质量和 Safety 是否不退化。
+是否以及何时进入 M4 由 Product Slice blocker 决定，不能仅因为 M1—M3 完成或未完成自动推断。
 
 ---
 
@@ -550,17 +556,22 @@ Task Contract
 
 ## M5 Durable Runtime & Control Plane
 
-- PostgreSQL Campaign / Memory Store；
+能力候选包括：
+
+- Campaign / job durable Store；
 - Object Storage；
 - Queue / Event Bus；
 - Worker Lease；
 - Durable Scheduler；
-- API Gateway；
-- Web Console；
+- API Gateway / CLI control；
 - RBAC、Secret、审批和成本中心；
 - SLO、告警和审计。
 
-## M6 Test Agent OS Beta
+BETA-A 可以先实现单节点、SQLite WAL、CLI-first 的最小 durable runtime；不需要等待这里列出的完整平台化形态。
+
+## M6 Test Agent OS 平台化
+
+长期能力包括：
 
 - Agent Identity 和生命周期；
 - Capability SDK 与包版本；
@@ -574,7 +585,9 @@ Task Contract
 
 ---
 
-# 10. 下一实施顺序
+# 10. 历史能力实施参考序列
+
+以下序列只说明早期 horizontal capability roadmap，不再具有 `SHOULD_DO_NEXT` 权威：
 
 ```text
 M1.0 Memory Benchmark & Threat Model
@@ -600,11 +613,12 @@ M1.0 Memory Benchmark & Threat Model
 → M4 Multi-agent Orchestration
 ```
 
-每个模块继续执行当前工程规则：
+当前产品执行必须读取 `docs/program-delivery-ssot.yaml`。
+
+每个真正进入执行的模块仍执行当前工程规则：
 
 - 单独测试设计；
-- 单元测试；
-- 阶段集成测试；
+- 与风险匹配的 Unit / Integration / E2E；
 - Golden / Negative / Adversarial 资产；
 - CI；
 - 机器可读台账；

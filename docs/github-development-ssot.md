@@ -1,10 +1,11 @@
 # GitHub 云端研发全流程 SSOT
 
 > 状态：`ACTIVE`  
-> 版本：`1.2`  
+> 版本：`1.3`  
 > 适用对象：人类开发者、AI 开发 Agent、Review Agent、Release Agent  
 > 适用范围：本仓库所有需求、模块、代码、测试、文档、配置、发布和研究实验变更  
 > 机器可读策略：`docs/github-development-ssot.yaml`  
+> Program Delivery：`docs/program-delivery-ssot.yaml`  
 > 当前自治授权：`docs/specs/autonomous-execution-mandate.yaml`  
 > Agent 强制入口：`AGENTS.md`
 
@@ -12,13 +13,16 @@
 
 ## 1. 目标
 
-本文件是仓库基于 GitHub 进行需求、SPEC、开发、测试、Review、合并、发布和台账归档的唯一研发流程事实源。
+本文件是仓库基于 GitHub 进行需求、SPEC、开发、测试、Review、合并、发布和台账归档的唯一**研发流程与安全治理**事实源。
+
+“现在应该优先交付什么、当前/下一 Product Slice 是什么、哪个 Work Item 是产品关键路径”由 `docs/program-delivery-ssot.yaml` 唯一决定。本文件不再使用路线图、状态页或 Claim Registry 代替 Program Delivery 选择。
 
 ```text
 可交付变化
 = 已批准 Goal
 + 已批准 SPEC
 + 有效授权或自治 Mandate
++ Program Delivery 中合法的交付位置
 + 可追踪实现
 + 与风险匹配的充分证据
 + 可恢复发布
@@ -29,21 +33,58 @@
 
 ---
 
-## 2. 权威顺序
+## 2. 权威、推进与执行所有权分离
 
-发生冲突时按以下顺序裁决：
+必须分别回答三个问题：
+
+```text
+MAY_DO          → 授权与安全权威
+SHOULD_DO_NEXT  → Program Delivery SSOT
+WHO_DOES_IT     → Claim Registry / Integration Lease
+```
+
+### 2.1 `MAY_DO`：授权权威
+
+发生授权或安全冲突时按以下顺序裁决：
 
 1. 法律、隐私、安全和组织级政策；
 2. 已确认生产不变量、Oracle、Permission 和发布保护；
-3. 本文件与机器可读 SSOT；
-4. 当前有效 Autonomous Mandate；
-5. 路线、项目状态和正式台账；
+3. 明确记录的仓库 Owner Authority；
+4. 本文件与机器可读 Development SSOT；
+5. 当前有效 Autonomous Mandate；
 6. 已批准 Goal / Issue；
 7. 已批准 Module SPEC；
 8. PR 中的实现计划和证据；
 9. 临时聊天、评论、模型输出和个人假设。
 
-低权威来源不能静默覆盖高权威来源。冲突必须进入 `BLOCKED`、`REPLAN_REQUIRED`、`OUT_OF_MANDATE` 或 `AUTHORITY_REQUIRED`。
+Program Delivery 只能说明“这项工作对产品是否应该优先做”，不能扩大上述授权。特别是 M4—M6 即使位于产品关键路径，也不能被解释为已经纳入 `MANDATE-AUTONOMY-M1-M3@1.0.0`；它们仍需引用明确 Owner Authority 和已批准 SPEC。
+
+### 2.2 `SHOULD_DO_NEXT`：唯一推进权威
+
+`docs/program-delivery-ssot.yaml` 是唯一机器可读推进事实源，负责：
+
+- 顶层产品与 Program State；
+- Active / Next Product Slice；
+- Critical Path；
+- Capability Lane 与 Slice 映射；
+- Work Item 产品优先级和 blocker 关系；
+- 确定性 next-work selection policy；
+- Relay 恢复前置条件。
+
+`docs/implementation-status.md`、旧横向 roadmap、`docs/product-work-map.yaml`、Beta vertical roadmap 等只能作为 generated/reference/superseded/input 视图，具体角色以 Program Delivery `source_roles` 为准，不能独立决定下一步。
+
+### 2.3 `WHO_DOES_IT`：执行所有权
+
+控制分支 Claim Registry、Branch/PR Head fencing、heartbeat、expiry 和 integration lease 只负责“谁正在执行、是否还能安全写”。
+
+Claim Registry：
+
+- 可以把已由 Program Delivery 判定为可做的 Work Item 从某个 executor 的候选集中排除；
+- 不能把 `BLOCKED` 变成 `READY`；
+- 不能改变 Product Slice、Critical Path、priority class 或完成状态；
+- 不能因为 claim sequence 更大就获得更高产品优先级。
+
+如果 durable delivery sources 发生冲突，不得凭经验自行挑一个，也不得回退到 Chat 历史；必须进入 `REPLAN_REQUIRED`，先修复 canonical Program Delivery 状态。
 
 ---
 
@@ -88,7 +129,7 @@ SPEC PR
 
 SPEC 合并后需求发生变化时，必须创建版本化 Change Event、Impact Assessment 和必要的 SPEC Addendum。禁止静默改写已批准 SPEC。
 
-SPEC 完成不代表模块实现完成，也不代表 Milestone Gate 通过。
+SPEC 完成不代表模块实现完成，也不代表 Product Slice 或 Milestone Gate 通过。
 
 ---
 
@@ -100,7 +141,7 @@ SPEC 完成不代表模块实现完成，也不代表 Milestone Gate 通过。
 MANDATE-AUTONOMY-M1-M3@1.0.0
 ```
 
-它由仓库所有者通过 Issue #23 授权，覆盖 M1、M2、M3 路线内的 `DEV0`—`DEV3` 工作。
+它由仓库所有者通过 Issue #23 授权，覆盖 M1、M2、M3 范围内的 `DEV0`—`DEV3` 工作。
 
 ### 4.1 Mandate 的作用
 
@@ -113,9 +154,9 @@ MANDATE-AUTONOMY-M1-M3@1.0.0
 替换为：
 
 ```text
-Approved Roadmap
+Program Delivery 中的合法 Work Item
 + Active Mandate
-+ Approved SPEC
++ Approved Goal / SPEC
 + DEV3 Evidence
 + Deterministic Review Gate
 → Autonomous Merge / Release / Closure
@@ -133,16 +174,16 @@ Mandate 只改变授权频率，不降低任何 SPEC、测试、威胁模型、�
 - 创建、Review 和合并 PR；
 - 发布 Python 包和 GHCR 镜像；
 - 验证 Main、Release、Ledger 和 Branch Cleanup；
-- 逐模块推进 M1—M3，不再重复请求人类批准。
+- 推进 Program Delivery 中落在 M1—M3 授权范围内的 Work Item，不再重复请求人类批准。
 
 ### 4.3 DEV3 自治前置条件
 
 必须同时满足：
 
-1. Mandate 为 `ACTIVE`；
-2. Goal 属于 M1—M3；
+1. Mandate 为 `ACTIVE`，或存在等价的 Explicit Authority；
+2. 当前动作位于该授权覆盖范围；
 3. 必需 SPEC 已合并到 `main`；
-4. PR 引用 Mandate ID 和 SPEC 版本；
+4. PR 引用 Mandate/Explicit Authority 和 SPEC 版本；
 5. 最终 Diff 未超出范围；
 6. 独立 Test Design、Threat Model、Negative / Adversarial、真实边界证据和 Rollback 完整；
 7. 必需 Checks 全绿；
@@ -152,9 +193,9 @@ Mandate 只改变授权频率，不降低任何 SPEC、测试、威胁模型、�
 
 ### 4.4 不在 Mandate 内的动作
 
-以下动作不能被“自治”绕过：
+以下动作不能被“产品优先级”或“自治”绕过：
 
-- M1—M3 之外的范围扩张；
+- M1—M3 之外且没有单独明确授权的工作；
 - 法律、Oracle、生产不变量、Policy 或 Permission 冲突；
 - 真实生产数据写入或个人数据暴露；
 - Secret 获取、泄漏或权限提升；
@@ -179,6 +220,7 @@ Mandate 可通过版本化 Change Event 撤销。撤销后禁止新的自治 DEV
 | Goal / Issue | 目标、范围、验收、权威、风险和 Mandate 引用 | 不代表最终实现状态 |
 | Module SPEC | 模块契约、边界、失败模式、证据和恢复设计 | 不代表代码已经实现 |
 | Autonomous Mandate | 持续授权、覆盖范围、排除边界和撤销规则 | 不替代 Module SPEC 或质量 Gate |
+| **Program Delivery SSOT** | 产品状态、Slice、Critical Path、Work Item 产品优先级和 next-work selection | **不能扩大授权，也不拥有 executor claim** |
 | Branch | 隔离 SPEC 或实现变更 | 不作为长期 SSOT |
 | Pull Request | SPEC/实现 Review、证据和合并决策 | 不能覆盖 Oracle 或 Requirement |
 | GitHub Actions | 权威自动验证、构建和发布 Gate | 不能证明未设计的业务风险 |
@@ -187,7 +229,8 @@ Mandate 可通过版本化 Change Event 撤销。撤销后禁止新的自治 DEV
 | Merge Commit | 已 Review 的不可变集成点 | 不等于发布验证完成 |
 | `main` | 权威代码、SPEC、Mandate 和文档基线 | 不保存聊天临时状态 |
 | Tag / Release / GHCR | 可部署的不可变版本 | 不替代主干质量证据 |
-| Status / Ledger | 项目状态、能力和资产索引 | 不得提前声明不存在的证据 |
+| Status / Ledger | 项目状态、能力和资产索引的视图 | **不决定产品下一步** |
+| Claim Registry / Integration Lease | 执行 ownership、fencing 与 integration serialization | **不决定产品优先级或完成真相** |
 
 ---
 
@@ -198,7 +241,7 @@ Mandate 可通过版本化 Change Event 撤销。撤销后禁止新的自治 DEV
 - GitHub Actions 是权威验证环境；
 - 本地和对话结果仅作为辅助证据；
 - Main Push 后继续验证 Build、Release、Migration 和运行产物；
-- Goal、SPEC、Mandate、PR、Commit、CI、Artifact、Release 和 Ledger 必须互相追溯；
+- Goal、SPEC、Mandate、Program Delivery、PR、Commit、CI、Artifact、Release 和 Ledger 必须互相追溯；
 - 环境、依赖、代码、目标项目、模型、Memory、设备和测试资产应版本化；
 - 合并后的临时分支必须清理。
 
@@ -246,11 +289,11 @@ stateDiagram-v2
 状态要点：
 
 - `SPEC_APPROVED`：SPEC 已通过 Gate 并进入 `main`；
-- `IMPLEMENTING`：只允许在 Goal、SPEC 和 Mandate 范围内实现；
-- `OUT_OF_MANDATE`：动作超出持续授权，禁止继续；
+- `IMPLEMENTING`：只允许在 Goal、SPEC 和授权范围内实现；
+- `OUT_OF_MANDATE`：动作超出持续或显式授权，禁止继续；
 - `MERGED`：进入主干，但任务尚未关闭；
 - `RELEASE_VERIFYING`：验证主干、构建、发布、迁移和 Smoke；
-- `CLOSED`：Goal、SPEC、实现、证据、发布、台账和清理全部完成。
+- `CLOSED`：Goal、SPEC、实现、证据、发布、Program Delivery/台账和清理全部真实收口。
 
 ---
 
@@ -276,7 +319,7 @@ stateDiagram-v2
 
 ### DEV3：生产关键或系统治理
 
-典型：Oracle、Policy、Permission、Assurance Floor、Memory、自主迭代、模型路由、真实设备、Secret、生产数据、金额、隐私、安全、破坏性迁移、Release Gate 和正式资产晋升。
+典型：Oracle、Policy、Permission、Assurance Floor、Memory、自主迭代、模型路由、真实设备、Secret、生产数据、金额、隐私、安全、破坏性迁移、Release Gate、Program Delivery / 自动任务选择和正式资产晋升。
 
 必须具备：
 
@@ -288,7 +331,7 @@ stateDiagram-v2
 - Rollback / Recovery；
 - Active Mandate 覆盖，或单独 Explicit Authority。
 
-DEV3 不能由 Agent 降级。Mandate 覆盖的 DEV3 可以在所有 Gate 通过后自治合并。
+DEV3 不能由 Agent 降级。覆盖该变化的 Mandate / Explicit Authority 存在且所有 Gate 通过后，才可自治合并。
 
 ### DEV-E：紧急变化
 
@@ -349,33 +392,37 @@ Static / Schema
 
 ### 10.2 Baseline Sync
 
-读取 `AGENTS.md`、SSOT、Mandate、状态、路线、相关 SPEC 和架构；获取最新 `main`；检查并行 PR 和资产版本。
+读取 `AGENTS.md`、Development/UX/Communication SSOT、Mandate、`docs/program-delivery-ssot.yaml`、相关 Goal / SPEC 和架构；获取最新 `main`；检查并行 PR、Claim ownership 和资产版本。
+
+状态页、旧 roadmap 和 work map 只按 Program Delivery `source_roles` 作为辅助视图读取。
 
 ### 10.3 Triage
 
-输出 Change Map、DEV Profile、Mandate Coverage、风险、SPEC 深度、Test Obligations、资产计划和 Blocker。
+先从 Program Delivery 得到候选 Product Slice / Work Item，再独立执行 Authority Coverage。输出 Change Map、DEV Profile、Mandate/Explicit Authority Coverage、风险、SPEC 深度、Test Obligations、资产计划和 Blocker。
+
+“产品应该做”但“当前未获授权”的工作必须是 `OUT_OF_MANDATE`，不能用 priority 覆盖授权。
 
 ### 10.4 SPEC Phase
 
-建立独立 SPEC Branch / PR，完成人类和机器可读规范、Test Design、Golden / Negative / Adversarial 资产目录、一致性 Gate、状态和路线更新。
+建立独立 SPEC Branch / PR，完成人类和机器可读规范、Test Design、Golden / Negative / Adversarial 资产目录、一致性 Gate，以及需要的 Program Delivery 变更候选。SPEC 只有 merge 后才可成为正式实现前提。
 
 ### 10.5 Implementation Phase
 
-实现必须引用已批准 SPEC 和适用 Mandate。新发现超出范围时停止扩展，创建 Change Event 和 SPEC Addendum。
+实现必须引用已批准 SPEC 和适用 Mandate / Explicit Authority。新发现超出范围时停止扩展，创建 Change Event 和 SPEC Addendum。
 
 ### 10.6 Pull Request
 
-PR 必须说明：Goal、SPEC、Mandate、Phase、Profile、Change Map、Acceptance/Evidence Matrix、执行与跳过证据、资产、Requirement/Oracle、Deployment/Rollback、Blocker 和 Merge Eligibility。
+PR 必须说明：Goal、SPEC、Mandate/Authority、Phase、Profile、Change Map、Acceptance/Evidence Matrix、执行与跳过证据、资产、Requirement/Oracle、Deployment/Rollback、Blocker 和 Merge Eligibility。
 
 ### 10.7 Review
 
-Review 必须检查 Goal/SPEC/Mandate 漂移、Oracle、Profile 低估、证据可观测性、False Green、Mock Truth Boundary、Permission/Budget/Context/Side Effect、外部效果和发布恢复。
+Review 必须检查 Goal/SPEC/Mandate 漂移、Program Delivery / Product Priority 漂移、Oracle、Profile 低估、证据可观测性、False Green、Mock Truth Boundary、Permission/Budget/Context/Side Effect、外部效果和发布恢复。
 
 ### 10.8 Merge 与 Release
 
 合并条件：Mandate 覆盖或 Explicit Authority、必需 Checks 全绿、Review Thread 为 0、证据充分、状态真实、Rollback 可信。
 
-合并后进入 `RELEASE_VERIFYING`，验证 Main CI、Build、Release/GHCR、Migration/Compatibility、Smoke/Probe/Canary、Ledger 和 Branch Cleanup。
+合并后进入 `RELEASE_VERIFYING`，验证 Main CI、Build、Release/GHCR、Migration/Compatibility、Smoke/Probe/Canary、Program Delivery / Ledger 和 Branch Cleanup。
 
 任何适用 Gate 失败，都不能进入 `CLOSED`。
 
@@ -383,19 +430,21 @@ Review 必须检查 Goal/SPEC/Mandate 漂移、Oracle、Profile 低估、证据�
 
 ## 11. Agent 自主权限
 
-在已批准 Goal、SPEC 和有效 Mandate 内，Agent 可以：
+在已批准 Goal、SPEC 和有效 Mandate / Explicit Authority 内，Agent 可以：
 
 - 创建 Goal、SPEC 和实现分支；
 - 创建、Review 和合并 SPEC / Implementation PR；
+- 从 Program Delivery 读取产品优先级并选择授权范围内的工作；
 - 选择并解释证据；
 - 修复有证据支持的问题；
-- 更新状态和台账；
+- 更新 Program Delivery、状态和台账；
 - 清理已合并临时分支；
 - 对满足条件的 DEV0—DEV3 自治合并和发布。
 
 必须暂停或升级：
 
 - 缺少或冲突的 Goal / SPEC / Mandate / Authority；
+- Program Delivery source split-brain 或 canonical state 与 GitHub 事实冲突；
 - Oracle / Policy / Permission 或更高权威冲突；
 - Out-of-Mandate 生产写、Secret、个人数据或危险设备操作；
 - 不可逆资源或成本；
@@ -407,9 +456,11 @@ Review 必须检查 Goal/SPEC/Mandate 漂移、Oracle、Profile 低估、证据�
 
 - 直接写 `main`；
 - 在必需 SPEC 合并前写运行时代码；
-- 没有 Active Covering Mandate 的自治 DEV3；
+- 没有 Active Covering Mandate / Explicit Authority 的自治 DEV3；
 - 静默改写 SPEC、Mandate 或 Requirement；
 - 静默降低 Profile；
+- 从 deprecated status/roadmap/work-map 选择下一产品工作；
+- 把 Claim Registry 当作产品 priority/readiness 来源；
 - 删除断言、固定 Sleep 或盲目 Retry 制造绿色；
 - Candidate 直接晋升生产；
 - 绕过失败的 CI、Evidence、Review 或 Release Gate。
@@ -420,6 +471,7 @@ Review 必须检查 Goal/SPEC/Mandate 漂移、Oracle、Profile 低估、证据�
 
 | 资产 | 默认位置 |
 |---|---|
+| Program Delivery SSOT | `docs/program-delivery-ssot.{yaml,md}` |
 | Module SPEC / Mandate | `docs/specs/` |
 | Test Design | `docs/testing/` |
 | Golden / Negative / Adversarial | `tests/assets/` 或 `benchmarks/` |
@@ -443,6 +495,7 @@ Review 必须检查 Goal/SPEC/Mandate 漂移、Oracle、Profile 低估、证据�
 Goal satisfied
 + Mandate coverage or explicit authority confirmed
 + required SPEC approved and merged
++ Program Delivery state truthful when product state changed
 + Profile justified
 + obligations have sufficient evidence
 + repository regression passed
@@ -457,17 +510,24 @@ Goal satisfied
 
 ## 14. SSOT 与 Mandate 自身变更
 
-修改本 SSOT 至少为 `DEV2`。放宽 SPEC Gate、安全边界、自动合并、Oracle、Policy、Permission、Mandate Scope 或生产批准时升级为 `DEV3`。
+修改本 SSOT 至少为 `DEV2`。放宽 SPEC Gate、安全边界、自动合并、Oracle、Policy、Permission、Mandate Scope、生产批准或 **Delivery Selection Authority** 时升级为 `DEV3`。
 
-本次 Standing Mandate 的创建已由 Issue #23 中的仓库所有者指令明确授权。
+`PROGRAM-DELIVERY-SSOT@1.0.0` 的建立由 Goal #91 中的仓库 Owner 指令授权，并受 `SPEC-PROGRAM-DELIVERY-SSOT@1.0.0` 约束。它不修改 `MANDATE-AUTONOMY-M1-M3@1.0.0` 的范围。
 
 以下文件必须保持一致：
 
 - `AGENTS.md`；
 - `docs/github-development-ssot.md`；
 - `docs/github-development-ssot.yaml`；
+- `docs/program-delivery-ssot.md`；
+- `docs/program-delivery-ssot.yaml`；
 - `docs/specs/autonomous-execution-mandate.yaml`；
+- `docs/specs/parallel-work-claims.md`；
+- `docs/specs/parallel-work-claims.yaml`；
+- `docs/specs/hourly-github-relay-prompt.md`；
 - `.github/ISSUE_TEMPLATE/goal.yml`；
 - `.github/pull_request_template.md`；
 - `tests/unit/test_github_development_ssot.py`；
-- `tests/unit/test_autonomous_execution_mandate.py`。
+- `tests/unit/test_autonomous_execution_mandate.py`；
+- `tests/unit/test_program_delivery.py`；
+- `tests/unit/test_program_delivery_source_consistency.py`。
