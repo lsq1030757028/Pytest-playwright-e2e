@@ -42,18 +42,22 @@ def test_canonical_program_delivery_ssot_validates() -> None:
     data = load_program_delivery(SSOT_PATH)
     assert data["program_delivery"]["source_role"] == "AUTHORITATIVE_DELIVERY"
     assert data["program"]["id"] == "TEST_AGENT_RUNTIME_BETA"
+    assert data["program"]["state"] == "PRE_BETA_A"
     assert data["execution_pointer"]["active_slice"] == "BETA-A"
+    assert data["execution_pointer"]["current_focus"] == "BETA-A-SPEC"
     assert data["relay_enablement"]["state"] == "DISABLED_GOVERNANCE_MIGRATION"
 
 
-def test_current_migration_state_has_no_false_ready_selection() -> None:
-    decision = select_next_work_item(load_raw())
-    assert decision.selected_work_item_id is None
-    assert (
-        "PROGRAM-DELIVERY-SSOT-IMPLEMENTATION",
-        "state:IN_PROGRESS",
-    ) in decision.excluded
-    assert ("BETA-A-SPEC", "state:BLOCKED") in decision.excluded
+def test_current_closed_migration_selects_beta_a_spec() -> None:
+    data = load_raw()
+    items = items_by_id(data)
+    assert data["program"]["state"] == "PRE_BETA_A"
+    assert items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] == "CLOSED"
+    assert items["BETA-A-SPEC"]["state"] == "READY"
+
+    decision = select_next_work_item(data)
+    assert decision.selected_work_item_id == "BETA-A-SPEC"
+    assert decision.candidates[0] == "BETA-A-SPEC"
 
 
 def test_after_governance_closure_selector_moves_to_beta_a_spec() -> None:
@@ -139,6 +143,7 @@ def test_ready_work_requires_authority_and_spec() -> None:
 def test_ready_work_cannot_have_open_dependency() -> None:
     data = deepcopy(load_raw())
     items = items_by_id(data)
+    items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] = "IN_PROGRESS"
     items["BETA-A-SPEC"]["state"] = "READY"
     with pytest.raises(ProgramDeliveryError, match="open dependency"):
         validate_program_delivery(data)
@@ -146,7 +151,7 @@ def test_ready_work_cannot_have_open_dependency() -> None:
 
 def test_critical_path_work_requires_slice_mapping() -> None:
     data = deepcopy(load_raw())
-    item = items_by_id(data)["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]
+    item = items_by_id(data)["BETA-A-SPEC"]
     item.pop("blocks_slice")
     with pytest.raises(ProgramDeliveryError, match="lacks product mapping"):
         validate_program_delivery(data)

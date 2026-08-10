@@ -57,7 +57,7 @@ def test_mutant_claim_registry_product_selector_is_killed() -> None:
 
 def test_mutant_critical_path_without_slice_mapping_is_killed() -> None:
     data = deepcopy(load_raw())
-    item = items_by_id(data)["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]
+    item = items_by_id(data)["BETA-A-SPEC"]
     item.pop("blocks_slice")
     with pytest.raises(ProgramDeliveryError, match="lacks product mapping"):
         validate_program_delivery(data)

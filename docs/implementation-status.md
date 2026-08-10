@@ -5,9 +5,9 @@
 > Canonical Delivery SSOT: `docs/program-delivery-ssot.yaml`  
 > 最近同步：2026-08-10  
 > 当前产品：`TEST_AGENT_RUNTIME_BETA`  
-> Program State：`CONTROL_MIGRATION`  
+> Program State：`PRE_BETA_A`  
 > Active Product Slice：`BETA-A`  
-> 当前 Focus：`PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` / PR #93  
+> 当前 Focus：`BETA-A-SPEC`  
 > Scheduled Relay：`DISABLED_GOVERNANCE_MIGRATION`
 
 本文件只用于人类快速阅读当前状态。它不得独立决定下一步、Work Item priority、Product Slice 或 Relay claim。若本文件与 `docs/program-delivery-ssot.yaml` 不一致，以 Program Delivery SSOT 为准，并由 consistency gate 阻止静默漂移。
@@ -28,9 +28,9 @@ BETA-A  Existing governed test pack → durable job → execute → evidence →
 → BETA-E  Two materially different projects → Beta acceptance
 ```
 
-Beta 产品/架构 SPEC 已通过 PR #87 合入 `main`。因此 `BETA-A` 的产品架构依赖已经满足。
+Beta 产品/架构 SPEC 已通过 PR #87 合入 `main`。统一 Program Delivery 控制实现已通过 PR #93 合入并完成主干 Full Quality / Security / Consistency / Cleanup 验证。
 
-当前正在先完成统一 Program Delivery 控制迁移，目的是让人类 Agent、定时 Relay 和后续执行器对“下一步是什么”得到唯一、确定性的答案。该迁移关闭后，产品关键路径进入：
+因此控制迁移不再阻塞产品推进，当前关键路径正式进入：
 
 ```text
 BETA-A-SPEC
@@ -44,10 +44,10 @@ BETA-A-SPEC
 
 | Work Item | 状态 | 产品作用 |
 |---|---|---|
-| `PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` | `IN_PROGRESS` | 统一 delivery truth / selector / Relay source，解除 BETA-A 自动推进控制面 blocker |
-| `BETA-A-SPEC` | `BLOCKED` | Program Delivery 迁移关闭后立即进入，定义首个 durable runtime slice |
-| `BETA-A-IMPLEMENTATION` | `BLOCKED` | 实现 durable CLI job + existing governed pack execution + evidence-backed verdict |
-| `BETA-A-ACCEPTANCE` | `BLOCKED` | package/container/replay/main-release 证明并关闭 BETA-A |
+| `PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` | `CLOSED` | 单一 delivery truth / selector / Relay source 迁移已闭环 |
+| `BETA-A-SPEC` | `READY` | 当前唯一产品下一步：定义首个 durable runtime slice |
+| `BETA-A-IMPLEMENTATION` | `BLOCKED` | 等 BETA-A SPEC 批准后实现 durable CLI job + existing governed pack execution + evidence-backed verdict |
+| `BETA-A-ACCEPTANCE` | `BLOCKED` | 等实现完成后做 package/container/replay/main-release 证明并关闭 BETA-A |
 
 这里的状态和顺序来自 `docs/program-delivery-ssot.yaml`，不是本文件计算出来的。
 
@@ -66,11 +66,11 @@ M1 Memory 现在是 BETA-D 的能力泳道，而不是阻塞 BETA-A 的全局串
 - M1C Hot Formation、Background Consolidation、poisoning/replay/concurrency gate 核心实现已合入；
 - PR #85 正在收尾 M1C migration evidence，目标是迁移/切换/回滚时不丢 Formation、Consolidation、Replay 和 contamination 证据。
 
-当前 Program Delivery 将 #85 视为 `PARALLEL_MEMORY_CLOSURE`，主要支撑未来 BETA-D。
+当前 Program Delivery 将 #85 视为并行能力 closure，主要支撑未来 BETA-D。
 
 ### UX False-positive / False-negative Assurance
 
-PR #63 仍是并行 UX 质量泳道，主要服务 BETA-C / BETA-E。它不替代 Human UAT，也不阻塞当前 BETA-A 控制迁移。
+PR #63 仍是并行 UX 质量泳道，主要服务 BETA-C / BETA-E。它不替代 Human UAT，也不阻塞当前 BETA-A。
 
 ### M2 / M3 / M4 / M5 / M6
 
@@ -124,30 +124,32 @@ WHO_DOES_IT     → control-branch Claim Registry / Integration Lease
 
 ---
 
-## 6. 当前治理变更
+## 6. Program Delivery 迁移结果
 
-Goal #91 / `SPEC-PROGRAM-DELIVERY-SSOT@1.0.0` 已批准并通过 PR #92 合入主干。
+Goal #91 / `SPEC-PROGRAM-DELIVERY-SSOT@1.0.0` 已批准，SPEC PR #92 与实现 PR #93 均已进入主干。
 
-当前 PR #93 正在实施：
+迁移已经完成以下职责重构：
 
-- `docs/program-delivery-ssot.{yaml,md}`；
-- deterministic selector / validator；
-- AGENTS / Development SSOT 入口迁移；
-- Parallel Claims 和 Hourly Relay prompt 迁移；
-- 旧 status / roadmap / product-work-map 降权；
-- source consistency / selector evidence。
+- `docs/program-delivery-ssot.yaml` 成为唯一 `SHOULD_DO_NEXT` 机器事实源；
+- deterministic selector / validator 与 mutation proof 已落地；
+- AGENTS / Development SSOT 已迁移到 Program Delivery；
+- Parallel Claims 只回答 `WHO_DOES_IT`；
+- Hourly Relay prompt 只消费 Program Delivery 的产品顺序；
+- 旧 status / roadmap / product-work-map 已降权；
+- main Full Quality、Secret Scan、CodeQL、Program consistency、Parallel Claims、UX mutation 与 Cleanup 验证已通过。
 
-`Pytest GitHub Relay` 在此期间必须保持关闭。
+`PROGRAM-DELIVERY-SSOT-IMPLEMENTATION = CLOSED`，`BETA-A-SPEC = READY`。
 
 ---
 
 ## 7. Relay 恢复条件
 
-只有以下全部满足后，Scheduled Relay 才允许单独进入 re-enable 动作：
+`Pytest GitHub Relay` 仍保持禁用。迁移完成不等于自动恢复。
+
+只有以下剩余门禁全部满足后，Scheduled Relay 才允许单独进入 re-enable 动作：
 
 ```text
-Program Delivery implementation merged to main
-+ main Full Quality green
+main Full Quality green
 + Secret Scan / CodeQL green
 + source consistency green
 + deterministic selector proof green
@@ -157,7 +159,7 @@ Program Delivery implementation merged to main
 + bounded acceptance run green
 ```
 
-**SPEC merge 或 implementation merge 都不等于 Relay 自动恢复。**
+**本次 migration closure 不启用 Relay。**
 
 ---
 
@@ -180,9 +182,13 @@ Program Delivery implementation merged to main
 
 ## 9. 下一动作
 
-当前唯一产品关键动作是完成 PR #93 的 Program Delivery 控制迁移并通过主干验证。
+当前 canonical Program Delivery 的唯一产品下一步是：
 
-该 Work Item 正式 `CLOSED` 后，canonical Program Delivery 必须把 `BETA-A-SPEC` 变为 `READY`，并由 deterministic selector 证明它是下一产品 Work Item。
+```text
+BETA-A-SPEC = READY
+```
+
+下一阶段必须继续遵守 SPEC-first：先建立并批准 BETA-A 的 durable runtime 实现契约、测试设计和威胁模型，再进入 Runtime Implementation。
 
 ---
 

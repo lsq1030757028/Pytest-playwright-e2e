@@ -13,14 +13,14 @@
 
 ```text
 Product: TEST_AGENT_RUNTIME_BETA
-Program State: CONTROL_MIGRATION
+Program State: PRE_BETA_A
 Active Slice: BETA-A
-Current Focus: PROGRAM-DELIVERY-SSOT-IMPLEMENTATION
+Current Focus: BETA-A-SPEC
 Next Slice After Active: BETA-B
 Scheduled Relay: DISABLED_GOVERNANCE_MIGRATION
 ```
 
-Beta 垂直架构已经合入 `main`。当前先完成统一推进控制面的迁移，保证后续所有 Agent / Relay 对“下一步”的计算一致；该迁移闭环后，产品关键路径进入 `BETA-A-SPEC → BETA-A-IMPLEMENTATION → BETA-A-ACCEPTANCE`。
+Beta 垂直架构与统一 Program Delivery 控制迁移均已完成实现并通过主干验证。产品关键路径现在正式进入 `BETA-A-SPEC → BETA-A-IMPLEMENTATION → BETA-A-ACCEPTANCE`；横向能力泳道只有在明确解除 active/next slice blocker 时才能进入关键路径。
 
 ## 2. 三个问题，三个事实面
 
@@ -46,7 +46,7 @@ BETA-D  restart → durable state + governed Memory → resume
 BETA-E  two materially different projects → Beta acceptance
 ```
 
-当前 `BETA-A = PREPARING`。BETA-B～E 仍由 slice dependency 阻塞。
+当前 `BETA-A = PREPARING`，其中 `BETA-A-SPEC = READY`。BETA-B～E 仍由 slice dependency 阻塞。
 
 ## 4. 能力泳道，而不是产品串行里程碑
 
@@ -63,11 +63,12 @@ BETA-E  two materially different projects → Beta acceptance
 ## 5. 当前关键路径
 
 ```text
-PROGRAM-DELIVERY-SSOT-IMPLEMENTATION
-→ BETA-A-SPEC
+BETA-A-SPEC
 → BETA-A-IMPLEMENTATION
 → BETA-A-ACCEPTANCE
 ```
+
+`PROGRAM-DELIVERY-SSOT-IMPLEMENTATION = CLOSED`，不再占据产品关键路径。
 
 当前并行泳道：
 
@@ -97,6 +98,8 @@ explicit priority DESC
 
 禁止用 milestone 编号、PR 编号、文件新旧、讨论热度或 claim sequence 推断产品优先级。
 
+当前 canonical selector 的下一产品 Work Item 必须是 `BETA-A-SPEC`。
+
 ## 7. Source Roles
 
 | Source | Role | 可决定下一步？ |
@@ -114,9 +117,8 @@ explicit priority DESC
 
 ## 8. Relay 状态
 
-`Pytest GitHub Relay` 必须继续保持禁用，直到：
+`Pytest GitHub Relay` **继续保持禁用**。Program Delivery 迁移完成只满足 Relay 恢复门禁中的一部分，不自动恢复定时任务。恢复仍要求：
 
-- Program Delivery 实现进入 main；
 - main Full Quality / Secret Scan / CodeQL 全绿；
 - source consistency 与 deterministic selector 证明全绿；
 - claims / integration queue 已按当前 GitHub 事实重新 reconcile；
@@ -124,7 +126,7 @@ explicit priority DESC
 - Relay prompt 已迁移到 Program Delivery SSOT；
 - bounded acceptance run 通过。
 
-**SPEC merge 或 implementation merge 本身都不等于 Relay 可以恢复。**
+**SPEC merge、implementation merge 或本次 migration closure 都不等于 Relay 可以恢复。**
 
 ## 9. 变更规则
 
