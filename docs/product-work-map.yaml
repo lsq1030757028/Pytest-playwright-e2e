@@ -1,11 +1,16 @@
 map_id: PRODUCT-WORK-MAP-M1-M3
 version: 0.1.0
-status: CANDIDATE
+status: SUPERSEDED
+source_role: SUPERSEDED_DELIVERY_MAP_OR_COMPATIBILITY_VIEW
+delivery_selection_authoritative: false
+superseded_by: docs/program-delivery-ssot.yaml
+superseded_under_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
 roadmap: docs/agent-os-roadmap.yaml
 authority_issue: 55
 scope: [M1, M2, M3]
 product_m4_claim: false
 selection_defaults:
+  role: LEGACY_COMPATIBILITY_ONLY
   order: [priority_desc, work_item_id_asc]
   claimable_states: [READY]
   active_states: [CLAIMED, IN_PROGRESS, EVIDENCE_READY, INTEGRATION_WAITING, INTEGRATING]
