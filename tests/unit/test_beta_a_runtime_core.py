@@ -31,7 +31,7 @@ def _ready(store: RuntimeStore, job_id: str, revision: int = 0, now: float = 1.0
 
 
 def test_submission_rejects_manifest_escape_nonhex_commit_and_floating_image(tmp_path):
-    _, _, manifests, submission_path = make_governed_fixture(tmp_path)
+    _, _, _, submission_path = make_governed_fixture(tmp_path)
     submission = yaml.safe_load(submission_path.read_text(encoding="utf-8"))
 
     outside = tmp_path / "outside.yaml"
@@ -41,7 +41,7 @@ def test_submission_rejects_manifest_escape_nonhex_commit_and_floating_image(tmp
     with pytest.raises(ManifestError, match="escapes"):
         load_submission_bundle(submission_path)
 
-    _, _, manifests, submission_path = make_governed_fixture(tmp_path / "nonhex")
+    _, _, _, submission_path = make_governed_fixture(tmp_path / "nonhex")
     submission = yaml.safe_load(submission_path.read_text(encoding="utf-8"))
     submission["commit_sha"] = "z" * 40
     write_yaml(submission_path, submission)
@@ -140,11 +140,17 @@ def test_prelaunch_lease_reclaims_but_started_attempt_never_reexecutes(tmp_path)
     assert reclaimed_claim[1].attempt_id == lease.attempt_id
     assert reclaimed_claim[1].lease_token != lease.lease_token
 
-    bundle2, _, _, _ = make_governed_fixture(tmp_path / "uncertain")
-    bundle2.submission["idempotency_key"] = "uncertain-key"
+    bundle2, _, _, _ = make_governed_fixture(
+        tmp_path / "uncertain",
+        idempotency_key="uncertain-key",
+    )
     second, _ = store.submit(bundle2, now=20.0)
     _ready(store, second.job_id, now=21.0)
-    claimed2 = store.claim_ready(worker_id="worker-a", now=22.0, lease_ttl_seconds=10.0)
+    claimed2 = store.claim_ready(
+        worker_id="worker-a",
+        now=22.0,
+        lease_ttl_seconds=10.0,
+    )
     assert claimed2 is not None
     _, lease2 = claimed2
     store.mark_command_started(lease2, {"argv": ["pytest"]}, now=23.0)
@@ -182,10 +188,14 @@ def _verify(
     )
 
 
-def test_verifier_blocks_false_green_tamper_skip_missing_collection_and_source_diff(tmp_path):
+def test_verifier_blocks_false_green_tamper_skip_missing_collection_and_source_diff(
+    tmp_path,
+):
     artifacts = ArtifactStore(tmp_path / "artifacts")
     node = "tests/test_governed.py::test_governed_unit"
-    passed = artifacts.put_text(json.dumps({"nodeid": node, "when": "call", "outcome": "passed"}))
+    passed = artifacts.put_text(
+        json.dumps({"nodeid": node, "when": "call", "outcome": "passed"})
+    )
     assert _verify(artifacts, passed).verdict == "VERIFIED_SUCCESS"
 
     artifacts.resolve(passed).write_text("tampered", encoding="utf-8")
@@ -193,13 +203,22 @@ def test_verifier_blocks_false_green_tamper_skip_missing_collection_and_source_d
     assert tampered.verdict == "INSUFFICIENT_EVIDENCE"
     assert tampered.terminal_state == "BLOCKED"
 
-    skipped = artifacts.put_text(json.dumps({"nodeid": node, "when": "call", "outcome": "skipped"}))
+    skipped = artifacts.put_text(
+        json.dumps({"nodeid": node, "when": "call", "outcome": "skipped"})
+    )
     assert _verify(artifacts, skipped).verdict == "INSUFFICIENT_EVIDENCE"
     assert _verify(artifacts, skipped, collected=()).verdict == "TEST_DEFECT"
 
-    passed2 = artifacts.put_text(json.dumps({"nodeid": node, "when": "call", "outcome": "passed"}) + "\n")
-    assert _verify(artifacts, passed2, product_source_unchanged=False).verdict == "POLICY_BLOCKED"
-    assert _verify(artifacts, passed2, cleanup_verified=False).verdict == "INSUFFICIENT_EVIDENCE"
+    passed_payload = {"nodeid": node, "when": "call", "outcome": "passed"}
+    passed2 = artifacts.put_text(json.dumps(passed_payload) + "\n")
+    assert (
+        _verify(artifacts, passed2, product_source_unchanged=False).verdict
+        == "POLICY_BLOCKED"
+    )
+    assert (
+        _verify(artifacts, passed2, cleanup_verified=False).verdict
+        == "INSUFFICIENT_EVIDENCE"
+    )
 
     empty = artifacts.put_text("")
     exit_zero_only = _verify(artifacts, empty, command_exit_code=0)
