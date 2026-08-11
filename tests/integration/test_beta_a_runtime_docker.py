@@ -33,7 +33,10 @@ def _expand_pack(manifests, submission_path, nodes):
     return load_submission_bundle(submission_path)
 
 
-def test_real_docker_pytest_playwright_is_durable_replayable_and_isolated(tmp_path, monkeypatch):
+def test_real_docker_pytest_playwright_is_durable_replayable_and_isolated(
+    tmp_path,
+    monkeypatch,
+):
     image = os.environ["BETA_A_DOCKER_IMAGE"]
     host_secret = "BETA_A_SHOULD_NOT_REACH_CONTAINER"
     monkeypatch.setenv("BETA_A_HOST_SECRET", host_secret)
@@ -61,6 +64,7 @@ def test_governed_browser():
 
 def test_governed_boundaries():
     assert os.environ.get("BETA_A_HOST_SECRET") is None
+    assert not Path("/var/run/docker.sock").exists()
     with pytest.raises(OSError):
         Path("product-write-probe.txt").write_text("forbidden", encoding="utf-8")
     sock = socket.socket()
@@ -91,7 +95,10 @@ def test_governed_boundaries():
     assert terminal.state == "SUCCEEDED"
     assert terminal.result["verdict"] == "VERIFIED_SUCCESS"
     assert terminal.result["automatic_reexecution"] is False
-    assert terminal.result["project_source_digest_before"] == terminal.result["project_source_digest_after"]
+    assert (
+        terminal.result["project_source_digest_before"]
+        == terminal.result["project_source_digest_after"]
+    )
     assert not (project / "product-write-probe.txt").exists()
     assert {"junit", "runtime_report", "collection", "entry_meta"} <= set(
         terminal.result["artifacts"]
