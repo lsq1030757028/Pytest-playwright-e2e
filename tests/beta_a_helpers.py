@@ -30,6 +30,7 @@ def make_governed_fixture(
     image: str = "beta-a-runtime-ci:1",
     repository: str = "https://example.invalid/beta-a-fixture.git",
     test_source: str | None = None,
+    idempotency_key: str = "beta-a-fixture-key",
 ) -> tuple[SubmissionBundle, Path, Path, Path]:
     project = root / "project"
     manifests = root / "manifests"
@@ -112,7 +113,7 @@ def make_governed_fixture(
     write_yaml(manifests / "pack.yaml", pack_manifest)
 
     submission = {
-        "idempotency_key": "beta-a-fixture-key",
+        "idempotency_key": idempotency_key,
         "project_repository": repository,
         "commit_sha": commit_sha,
         "project_profile_ref": "project.yaml",
