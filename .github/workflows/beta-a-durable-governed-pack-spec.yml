@@ -1,0 +1,45 @@
+name: beta-a-durable-governed-pack-spec
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/beta-a-durable-governed-pack-spec.md"
+      - "docs/specs/beta-a-durable-governed-pack.yaml"
+      - "docs/security/beta-a-durable-governed-pack-threat-model.md"
+      - "docs/testing/beta-a-durable-governed-pack-test-design.md"
+      - "tests/unit/test_beta_a_durable_governed_pack_spec.py"
+      - ".github/workflows/beta-a-durable-governed-pack-spec.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/beta-a-durable-governed-pack-spec.md"
+      - "docs/specs/beta-a-durable-governed-pack.yaml"
+      - "docs/security/beta-a-durable-governed-pack-threat-model.md"
+      - "docs/testing/beta-a-durable-governed-pack-test-design.md"
+      - "tests/unit/test_beta_a_durable_governed_pack_spec.py"
+      - ".github/workflows/beta-a-durable-governed-pack-spec.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-beta-a-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Lint BETA-A SPEC checks
+        run: |
+          uv run ruff check tests/unit/test_beta_a_durable_governed_pack_spec.py
+
+      - name: Validate BETA-A durable governed-pack SPEC package
+        run: |
+          uv run pytest tests/unit/test_beta_a_durable_governed_pack_spec.py -q
