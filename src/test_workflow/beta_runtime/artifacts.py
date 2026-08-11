@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import re
 import tempfile
@@ -63,13 +62,19 @@ class ArtifactStore:
         media_type: str = "text/plain; charset=utf-8",
         limit_bytes: int = 1024 * 1024,
     ) -> ArtifactRef:
-        return self.put_bytes(self.bounded_text(text, limit_bytes=limit_bytes), media_type=media_type)
+        data = self.bounded_text(text, limit_bytes=limit_bytes)
+        return self.put_bytes(data, media_type=media_type)
 
     def put_json(self, value: Any) -> ArtifactRef:
         data = (canonical_json(value) + "\n").encode("utf-8")
         return self.put_bytes(data, media_type="application/json")
 
-    def put_file(self, source: Path, *, media_type: str = "application/octet-stream") -> ArtifactRef:
+    def put_file(
+        self,
+        source: Path,
+        *,
+        media_type: str = "application/octet-stream",
+    ) -> ArtifactRef:
         return self.put_bytes(source.read_bytes(), media_type=media_type)
 
     def put_bytes(self, data: bytes, *, media_type: str) -> ArtifactRef:
