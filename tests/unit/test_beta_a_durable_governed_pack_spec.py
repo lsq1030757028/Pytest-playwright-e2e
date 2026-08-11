@@ -139,7 +139,6 @@ def test_reference_runtime_preserves_parent_security_boundaries() -> None:
     assert profile["artifact_store"]["backend"] == "CONTENT_ADDRESSED_FILESYSTEM"
     assert profile["artifact_store"]["hash"] == "SHA256"
     assert profile["artifact_store"]["temp_write_hash_fsync_atomic_finalize"] == "required"
-
     sandbox = profile["sandbox"]
     assert sandbox["isolated_worker_required"] is True
     assert sandbox["product_tree_read_only"] is True
@@ -148,7 +147,6 @@ def test_reference_runtime_preserves_parent_security_boundaries() -> None:
     assert sandbox["path_traversal"] == "reject"
     assert sandbox["symlink_escape"] == "reject"
     assert sandbox["network_default"] == "deny"
-
     process = profile["process_execution"]
     assert process["shell_interpolation"] == "forbidden"
     assert process["argv_list_only"] is True
@@ -179,7 +177,6 @@ def test_job_lifecycle_and_attempt_fencing_are_deterministic() -> None:
         "CANCELLED": "CANCELLED",
         "TIMED_OUT": "TIMED_OUT",
     }
-
     attempt = spec["attempt_lifecycle"]
     assert attempt["lease_token_required_for_mutation_after_claim"] is True
     assert attempt["lease_heartbeat_required"] is True
@@ -246,8 +243,7 @@ def test_cancellation_requires_process_tree_and_cleanup_truth() -> None:
 
 
 def test_budgets_are_bounded_and_no_retry_loop_exists() -> None:
-    budgets = load_yaml(SPEC_YAML)["budgets"]
-    assert budgets == {
+    assert load_yaml(SPEC_YAML)["budgets"] == {
         "wall_clock_job_minutes_max": 45,
         "execution_attempt_minutes_max": 15,
         "execution_attempts_max": 1,
@@ -310,12 +306,16 @@ def test_parent_architecture_is_narrowed_not_weakened() -> None:
 def test_program_delivery_truth_and_post_spec_transition_are_consistent() -> None:
     program = load_yaml(PROGRAM_DELIVERY)
     items = {item["work_item_id"]: item for item in program["work_items"]}
-    assert program["program"]["state"] == "PRE_BETA_A"
+    assert program["program"]["state"] == "BETA_A_IMPLEMENTATION"
     assert program["execution_pointer"]["active_slice"] == "BETA-A"
-    assert program["execution_pointer"]["current_focus"] == "BETA-A-SPEC"
-    assert program["execution_pointer"]["critical_path"][0] == "BETA-A-SPEC"
-    assert items["BETA-A-SPEC"]["state"] == "READY"
-    assert items["BETA-A-IMPLEMENTATION"]["state"] == "BLOCKED"
+    assert program["execution_pointer"]["current_focus"] == "BETA-A-IMPLEMENTATION"
+    assert program["execution_pointer"]["critical_path"][0] == "BETA-A-IMPLEMENTATION"
+    assert items["BETA-A-SPEC"]["state"] == "CLOSED"
+    assert items["BETA-A-SPEC"]["target_pr"] == 96
+    assert items["BETA-A-IMPLEMENTATION"]["state"] == "READY"
+    assert items["BETA-A-IMPLEMENTATION"]["required_spec"] == (
+        "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0"
+    )
 
     transition = load_yaml(SPEC_YAML)["post_spec_transition"]
     assert transition["program_delivery_work_item_to_close"] == "BETA-A-SPEC"
@@ -333,19 +333,16 @@ def test_human_assets_define_uncertainty_false_green_and_ux_contracts() -> None:
     spec_md = SPEC_MD.read_text(encoding="utf-8")
     threat = THREAT_MODEL.read_text(encoding="utf-8")
     design = TEST_DESIGN.read_text(encoding="utf-8")
-
     assert "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0" in spec_md
     assert "ABANDONED_UNCERTAIN" in spec_md
     assert "Exit code alone can never produce `VERIFIED_SUCCESS`" in spec_md
     assert "must not falsely report `CANCELLED`" in spec_md
     assert "Full active resume stays BETA-D" not in spec_md
     assert "Full resume of an active execution is BETA-D scope" in spec_md
-
     assert "Green process with incomplete governed pack" in threat
     assert "Crash after launch, before result" in threat
     assert "Cancellation with surviving process" in threat
     assert "Scheduled Relay" in threat
-
     assert "Governed-pack false-green matrix" in design
     assert "Restart matrix" in design
     assert "Cancellation matrix" in design
