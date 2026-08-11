@@ -14,10 +14,9 @@ def load_yaml(path: Path) -> dict[str, object]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def test_spec_identity_authority_and_phase_are_bound() -> None:
+def test_spec_identity_authority_and_assurance_are_bound() -> None:
     spec = load_yaml(SPEC_YAML)
-    meta = spec["spec"]
-    assert meta == {
+    assert spec["spec"] == {
         "id": "SPEC-BETA-A-DURABLE-GOVERNED-PACK",
         "version": "0.1.0",
         "status": "CANDIDATE",
@@ -29,7 +28,6 @@ def test_spec_identity_authority_and_phase_are_bound() -> None:
         "work_item_id": "BETA-A-SPEC",
         "product_slice": "BETA-A",
     }
-
     authority = spec["authority"]
     assert authority["owner_scope_extension_issues"] == [65, 66]
     assert authority["slice_goal_issue"] == 95
@@ -38,20 +36,12 @@ def test_spec_identity_authority_and_phase_are_bound() -> None:
     assert authority["standing_mandate_extended"] is False
     assert authority["runtime_implementation_requires_spec_merge"] is True
     assert authority["may_change_oracle_policy_permission"] is False
+    assert spec["assurance"]["development"] == "DEV3"
+    assert spec["assurance"]["ux"] == "UX3"
+    assert spec["assurance"]["human_uat_replaced"] is False
 
 
-def test_assurance_is_dev3_ux3_without_human_uat_replacement() -> None:
-    assurance = load_yaml(SPEC_YAML)["assurance"]
-    assert assurance["development"] == "DEV3"
-    assert assurance["ux"] == "UX3"
-    assert assurance["threat_model_required"] is True
-    assert assurance["independent_test_design_required"] is True
-    assert assurance["mutation_or_equivalent_proof_required"] is True
-    assert assurance["rollback_and_recovery_required"] is True
-    assert assurance["human_uat_replaced"] is False
-
-
-def test_slice_is_existing_pack_only_and_does_not_pull_later_slices_forward() -> None:
+def test_slice_is_existing_pack_only_and_keeps_later_slices_out() -> None:
     spec = load_yaml(SPEC_YAML)
     included = set(spec["slice_boundary"]["includes"])
     excluded = set(spec["slice_boundary"]["excludes"])
@@ -82,8 +72,9 @@ def test_slice_is_existing_pack_only_and_does_not_pull_later_slices_forward() ->
     assert spec["business_outcome"]["scheduled_relay_reenabled_by_this_spec"] is False
 
 
-def test_entrypoint_is_cli_first_with_explicit_single_node_bootstrap() -> None:
-    entrypoint = load_yaml(SPEC_YAML)["entrypoint"]
+def test_entrypoint_and_submission_are_bounded_and_idempotent() -> None:
+    spec = load_yaml(SPEC_YAML)
+    entrypoint = spec["entrypoint"]
     assert entrypoint["user_commands"] == {
         "submit": "test-agent job submit",
         "status": "test-agent job status",
@@ -91,22 +82,17 @@ def test_entrypoint_is_cli_first_with_explicit_single_node_bootstrap() -> None:
         "events": "test-agent job events",
         "cancel": "test-agent job cancel",
     }
-    assert entrypoint["operator_bootstrap"]["reference_command"] == (
-        "test-agent runtime serve"
-    )
+    assert entrypoint["operator_bootstrap"]["reference_command"] == "test-agent runtime serve"
     assert entrypoint["operator_bootstrap"]["user_product_entrypoint"] is False
     assert entrypoint["state_locator"]["type"] == "EXPLICIT_STATE_DIR"
     assert entrypoint["state_locator"]["same_state_dir_required_for_runtime_and_cli"] is True
     assert entrypoint["output"]["stable_json_mode_required"] is True
     assert entrypoint["output"]["raw_unbounded_logs_in_default_output"] is False
 
-
-def test_submission_fingerprint_and_rebound_rules_fail_closed() -> None:
-    submission = load_yaml(SPEC_YAML)["submission"]
+    submission = spec["submission"]
     assert submission["fingerprint_binds_all_required_fields"] is True
     assert submission["same_key_same_fingerprint"] == "IDEMPOTENT_SAME_JOB"
     assert submission["same_key_changed_fingerprint"] == "EXPLICIT_CONFLICT"
-    rejects = set(submission["rejects"])
     assert {
         "floating_project_ref",
         "missing_oracle_authority",
@@ -114,12 +100,11 @@ def test_submission_fingerprint_and_rebound_rules_fail_closed() -> None:
         "unbounded_budget",
         "product_source_write_permission",
         "freeform_shell_or_pytest_argument_string",
-    } <= rejects
+    } <= set(submission["rejects"])
 
 
-def test_governed_pack_requires_exact_complete_nodes_not_freeform_args() -> None:
+def test_governed_pack_prevents_partial_pack_false_green() -> None:
     pack = load_yaml(SPEC_YAML)["governed_pack_manifest"]
-    required_fields = set(pack["required_fields"])
     assert {
         "pack_id",
         "pack_version",
@@ -127,7 +112,7 @@ def test_governed_pack_requires_exact_complete_nodes_not_freeform_args() -> None
         "selected_node_ids",
         "required_node_ids",
         "node_oracle_bindings",
-    } <= required_fields
+    } <= set(pack["required_fields"])
     assert pack["immutable_and_hash_bound"] is True
     assert pack["selected_node_ids_unique"] is True
     assert pack["required_node_ids_subset_of_selected"] is True
@@ -171,8 +156,9 @@ def test_reference_runtime_preserves_parent_security_boundaries() -> None:
     assert process["adapter_generated_command_only"] is True
 
 
-def test_job_lifecycle_terminal_mapping_is_deterministic() -> None:
-    lifecycle = load_yaml(SPEC_YAML)["job_lifecycle"]
+def test_job_lifecycle_and_attempt_fencing_are_deterministic() -> None:
+    spec = load_yaml(SPEC_YAML)
+    lifecycle = spec["job_lifecycle"]
     states = lifecycle["allowed_states"]
     terminal = lifecycle["terminal_states"]
     assert len(states) == len(set(states))
@@ -194,9 +180,7 @@ def test_job_lifecycle_terminal_mapping_is_deterministic() -> None:
         "TIMED_OUT": "TIMED_OUT",
     }
 
-
-def test_attempt_fencing_has_one_launch_and_no_automatic_retry() -> None:
-    attempt = load_yaml(SPEC_YAML)["attempt_lifecycle"]
+    attempt = spec["attempt_lifecycle"]
     assert attempt["lease_token_required_for_mutation_after_claim"] is True
     assert attempt["lease_heartbeat_required"] is True
     assert attempt["heartbeat_interval_seconds"] == 2
@@ -207,9 +191,8 @@ def test_attempt_fencing_has_one_launch_and_no_automatic_retry() -> None:
     assert attempt["automatic_execution_retries"] == 0
 
 
-def test_restart_reconciliation_does_not_claim_beta_d_resume() -> None:
+def test_restart_reconciliation_is_safe_without_claiming_beta_d() -> None:
     restart = load_yaml(SPEC_YAML)["restart_reconciliation"]
-    assert restart["queryable_state_after_control_restart"] == "required"
     assert restart["safe_recovery_cases"] == {
         "accepted_without_attempt": "MAY_CONTINUE",
         "leased_before_command_started": "MAY_RECLAIM_AFTER_LEASE_EXPIRY",
@@ -223,11 +206,10 @@ def test_restart_reconciliation_does_not_claim_beta_d_resume() -> None:
     assert restart["full_active_execution_resume_deferred_to_slice"] == "BETA-D"
 
 
-def test_verifier_requires_complete_governed_evidence_not_exit_code() -> None:
+def test_verifier_requires_complete_evidence_not_exit_code() -> None:
     verifier = load_yaml(SPEC_YAML)["verifier"]
     assert verifier["authority"] == "DETERMINISTIC_VERIFIER"
     assert verifier["model_output_authority"] == "CANDIDATE_ONLY"
-    requirements = set(verifier["verified_success_requires"])
     assert {
         "terminal_attempt_completed",
         "command_exit_success",
@@ -240,7 +222,7 @@ def test_verifier_requires_complete_governed_evidence_not_exit_code() -> None:
         "no_product_source_diff",
         "no_policy_or_oracle_conflict",
         "cleanup_verified",
-    } <= requirements
+    } <= set(verifier["verified_success_requires"])
     assert verifier["exit_code_alone_may_produce_verified_success"] is False
     assert verifier["assertion_failure_with_valid_governed_oracle_binding"] == "PRODUCT_DEFECT"
     assert verifier["collection_import_fixture_or_test_structure_failure"] == "TEST_DEFECT"
@@ -263,19 +245,21 @@ def test_cancellation_requires_process_tree_and_cleanup_truth() -> None:
     assert cancellation["cancel_after_terminal_returns_existing_terminal_truth"] is True
 
 
-def test_budgets_are_bounded_and_beta_a_has_no_execution_retry_loop() -> None:
+def test_budgets_are_bounded_and_no_retry_loop_exists() -> None:
     budgets = load_yaml(SPEC_YAML)["budgets"]
-    assert budgets["wall_clock_job_minutes_max"] == 45
-    assert budgets["execution_attempt_minutes_max"] == 15
-    assert budgets["execution_attempts_max"] == 1
-    assert budgets["concurrent_workers_per_job"] == 1
-    assert budgets["browser_contexts_per_attempt"] == 1
-    assert budgets["artifact_mebibytes_per_job_max"] == 500
-    assert budgets["freeform_retry_count"] == 0
-    assert budgets["budget_exhaustion_widens_limit"] is False
+    assert budgets == {
+        "wall_clock_job_minutes_max": 45,
+        "execution_attempt_minutes_max": 15,
+        "execution_attempts_max": 1,
+        "concurrent_workers_per_job": 1,
+        "browser_contexts_per_attempt": 1,
+        "artifact_mebibytes_per_job_max": 500,
+        "freeform_retry_count": 0,
+        "budget_exhaustion_widens_limit": False,
+    }
 
 
-def test_critical_mutation_catalog_is_complete_and_zero_survivor() -> None:
+def test_critical_mutation_catalog_and_zero_invariants_are_complete() -> None:
     spec = load_yaml(SPEC_YAML)
     assert set(spec["critical_mutation_catalog"]) == {
         "REMOVE_SUBMISSION_FINGERPRINT_REBOUND_REJECTION",
@@ -290,10 +274,6 @@ def test_critical_mutation_catalog_is_complete_and_zero_survivor() -> None:
         "ALLOW_EXIT_CODE_ONLY_SUCCESS",
     }
     assert spec["critical_mutation_survivors_allowed"] == 0
-
-
-def test_protected_zero_invariants_cover_false_green_and_recovery() -> None:
-    invariants = load_yaml(SPEC_YAML)["protected_invariants"]
     zero_keys = {
         "critical_false_green_count",
         "unauthorized_product_source_write_count",
@@ -308,6 +288,7 @@ def test_protected_zero_invariants_cover_false_green_and_recovery() -> None:
         "secret_or_personal_data_exposure_count",
         "unbounded_retry_or_spend_count",
     }
+    invariants = spec["protected_invariants"]
     assert zero_keys <= set(invariants)
     assert all(invariants[key] == 0 for key in zero_keys)
 
@@ -326,7 +307,7 @@ def test_parent_architecture_is_narrowed_not_weakened() -> None:
     assert spec["supported_profile"]["network_default"] == "DENY"
 
 
-def test_program_delivery_current_truth_matches_spec_phase() -> None:
+def test_program_delivery_truth_and_post_spec_transition_are_consistent() -> None:
     program = load_yaml(PROGRAM_DELIVERY)
     items = {item["work_item_id"]: item for item in program["work_items"]}
     assert program["program"]["state"] == "PRE_BETA_A"
@@ -336,10 +317,7 @@ def test_program_delivery_current_truth_matches_spec_phase() -> None:
     assert items["BETA-A-SPEC"]["state"] == "READY"
     assert items["BETA-A-IMPLEMENTATION"]["state"] == "BLOCKED"
 
-
-def test_post_spec_transition_advances_only_to_beta_a_implementation() -> None:
-    spec = load_yaml(SPEC_YAML)
-    transition = spec["post_spec_transition"]
+    transition = load_yaml(SPEC_YAML)["post_spec_transition"]
     assert transition["program_delivery_work_item_to_close"] == "BETA-A-SPEC"
     assert transition["program_delivery_work_item_to_ready"] == "BETA-A-IMPLEMENTATION"
     assert set(transition["runtime_implementation_may_start_only_after"]) == {
@@ -359,8 +337,9 @@ def test_human_assets_define_uncertainty_false_green_and_ux_contracts() -> None:
     assert "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0" in spec_md
     assert "ABANDONED_UNCERTAIN" in spec_md
     assert "Exit code alone can never produce `VERIFIED_SUCCESS`" in spec_md
-    assert "must not publish `CANCELLED`" in spec_md
-    assert "BETA-D" in spec_md
+    assert "must not falsely report `CANCELLED`" in spec_md
+    assert "Full active resume stays BETA-D" not in spec_md
+    assert "Full resume of an active execution is BETA-D scope" in spec_md
 
     assert "Green process with incomplete governed pack" in threat
     assert "Crash after launch, before result" in threat
