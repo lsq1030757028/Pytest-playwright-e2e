@@ -271,13 +271,40 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     if "pytest" not in permitted_capabilities:
         raise ManifestError("pytest capability is required")
 
-    project_ref = _manifest_ref(base, submission["project_profile_ref"], label="project profile")
-    pack_ref = _manifest_ref(base, submission["governed_pack_manifest_ref"], label="governed pack")
-    objective_ref = _manifest_ref(base, submission["objective_manifest_ref"], label="objective")
-    environment_ref = _manifest_ref(base, submission["environment_profile_ref"], label="environment")
-    budget_ref = _manifest_ref(base, submission["budget_profile_ref"], label="budget")
-    evidence_ref = _manifest_ref(base, submission["evidence_profile_ref"], label="evidence")
-    oracle_refs = tuple(_manifest_ref(base, raw, label="oracle") for raw in submission["oracle_refs"])
+    project_ref = _manifest_ref(
+        base,
+        submission["project_profile_ref"],
+        label="project profile",
+    )
+    pack_ref = _manifest_ref(
+        base,
+        submission["governed_pack_manifest_ref"],
+        label="governed pack",
+    )
+    objective_ref = _manifest_ref(
+        base,
+        submission["objective_manifest_ref"],
+        label="objective",
+    )
+    environment_ref = _manifest_ref(
+        base,
+        submission["environment_profile_ref"],
+        label="environment",
+    )
+    budget_ref = _manifest_ref(
+        base,
+        submission["budget_profile_ref"],
+        label="budget",
+    )
+    evidence_ref = _manifest_ref(
+        base,
+        submission["evidence_profile_ref"],
+        label="evidence",
+    )
+    oracle_refs = tuple(
+        _manifest_ref(base, raw, label="oracle")
+        for raw in submission["oracle_refs"]
+    )
 
     _require(
         project_ref.data,
@@ -289,7 +316,11 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     if project_ref.data["commit_sha"] != commit_sha:
         raise ManifestError("project profile commit does not match submission")
 
-    _require(environment_ref.data, {"backend", "image", "network"}, label="environment profile")
+    _require(
+        environment_ref.data,
+        {"backend", "image", "network"},
+        label="environment profile",
+    )
     if environment_ref.data["backend"] != "DOCKER":
         raise ManifestError("BETA-A reference profile requires DOCKER backend")
     if environment_ref.data["network"] != "DENY":
@@ -347,7 +378,9 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     oracle_raw_refs = set(submission["oracle_refs"])
     for node_id in required:
         if bindings[node_id] not in oracle_raw_refs:
-            raise ManifestError(f"required node Oracle is not authorized by submission: {node_id}")
+            raise ManifestError(
+                f"required node Oracle is not authorized by submission: {node_id}"
+            )
 
     project_profile = ProjectProfile(
         profile_id=str(project_ref.data["profile_id"]),
@@ -363,7 +396,10 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
         commit_sha=commit_sha,
         selected_node_ids=tuple(str(item) for item in selected),
         required_node_ids=tuple(str(item) for item in required),
-        node_oracle_bindings={str(key): str(value) for key, value in bindings.items()},
+        node_oracle_bindings={
+            str(key): str(value)
+            for key, value in bindings.items()
+        },
     )
 
     bindings_for_fingerprint = {
