@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -54,6 +55,19 @@ def _resolve_ref(base: Path, raw: str, *, label: str) -> Path:
     if not candidate.is_absolute():
         candidate = base / candidate
     return candidate.resolve()
+
+
+def _resolve_manifest_ref(base: Path, raw: str, *, label: str) -> Path:
+    if not isinstance(raw, str) or not raw.strip():
+        raise ManifestError(f"{label} must be a non-empty relative path")
+    candidate = Path(raw)
+    if candidate.is_absolute():
+        raise ManifestError(f"{label} must stay inside the submission manifest directory")
+    root = base.resolve()
+    resolved = (root / candidate).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise ManifestError(f"{label} escapes the submission manifest directory")
+    return resolved
 
 
 def _safe_node_id(node_id: str) -> None:
@@ -182,9 +196,17 @@ _PACK_REQUIRED = {
     "evidence_profile_ref",
 }
 
+_ORACLE_REQUIRED = {
+    "oracle_id",
+    "status",
+    "authority",
+    "project_repository",
+    "commit_sha",
+}
+
 
 def _manifest_ref(base: Path, raw: str, *, label: str) -> ManifestRef:
-    path = _resolve_ref(base, raw, label=label)
+    path = _resolve_manifest_ref(base, raw, label=label)
     data = _load_mapping(path)
     return ManifestRef(raw=raw, path=path, sha256=sha256_file(path), data=data)
 
@@ -210,6 +232,18 @@ def _validate_budget(data: dict[str, Any]) -> None:
         raise ManifestError("BETA-A requires one browser context and zero automatic retries")
 
 
+def _validate_oracle(ref: ManifestRef, *, repository: str, commit_sha: str) -> None:
+    _require(ref.data, _ORACLE_REQUIRED, label="oracle")
+    if ref.data["status"] != "ACTIVE":
+        raise ManifestError(f"oracle is not ACTIVE: {ref.raw}")
+    if ref.data["authority"] != "AUTHORITATIVE":
+        raise ManifestError(f"oracle is not AUTHORITATIVE: {ref.raw}")
+    if ref.data["project_repository"] != repository:
+        raise ManifestError(f"oracle project repository does not match submission: {ref.raw}")
+    if ref.data["commit_sha"] != commit_sha:
+        raise ManifestError(f"oracle commit does not match submission: {ref.raw}")
+
+
 def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     manifest_path = manifest_path.resolve()
     submission = _load_mapping(manifest_path)
@@ -223,8 +257,8 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
         raise ManifestError("idempotency_key must be non-empty")
     if not isinstance(repository, str) or not repository.strip():
         raise ManifestError("project_repository must be non-empty")
-    if not isinstance(commit_sha, str) or len(commit_sha) != 40:
-        raise ManifestError("commit_sha must be a full 40-character Git SHA")
+    if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-fA-F]{40}", commit_sha) is None:
+        raise ManifestError("commit_sha must be a full 40-character hexadecimal Git SHA")
 
     list_fields = ("permitted_test_paths", "permitted_capabilities", "oracle_refs")
     for key in list_fields:
@@ -237,40 +271,13 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     if "pytest" not in permitted_capabilities:
         raise ManifestError("pytest capability is required")
 
-    project_ref = _manifest_ref(
-        base,
-        submission["project_profile_ref"],
-        label="project profile",
-    )
-    pack_ref = _manifest_ref(
-        base,
-        submission["governed_pack_manifest_ref"],
-        label="governed pack",
-    )
-    objective_ref = _manifest_ref(
-        base,
-        submission["objective_manifest_ref"],
-        label="objective",
-    )
-    environment_ref = _manifest_ref(
-        base,
-        submission["environment_profile_ref"],
-        label="environment",
-    )
-    budget_ref = _manifest_ref(
-        base,
-        submission["budget_profile_ref"],
-        label="budget",
-    )
-    evidence_ref = _manifest_ref(
-        base,
-        submission["evidence_profile_ref"],
-        label="evidence",
-    )
-    oracle_refs = tuple(
-        _manifest_ref(base, raw, label="oracle")
-        for raw in submission["oracle_refs"]
-    )
+    project_ref = _manifest_ref(base, submission["project_profile_ref"], label="project profile")
+    pack_ref = _manifest_ref(base, submission["governed_pack_manifest_ref"], label="governed pack")
+    objective_ref = _manifest_ref(base, submission["objective_manifest_ref"], label="objective")
+    environment_ref = _manifest_ref(base, submission["environment_profile_ref"], label="environment")
+    budget_ref = _manifest_ref(base, submission["budget_profile_ref"], label="budget")
+    evidence_ref = _manifest_ref(base, submission["evidence_profile_ref"], label="evidence")
+    oracle_refs = tuple(_manifest_ref(base, raw, label="oracle") for raw in submission["oracle_refs"])
 
     _require(
         project_ref.data,
@@ -282,11 +289,7 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     if project_ref.data["commit_sha"] != commit_sha:
         raise ManifestError("project profile commit does not match submission")
 
-    _require(
-        environment_ref.data,
-        {"backend", "image", "network"},
-        label="environment profile",
-    )
+    _require(environment_ref.data, {"backend", "image", "network"}, label="environment profile")
     if environment_ref.data["backend"] != "DOCKER":
         raise ManifestError("BETA-A reference profile requires DOCKER backend")
     if environment_ref.data["network"] != "DENY":
@@ -294,6 +297,8 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     image = environment_ref.data["image"]
     if not isinstance(image, str) or not image.strip():
         raise ManifestError("environment image must be explicitly versioned")
+    if image.endswith(":latest") or (":" not in image and "@sha256:" not in image):
+        raise ManifestError("environment image must not use a floating or implicit latest tag")
 
     checkout_path = _resolve_ref(
         project_ref.path.parent,
@@ -307,6 +312,9 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     _require(evidence_ref.data, {"profile_id", "capture"}, label="evidence profile")
     if not isinstance(evidence_ref.data["capture"], list):
         raise ManifestError("evidence capture must be a list")
+
+    for oracle_ref in oracle_refs:
+        _validate_oracle(oracle_ref, repository=repository, commit_sha=commit_sha)
 
     pack_data = pack_ref.data
     _require(pack_data, _PACK_REQUIRED, label="governed pack")
@@ -339,9 +347,7 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
     oracle_raw_refs = set(submission["oracle_refs"])
     for node_id in required:
         if bindings[node_id] not in oracle_raw_refs:
-            raise ManifestError(
-                f"required node Oracle is not authorized by submission: {node_id}"
-            )
+            raise ManifestError(f"required node Oracle is not authorized by submission: {node_id}")
 
     project_profile = ProjectProfile(
         profile_id=str(project_ref.data["profile_id"]),
@@ -357,10 +363,7 @@ def load_submission_bundle(manifest_path: Path) -> SubmissionBundle:
         commit_sha=commit_sha,
         selected_node_ids=tuple(str(item) for item in selected),
         required_node_ids=tuple(str(item) for item in required),
-        node_oracle_bindings={
-            str(key): str(value)
-            for key, value in bindings.items()
-        },
+        node_oracle_bindings={str(key): str(value) for key, value in bindings.items()},
     )
 
     bindings_for_fingerprint = {
