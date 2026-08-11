@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from .models import canonical_json
 
@@ -90,7 +89,9 @@ class DockerSandbox:
 
     def ensure_available(self, image: str) -> None:
         if shutil.which("docker") is None:
-            raise SandboxUnavailable("Docker CLI is unavailable; host-subprocess fallback is forbidden")
+            raise SandboxUnavailable(
+                "Docker CLI is unavailable; host-subprocess fallback is forbidden"
+            )
         info = subprocess.run(
             ["docker", "info", "--format", "{{.ServerVersion}}"],
             capture_output=True,
@@ -100,7 +101,9 @@ class DockerSandbox:
             check=False,
         )
         if info.returncode != 0:
-            raise SandboxUnavailable(f"Docker daemon is unavailable: {info.stderr.strip()}")
+            raise SandboxUnavailable(
+                f"Docker daemon is unavailable: {info.stderr.strip()}"
+            )
         inspect = subprocess.run(
             ["docker", "image", "inspect", image],
             capture_output=True,
@@ -111,7 +114,8 @@ class DockerSandbox:
         )
         if inspect.returncode != 0:
             raise SandboxUnavailable(
-                "execution image is not locally available; runtime will not pull images implicitly"
+                "execution image is not locally available; "
+                "runtime will not pull images implicitly"
             )
 
     def command_manifest(
@@ -154,7 +158,7 @@ class DockerSandbox:
         validate_project_tree(project_path)
         scratch_path = scratch_path.resolve()
         scratch_path.mkdir(parents=True, exist_ok=True)
-        scratch_path.chmod(0o777)
+        scratch_path.chmod(0o700)
         command_input = scratch_path / "command-input.json"
         command_input.write_text(
             canonical_json({"selected_node_ids": list(selected_node_ids)}) + "\n",
@@ -228,12 +232,13 @@ class DockerSandbox:
         try:
             while True:
                 elapsed = time.monotonic() - started
-                if cancel_requested():
+                if not cancelled and not timed_out and cancel_requested():
                     cancelled = True
                     self._stop(container_name)
-                elif elapsed >= timeout_seconds:
+                elif not cancelled and not timed_out and elapsed >= timeout_seconds:
                     timed_out = True
                     self._stop(container_name)
+
                 now = time.monotonic()
                 if now - last_heartbeat >= heartbeat_interval_seconds:
                     heartbeat(time.time())
@@ -242,15 +247,17 @@ class DockerSandbox:
                     stdout, stderr = process.communicate(timeout=0.25)
                     break
                 except subprocess.TimeoutExpired:
-                    if cancelled or timed_out:
-                        continue
+                    continue
+
+            self._force_remove(container_name)
+            cleanup_verified = self._cleanup_verified(container_name)
             return DockerRunResult(
                 exit_code=int(process.returncode),
                 stdout=stdout,
                 stderr=stderr,
                 cancelled=cancelled,
                 timed_out=timed_out,
-                cleanup_verified=self._cleanup_verified(container_name),
+                cleanup_verified=cleanup_verified,
                 container_name=container_name,
             )
         finally:
