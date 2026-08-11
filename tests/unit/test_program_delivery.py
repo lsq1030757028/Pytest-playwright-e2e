@@ -23,53 +23,36 @@ def items_by_id(data: dict[str, object]) -> dict[str, dict[str, object]]:
     return {item["work_item_id"]: item for item in data["work_items"]}
 
 
-def close_governance_and_ready_beta_a(data: dict[str, object]) -> dict[str, object]:
-    result = deepcopy(data)
-    items = items_by_id(result)
-    items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] = "CLOSED"
-    items["BETA-A-SPEC"]["state"] = "READY"
-    result["program"]["state"] = "PRE_BETA_A"
-    result["execution_pointer"]["current_focus"] = "BETA-A-SPEC"
-    result["execution_pointer"]["critical_path"] = [
-        "BETA-A-SPEC",
-        "BETA-A-IMPLEMENTATION",
-        "BETA-A-ACCEPTANCE",
-    ]
-    return result
-
-
 def test_canonical_program_delivery_ssot_validates() -> None:
     data = load_program_delivery(SSOT_PATH)
     assert data["program_delivery"]["source_role"] == "AUTHORITATIVE_DELIVERY"
     assert data["program"]["id"] == "TEST_AGENT_RUNTIME_BETA"
-    assert data["program"]["state"] == "PRE_BETA_A"
+    assert data["program"]["state"] == "BETA_A_IMPLEMENTATION"
+    assert data["product_slices"]["BETA-A"]["state"] == "IMPLEMENTING"
     assert data["execution_pointer"]["active_slice"] == "BETA-A"
-    assert data["execution_pointer"]["current_focus"] == "BETA-A-SPEC"
+    assert data["execution_pointer"]["current_focus"] == "BETA-A-IMPLEMENTATION"
     assert data["relay_enablement"]["state"] == "DISABLED_GOVERNANCE_MIGRATION"
 
 
-def test_current_closed_migration_selects_beta_a_spec() -> None:
+def test_current_selector_resolves_beta_a_implementation() -> None:
     data = load_raw()
     items = items_by_id(data)
-    assert data["program"]["state"] == "PRE_BETA_A"
     assert items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] == "CLOSED"
-    assert items["BETA-A-SPEC"]["state"] == "READY"
+    assert items["BETA-A-SPEC"]["state"] == "CLOSED"
+    assert items["BETA-A-SPEC"]["target_pr"] == 96
+    assert items["BETA-A-IMPLEMENTATION"]["state"] == "READY"
+    assert items["BETA-A-IMPLEMENTATION"]["authority_issue"] == 95
+    assert items["BETA-A-IMPLEMENTATION"]["required_spec"] == (
+        "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0"
+    )
 
     decision = select_next_work_item(data)
-    assert decision.selected_work_item_id == "BETA-A-SPEC"
-    assert decision.candidates[0] == "BETA-A-SPEC"
+    assert decision.selected_work_item_id == "BETA-A-IMPLEMENTATION"
+    assert decision.candidates[0] == "BETA-A-IMPLEMENTATION"
 
 
-def test_after_governance_closure_selector_moves_to_beta_a_spec() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
-    validate_program_delivery(data)
-    decision = select_next_work_item(data)
-    assert decision.selected_work_item_id == "BETA-A-SPEC"
-    assert decision.candidates[0] == "BETA-A-SPEC"
-
-
-def test_security_correctness_repair_outranks_beta_a() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
+def test_security_correctness_repair_outranks_beta_a_implementation() -> None:
+    data = deepcopy(load_raw())
     data["work_items"].append(
         {
             "work_item_id": "SECURITY-REPAIR",
@@ -79,8 +62,8 @@ def test_security_correctness_repair_outranks_beta_a() -> None:
             "selection_class": "SECURITY_CORRECTNESS_REPAIR",
             "priority": 1,
             "dependencies": [],
-            "authority_issue": 91,
-            "required_spec": "SPEC-PROGRAM-DELIVERY-SSOT@1.0.0",
+            "authority_issue": 95,
+            "required_spec": "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0",
             "target_branch": None,
             "target_pr": None,
             "exclusive_domain": "security-repair",
@@ -94,7 +77,7 @@ def test_security_correctness_repair_outranks_beta_a() -> None:
 
 
 def test_unmapped_horizontal_infrastructure_cannot_jump_beta_a_queue() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
+    data = deepcopy(load_raw())
     data["work_items"].append(
         {
             "work_item_id": "ATTRACTIVE-HORIZONTAL-INFRA",
@@ -104,7 +87,7 @@ def test_unmapped_horizontal_infrastructure_cannot_jump_beta_a_queue() -> None:
             "selection_class": "UNMAPPED_HORIZONTAL_INFRASTRUCTURE",
             "priority": 999999,
             "dependencies": [],
-            "authority_issue": 91,
+            "authority_issue": 95,
             "required_spec": "self",
             "target_branch": None,
             "target_pr": None,
@@ -114,28 +97,28 @@ def test_unmapped_horizontal_infrastructure_cannot_jump_beta_a_queue() -> None:
         }
     )
     decision = select_next_work_item(data)
-    assert decision.selected_work_item_id == "BETA-A-SPEC"
+    assert decision.selected_work_item_id == "BETA-A-IMPLEMENTATION"
 
 
 def test_execution_ownership_only_removes_candidate_not_product_truth() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
-    before = deepcopy(items_by_id(data)["BETA-A-SPEC"])
+    data = deepcopy(load_raw())
+    before = deepcopy(items_by_id(data)["BETA-A-IMPLEMENTATION"])
     decision = select_next_work_item(
-        data, unavailable_work_item_ids={"BETA-A-SPEC"}
+        data, unavailable_work_item_ids={"BETA-A-IMPLEMENTATION"}
     )
-    after = items_by_id(data)["BETA-A-SPEC"]
+    after = items_by_id(data)["BETA-A-IMPLEMENTATION"]
     assert before == after
     assert after["state"] == "READY"
     assert decision.selected_work_item_id is None
     assert (
-        "BETA-A-SPEC",
+        "BETA-A-IMPLEMENTATION",
         "execution_ownership_unavailable",
     ) in decision.excluded
 
 
 def test_ready_work_requires_authority_and_spec() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
-    items_by_id(data)["BETA-A-SPEC"]["authority_issue"] = None
+    data = deepcopy(load_raw())
+    items_by_id(data)["BETA-A-IMPLEMENTATION"]["authority_issue"] = None
     with pytest.raises(ProgramDeliveryError, match="lacks authority/spec"):
         validate_program_delivery(data)
 
@@ -143,7 +126,6 @@ def test_ready_work_requires_authority_and_spec() -> None:
 def test_ready_work_cannot_have_open_dependency() -> None:
     data = deepcopy(load_raw())
     items = items_by_id(data)
-    items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] = "IN_PROGRESS"
     items["BETA-A-SPEC"]["state"] = "READY"
     with pytest.raises(ProgramDeliveryError, match="open dependency"):
         validate_program_delivery(data)
@@ -151,8 +133,8 @@ def test_ready_work_cannot_have_open_dependency() -> None:
 
 def test_critical_path_work_requires_slice_mapping() -> None:
     data = deepcopy(load_raw())
-    item = items_by_id(data)["BETA-A-SPEC"]
-    item.pop("blocks_slice")
+    item = items_by_id(data)["BETA-A-IMPLEMENTATION"]
+    item.pop("closes_slice")
     with pytest.raises(ProgramDeliveryError, match="lacks product mapping"):
         validate_program_delivery(data)
 
@@ -187,6 +169,7 @@ def test_human_companion_matches_current_pointer() -> None:
         f"Next Slice After Active: {data['execution_pointer']['next_slice_after_active']}"
         in text
     )
+    assert "BETA-A-IMPLEMENTATION = READY" in text
 
 
 def test_milestone_and_claim_sequence_are_forbidden_priority_signals() -> None:
