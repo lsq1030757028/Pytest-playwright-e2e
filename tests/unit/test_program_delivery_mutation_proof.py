@@ -21,21 +21,6 @@ def items_by_id(data: dict[str, object]) -> dict[str, dict[str, object]]:
     return {item["work_item_id"]: item for item in data["work_items"]}
 
 
-def close_governance_and_ready_beta_a(data: dict[str, object]) -> dict[str, object]:
-    result = deepcopy(data)
-    items = items_by_id(result)
-    items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] = "CLOSED"
-    items["BETA-A-SPEC"]["state"] = "READY"
-    result["program"]["state"] = "PRE_BETA_A"
-    result["execution_pointer"]["current_focus"] = "BETA-A-SPEC"
-    result["execution_pointer"]["critical_path"] = [
-        "BETA-A-SPEC",
-        "BETA-A-IMPLEMENTATION",
-        "BETA-A-ACCEPTANCE",
-    ]
-    return result
-
-
 def test_mutant_second_authoritative_delivery_source_is_killed() -> None:
     data = deepcopy(load_raw())
     legacy = data["source_roles"]["docs/product-work-map.yaml"]
@@ -57,8 +42,8 @@ def test_mutant_claim_registry_product_selector_is_killed() -> None:
 
 def test_mutant_critical_path_without_slice_mapping_is_killed() -> None:
     data = deepcopy(load_raw())
-    item = items_by_id(data)["BETA-A-SPEC"]
-    item.pop("blocks_slice")
+    item = items_by_id(data)["BETA-A-IMPLEMENTATION"]
+    item.pop("closes_slice")
     with pytest.raises(ProgramDeliveryError, match="lacks product mapping"):
         validate_program_delivery(data)
 
@@ -83,8 +68,8 @@ def test_mutant_unmapped_horizontal_not_last_is_killed() -> None:
 
 
 def test_mutant_ready_without_authority_is_killed() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
-    items_by_id(data)["BETA-A-SPEC"]["authority_issue"] = None
+    data = deepcopy(load_raw())
+    items_by_id(data)["BETA-A-IMPLEMENTATION"]["authority_issue"] = None
     with pytest.raises(ProgramDeliveryError, match="lacks authority/spec"):
         validate_program_delivery(data)
 
@@ -111,23 +96,25 @@ def test_mutant_milestone_priority_signal_is_killed() -> None:
 
 
 def test_claim_ownership_cannot_mutate_product_readiness() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
-    before = deepcopy(items_by_id(data)["BETA-A-SPEC"])
-    decision = select_next_work_item(data, unavailable_work_item_ids={"BETA-A-SPEC"})
-    after = items_by_id(data)["BETA-A-SPEC"]
+    data = deepcopy(load_raw())
+    before = deepcopy(items_by_id(data)["BETA-A-IMPLEMENTATION"])
+    decision = select_next_work_item(
+        data, unavailable_work_item_ids={"BETA-A-IMPLEMENTATION"}
+    )
+    after = items_by_id(data)["BETA-A-IMPLEMENTATION"]
     assert after == before
     assert after["state"] == "READY"
     assert decision.selected_work_item_id is None
 
 
-def test_post_migration_selector_cannot_fall_through_to_m1d() -> None:
-    data = close_governance_and_ready_beta_a(load_raw())
+def test_active_slice_selector_cannot_fall_through_to_future_horizontal() -> None:
+    data = deepcopy(load_raw())
     items = items_by_id(data)
     items["M1D-SHARED-MEMORY-GOVERNANCE"]["state"] = "READY"
     items["M1C-MEMORY-FORMATION-CLOSURE"]["state"] = "CLOSED"
     items["M1D-SHARED-MEMORY-GOVERNANCE"]["authority_issue"] = 74
     decision = select_next_work_item(data)
-    assert decision.selected_work_item_id == "BETA-A-SPEC"
-    assert decision.candidates.index("BETA-A-SPEC") < decision.candidates.index(
+    assert decision.selected_work_item_id == "BETA-A-IMPLEMENTATION"
+    assert decision.candidates.index("BETA-A-IMPLEMENTATION") < decision.candidates.index(
         "M1D-SHARED-MEMORY-GOVERNANCE"
     )
