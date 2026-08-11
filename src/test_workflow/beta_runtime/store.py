@@ -4,10 +4,11 @@ import json
 import sqlite3
 import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from .models import SubmissionBundle, canonical_json
 
@@ -140,17 +141,25 @@ class RuntimeStore:
             elif int(existing["value"]) != self.SCHEMA_VERSION:
                 raise RuntimeError("incompatible BETA-A runtime schema version")
 
-    def submit(self, bundle: SubmissionBundle, *, now: float | None = None) -> tuple[JobRecord, bool]:
+    def submit(
+        self,
+        bundle: SubmissionBundle,
+        *,
+        now: float | None = None,
+    ) -> tuple[JobRecord, bool]:
         timestamp = time.time() if now is None else now
         key = str(bundle.submission["idempotency_key"])
         payload = bundle.durable_payload()
         with self._transaction() as connection:
             existing = connection.execute(
-                "SELECT * FROM jobs WHERE idempotency_key = ?", (key,)
+                "SELECT * FROM jobs WHERE idempotency_key = ?",
+                (key,),
             ).fetchone()
             if existing is not None:
                 if existing["request_fingerprint"] != bundle.fingerprint:
-                    raise JobConflictError("idempotency key is already bound to a different request")
+                    raise JobConflictError(
+                        "idempotency key is already bound to a different request"
+                    )
                 return self._row_to_job(existing), False
 
             job_id = f"job-{uuid.uuid4().hex}"
@@ -161,7 +170,14 @@ class RuntimeStore:
                     state, revision, created_at, updated_at
                 ) VALUES(?, ?, ?, ?, 'ACCEPTED', 0, ?, ?)
                 """,
-                (job_id, key, bundle.fingerprint, canonical_json(payload), timestamp, timestamp),
+                (
+                    job_id,
+                    key,
+                    bundle.fingerprint,
+                    canonical_json(payload),
+                    timestamp,
+                    timestamp,
+                ),
             )
             self._append_event(
                 connection,
@@ -171,21 +187,41 @@ class RuntimeStore:
                 payload={"request_fingerprint": bundle.fingerprint},
                 created_at=timestamp,
             )
-            row = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
             assert row is not None
             return self._row_to_job(row), True
 
     def get_job(self, job_id: str) -> JobRecord:
         with self._connect() as connection:
-            row = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
         if row is None:
             raise KeyError(job_id)
         return self._row_to_job(row)
 
+    def next_job(self, state: str) -> JobRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM jobs
+                 WHERE state = ?
+                 ORDER BY created_at, job_id
+                 LIMIT 1
+                """,
+                (state,),
+            ).fetchone()
+        return None if row is None else self._row_to_job(row)
+
     def events(self, job_id: str) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM job_events WHERE job_id = ? ORDER BY seq", (job_id,)
+                "SELECT * FROM job_events WHERE job_id = ? ORDER BY seq",
+                (job_id,),
             ).fetchall()
         return [
             {
@@ -212,7 +248,10 @@ class RuntimeStore:
     ) -> JobRecord:
         timestamp = time.time() if now is None else now
         with self._transaction() as connection:
-            row = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
             if row is None:
                 raise KeyError(job_id)
             if int(row["revision"]) != expected_revision:
@@ -223,6 +262,11 @@ class RuntimeStore:
                 self._assert_current_lease(connection, job_id, lease_token, timestamp)
 
             next_revision = expected_revision + 1
+            result_json = (
+                canonical_json(result)
+                if result is not None
+                else row["result_json"]
+            )
             updated = connection.execute(
                 """
                 UPDATE jobs
@@ -232,7 +276,7 @@ class RuntimeStore:
                 (
                     new_state,
                     next_revision,
-                    canonical_json(result) if result is not None else row["result_json"],
+                    result_json,
                     timestamp,
                     job_id,
                     expected_revision,
@@ -248,14 +292,25 @@ class RuntimeStore:
                 payload=payload or {},
                 created_at=timestamp,
             )
-            changed = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            changed = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
             assert changed is not None
             return self._row_to_job(changed)
 
-    def request_cancel(self, job_id: str, *, now: float | None = None) -> JobRecord:
+    def request_cancel(
+        self,
+        job_id: str,
+        *,
+        now: float | None = None,
+    ) -> JobRecord:
         timestamp = time.time() if now is None else now
         with self._transaction() as connection:
-            row = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
             if row is None:
                 raise KeyError(job_id)
             if row["state"] in TERMINAL_STATES or bool(row["cancel_requested"]):
@@ -272,14 +327,18 @@ class RuntimeStore:
                 payload={},
                 created_at=timestamp,
             )
-            changed = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+            changed = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
             assert changed is not None
             return self._row_to_job(changed)
 
     def is_cancel_requested(self, job_id: str) -> bool:
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT cancel_requested FROM jobs WHERE job_id = ?", (job_id,)
+                "SELECT cancel_requested FROM jobs WHERE job_id = ?",
+                (job_id,),
             ).fetchone()
         if row is None:
             raise KeyError(job_id)
@@ -303,8 +362,10 @@ class RuntimeStore:
             ).fetchone()
             if row is None:
                 return None
+
             attempt = connection.execute(
-                "SELECT * FROM attempts WHERE job_id = ?", (row["job_id"],)
+                "SELECT * FROM attempts WHERE job_id = ?",
+                (row["job_id"],),
             ).fetchone()
             if attempt is not None:
                 if bool(attempt["command_started"]):
@@ -326,7 +387,15 @@ class RuntimeStore:
                         lease_expires_at, created_at, updated_at
                     ) VALUES(?, ?, 'LEASED', ?, ?, ?, ?, ?)
                     """,
-                    (attempt_id, row["job_id"], lease_token, worker_id, expires_at, now, now),
+                    (
+                        attempt_id,
+                        row["job_id"],
+                        lease_token,
+                        worker_id,
+                        expires_at,
+                        now,
+                        now,
+                    ),
                 )
             else:
                 connection.execute(
@@ -341,7 +410,11 @@ class RuntimeStore:
 
             next_revision = int(row["revision"]) + 1
             connection.execute(
-                "UPDATE jobs SET state = 'EXECUTING', revision = ?, updated_at = ? WHERE job_id = ?",
+                """
+                UPDATE jobs
+                   SET state = 'EXECUTING', revision = ?, updated_at = ?
+                 WHERE job_id = ?
+                """,
                 (next_revision, now, row["job_id"]),
             )
             self._append_event(
@@ -353,7 +426,8 @@ class RuntimeStore:
                 created_at=now,
             )
             job_row = connection.execute(
-                "SELECT * FROM jobs WHERE job_id = ?", (row["job_id"],)
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (row["job_id"],),
             ).fetchone()
             assert job_row is not None
             return self._row_to_job(job_row), AttemptLease(
@@ -373,10 +447,19 @@ class RuntimeStore:
         lease_ttl_seconds: float = 10.0,
     ) -> AttemptLease:
         with self._transaction() as connection:
-            self._assert_current_lease(connection, lease.job_id, lease.lease_token, now)
+            self._assert_current_lease(
+                connection,
+                lease.job_id,
+                lease.lease_token,
+                now,
+            )
             expires_at = now + lease_ttl_seconds
             connection.execute(
-                "UPDATE attempts SET lease_expires_at = ?, updated_at = ? WHERE attempt_id = ?",
+                """
+                UPDATE attempts
+                   SET lease_expires_at = ?, updated_at = ?
+                 WHERE attempt_id = ?
+                """,
                 (expires_at, now, lease.attempt_id),
             )
         return AttemptLease(
@@ -396,13 +479,19 @@ class RuntimeStore:
         now: float,
     ) -> AttemptLease:
         with self._transaction() as connection:
-            attempt = self._assert_current_lease(connection, lease.job_id, lease.lease_token, now)
+            attempt = self._assert_current_lease(
+                connection,
+                lease.job_id,
+                lease.lease_token,
+                now,
+            )
             if bool(attempt["command_started"]):
                 raise LeaseError("command already started for this BETA-A attempt")
             connection.execute(
                 """
                 UPDATE attempts
-                   SET command_started = 1, state = 'RUNNING', command_manifest_json = ?, updated_at = ?
+                   SET command_started = 1, state = 'RUNNING',
+                       command_manifest_json = ?, updated_at = ?
                  WHERE attempt_id = ?
                 """,
                 (canonical_json(command_manifest), now, lease.attempt_id),
@@ -425,7 +514,12 @@ class RuntimeStore:
         now: float,
     ) -> None:
         with self._transaction() as connection:
-            self._assert_current_lease(connection, lease.job_id, lease.lease_token, now)
+            self._assert_current_lease(
+                connection,
+                lease.job_id,
+                lease.lease_token,
+                now,
+            )
             connection.execute(
                 """
                 UPDATE attempts
@@ -435,55 +529,111 @@ class RuntimeStore:
                 (state, canonical_json(evidence_manifest), now, lease.attempt_id),
             )
 
-    def reconcile_uncertain(self, *, now: float | None = None) -> list[str]:
-        timestamp = time.time() if now is None else now
+    def reconcile_expired_attempts(self, *, now: float) -> dict[str, list[str]]:
+        reclaimed: list[str] = []
         blocked: list[str] = []
         with self._transaction() as connection:
             rows = connection.execute(
                 """
-                SELECT j.*, a.attempt_id, a.command_started, a.state AS attempt_state
-                  FROM jobs j JOIN attempts a ON a.job_id = j.job_id
-                 WHERE j.state = 'EXECUTING' AND a.command_started = 1
+                SELECT j.*, a.attempt_id, a.command_started
+                  FROM jobs j
+                  JOIN attempts a ON a.job_id = j.job_id
+                 WHERE j.state = 'EXECUTING'
+                   AND COALESCE(a.lease_expires_at, 0) <= ?
                    AND a.state NOT IN ('COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT')
-                """
+                """,
+                (now,),
             ).fetchall()
             for row in rows:
-                result = {
-                    "verdict": "INSUFFICIENT_EVIDENCE",
-                    "reason": "ABANDONED_UNCERTAIN",
-                    "attempt_id": row["attempt_id"],
-                    "automatic_reexecution": False,
-                }
-                connection.execute(
-                    "UPDATE attempts SET state = 'ABANDONED_UNCERTAIN', updated_at = ? WHERE attempt_id = ?",
-                    (timestamp, row["attempt_id"]),
-                )
-                next_revision = int(row["revision"]) + 1
-                connection.execute(
-                    """
-                    UPDATE jobs
-                       SET state = 'BLOCKED', revision = ?, result_json = ?, updated_at = ?
-                     WHERE job_id = ?
-                    """,
-                    (next_revision, canonical_json(result), timestamp, row["job_id"]),
-                )
-                self._append_event(
-                    connection,
-                    row["job_id"],
-                    event_type="UNCERTAIN_EXECUTION_BLOCKED",
-                    state="BLOCKED",
-                    payload=result,
-                    created_at=timestamp,
-                )
-                blocked.append(row["job_id"])
-        return blocked
+                if bool(row["command_started"]):
+                    self._block_uncertain_attempt(connection, row, now=now)
+                    blocked.append(row["job_id"])
+                else:
+                    self._make_prelaunch_attempt_reclaimable(connection, row, now=now)
+                    reclaimed.append(row["job_id"])
+        return {"reclaimed": reclaimed, "blocked": blocked}
 
     def attempt_for_job(self, job_id: str) -> dict[str, Any] | None:
         with self._connect() as connection:
-            row = connection.execute("SELECT * FROM attempts WHERE job_id = ?", (job_id,)).fetchone()
-        if row is None:
-            return None
-        return dict(row)
+            row = connection.execute(
+                "SELECT * FROM attempts WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
+        return None if row is None else dict(row)
+
+    def _make_prelaunch_attempt_reclaimable(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+        *,
+        now: float,
+    ) -> None:
+        connection.execute(
+            """
+            UPDATE attempts
+               SET state = 'CREATED', lease_token = NULL, worker_id = NULL,
+                   lease_expires_at = NULL, updated_at = ?
+             WHERE attempt_id = ?
+            """,
+            (now, row["attempt_id"]),
+        )
+        next_revision = int(row["revision"]) + 1
+        connection.execute(
+            """
+            UPDATE jobs
+               SET state = 'READY_TO_EXECUTE', revision = ?, updated_at = ?
+             WHERE job_id = ?
+            """,
+            (next_revision, now, row["job_id"]),
+        )
+        self._append_event(
+            connection,
+            row["job_id"],
+            event_type="PRELAUNCH_LEASE_EXPIRED_RECLAIMABLE",
+            state="READY_TO_EXECUTE",
+            payload={"attempt_id": row["attempt_id"]},
+            created_at=now,
+        )
+
+    def _block_uncertain_attempt(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+        *,
+        now: float,
+    ) -> None:
+        result = {
+            "verdict": "INSUFFICIENT_EVIDENCE",
+            "terminal_state": "BLOCKED",
+            "reason": "ABANDONED_UNCERTAIN",
+            "attempt_id": row["attempt_id"],
+            "automatic_reexecution": False,
+        }
+        connection.execute(
+            """
+            UPDATE attempts
+               SET state = 'ABANDONED_UNCERTAIN', updated_at = ?
+             WHERE attempt_id = ?
+            """,
+            (now, row["attempt_id"]),
+        )
+        next_revision = int(row["revision"]) + 1
+        connection.execute(
+            """
+            UPDATE jobs
+               SET state = 'BLOCKED', revision = ?, result_json = ?, updated_at = ?
+             WHERE job_id = ?
+            """,
+            (next_revision, canonical_json(result), now, row["job_id"]),
+        )
+        self._append_event(
+            connection,
+            row["job_id"],
+            event_type="UNCERTAIN_EXECUTION_BLOCKED",
+            state="BLOCKED",
+            payload=result,
+            created_at=now,
+        )
 
     def _assert_current_lease(
         self,
@@ -493,7 +643,8 @@ class RuntimeStore:
         now: float,
     ) -> sqlite3.Row:
         attempt = connection.execute(
-            "SELECT * FROM attempts WHERE job_id = ?", (job_id,)
+            "SELECT * FROM attempts WHERE job_id = ?",
+            (job_id,),
         ).fetchone()
         if attempt is None or attempt["lease_token"] != lease_token:
             raise LeaseError("stale worker lease")
@@ -522,7 +673,14 @@ class RuntimeStore:
             INSERT INTO job_events(job_id, seq, event_type, state, payload_json, created_at)
             VALUES(?, ?, ?, ?, ?, ?)
             """,
-            (job_id, seq, event_type, state, canonical_json(payload), created_at),
+            (
+                job_id,
+                seq,
+                event_type,
+                state,
+                canonical_json(payload),
+                created_at,
+            ),
         )
 
     @staticmethod
