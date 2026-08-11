@@ -5,7 +5,12 @@ import json
 import pytest
 
 from test_workflow.beta_runtime.artifacts import ArtifactStore
-from test_workflow.beta_runtime.store import JobConflictError, LeaseError, RuntimeStore, StaleWriteError
+from test_workflow.beta_runtime.store import (
+    JobConflictError,
+    LeaseError,
+    RuntimeStore,
+    StaleWriteError,
+)
 from test_workflow.beta_runtime.verifier import VerificationInput, verify_attempt
 from tests.beta_a_helpers import make_governed_fixture
 
@@ -26,13 +31,14 @@ def _verify(
     cleanup=True,
     exit_code=0,
 ):
+    refs = artifact_refs if artifact_refs is not None else (ref.as_dict(),)
     return verify_attempt(
         VerificationInput(
             required_node_ids=(NODE,),
             collected_node_ids=tuple(collected),
             runtime_report_path=store.resolve(ref),
             command_exit_code=exit_code,
-            artifact_refs=tuple(artifact_refs if artifact_refs is not None else (ref.as_dict(),)),
+            artifact_refs=tuple(refs),
             product_source_unchanged=unchanged,
             cleanup_verified=cleanup,
         ),
