@@ -91,19 +91,20 @@ def test_current_product_truth_comes_from_program_delivery() -> None:
     program = load_yaml(PROGRAM_PATH)
     items = {item["work_item_id"]: item for item in program["work_items"]}
     pointer = program["execution_pointer"]
-    assert program["program"]["state"] == "PRE_BETA_A"
+    assert program["program"]["state"] == "BETA_A_IMPLEMENTATION"
     assert pointer["active_slice"] == "BETA-A"
-    assert pointer["current_focus"] == "BETA-A-SPEC"
-    assert pointer["critical_path"][:2] == [
-        "BETA-A-SPEC",
+    assert pointer["current_focus"] == "BETA-A-IMPLEMENTATION"
+    assert pointer["critical_path"] == [
         "BETA-A-IMPLEMENTATION",
+        "BETA-A-ACCEPTANCE",
     ]
     assert items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] == "CLOSED"
-    assert items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["blocks_slice"] == "BETA-A"
-    assert items["BETA-A-SPEC"]["state"] == "READY"
-    assert items["BETA-A-SPEC"]["dependencies"] == [
-        "PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"
-    ]
+    assert items["BETA-A-SPEC"]["state"] == "CLOSED"
+    assert items["BETA-A-IMPLEMENTATION"]["state"] == "READY"
+    assert items["BETA-A-IMPLEMENTATION"]["authority_issue"] == 95
+    assert items["BETA-A-IMPLEMENTATION"]["required_spec"] == (
+        "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0"
+    )
     assert items["M1C-MEMORY-FORMATION-CLOSURE"]["supports_slices"] == ["BETA-D"]
     assert items["UX-FP-FN-BENCHMARK-SPEC"]["supports_slices"] == [
         "BETA-C",

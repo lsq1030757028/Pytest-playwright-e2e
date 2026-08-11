@@ -8,12 +8,8 @@ from test_workflow.relay_claims import select_work_item
 PROGRAM_PATH = Path("docs/program-delivery-ssot.yaml")
 
 
-def load_program_ready_for_beta_a() -> dict[str, object]:
-    program = yaml.safe_load(PROGRAM_PATH.read_text(encoding="utf-8"))
-    items = {item["work_item_id"]: item for item in program["work_items"]}
-    items["PROGRAM-DELIVERY-SSOT-IMPLEMENTATION"]["state"] = "CLOSED"
-    items["BETA-A-SPEC"]["state"] = "READY"
-    return program
+def load_current_program() -> dict[str, object]:
+    return yaml.safe_load(PROGRAM_PATH.read_text(encoding="utf-8"))
 
 
 def registry(*claims: dict[str, object], claim_sequence: int = 0) -> dict[str, object]:
@@ -45,22 +41,22 @@ def active_claim(
     }
 
 
-def test_relay_selector_resolves_beta_a_after_governance_closure() -> None:
-    program = load_program_ready_for_beta_a()
+def test_relay_selector_resolves_current_beta_a_implementation() -> None:
+    program = load_current_program()
     result = select_work_item(program, registry())
-    assert result.work_item_id == "BETA-A-SPEC"
+    assert result.work_item_id == "BETA-A-IMPLEMENTATION"
 
 
 def test_claim_sequence_cannot_reprioritize_program_delivery() -> None:
-    program = load_program_ready_for_beta_a()
+    program = load_current_program()
     low_sequence = select_work_item(program, registry(claim_sequence=1))
     high_sequence = select_work_item(program, registry(claim_sequence=1_000_000))
-    assert low_sequence.work_item_id == "BETA-A-SPEC"
-    assert high_sequence.work_item_id == "BETA-A-SPEC"
+    assert low_sequence.work_item_id == "BETA-A-IMPLEMENTATION"
+    assert high_sequence.work_item_id == "BETA-A-IMPLEMENTATION"
 
 
 def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
-    program = load_program_ready_for_beta_a()
+    program = load_current_program()
     state = registry(
         active_claim(
             "M1C-MEMORY-FORMATION-CLOSURE",
@@ -70,11 +66,11 @@ def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
         )
     )
     result = select_work_item(program, state)
-    assert result.work_item_id == "BETA-A-SPEC"
+    assert result.work_item_id == "BETA-A-IMPLEMENTATION"
 
 
 def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> None:
-    program = load_program_ready_for_beta_a()
+    program = load_current_program()
     items = {item["work_item_id"]: item for item in program["work_items"]}
     horizontal = deepcopy(items["M1D-SHARED-MEMORY-GOVERNANCE"])
     horizontal.update(
@@ -83,8 +79,8 @@ def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> 
             "state": "READY",
             "priority": 99_999,
             "dependencies": [],
-            "authority_issue": 91,
-            "required_spec": "SPEC",
+            "authority_issue": 95,
+            "required_spec": "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0",
             "target_branch": "horizontal",
             "target_pr": None,
             "exclusive_domain": "horizontal",
@@ -103,4 +99,6 @@ def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> 
     )
     result = select_work_item(program, state)
     assert result.work_item_id == "READY-HORIZONTAL"
-    assert result.rejected["BETA-A-SPEC"] == "domain_conflict:beta-a-runtime"
+    assert result.rejected["BETA-A-IMPLEMENTATION"] == (
+        "domain_conflict:beta-a-runtime"
+    )
