@@ -8,8 +8,14 @@ from pathlib import Path
 from typing import Any
 
 from .artifacts import ArtifactRef, ArtifactStore
-from .models import SubmissionBundle, canonical_json, sha256_file
-from .sandbox import DockerSandbox, SandboxPolicyError, SandboxUnavailable, source_tree_digest
+from .models import SubmissionBundle
+from .sandbox import (
+    DockerSandbox,
+    SandboxPolicyError,
+    SandboxUnavailable,
+    source_tree_digest,
+    validate_project_tree,
+)
 from .store import AttemptLease, JobRecord, RuntimeStore
 from .verifier import VerificationInput, verify_attempt
 
@@ -32,7 +38,9 @@ def _git(project: Path, *args: str) -> str:
         check=False,
     )
     if process.returncode != 0:
-        raise RuntimeValidationError(process.stderr.strip() or "git verification failed")
+        raise RuntimeValidationError(
+            process.stderr.strip() or "git verification failed"
+        )
     return process.stdout.strip()
 
 
@@ -41,7 +49,12 @@ def _ref_dict(ref: ArtifactRef) -> dict[str, Any]:
 
 
 class RuntimeService:
-    def __init__(self, state_dir: Path, *, sandbox: DockerSandbox | None = None) -> None:
+    def __init__(
+        self,
+        state_dir: Path,
+        *,
+        sandbox: DockerSandbox | None = None,
+    ) -> None:
         self.state_dir = state_dir.resolve()
         self.store = RuntimeStore(self.state_dir)
         self.artifacts = ArtifactStore(self.state_dir / "artifacts")
@@ -50,72 +63,28 @@ class RuntimeService:
         self.work_root.mkdir(parents=True, exist_ok=True)
 
     def submit(self, bundle: SubmissionBundle) -> tuple[JobRecord, bool]:
-        self._verify_project_identity(bundle.project_profile.checkout_path, bundle.submission)
+        self._verify_project_identity(
+            bundle.project_profile.checkout_path,
+            bundle.submission,
+        )
+        validate_project_tree(bundle.project_profile.checkout_path)
         return self.store.submit(bundle)
 
     def serve_once(self, *, worker_id: str = "worker-1") -> str | None:
-        self._reconcile_expired_uncertain()
-        accepted = self._next_job("ACCEPTED")
+        self.store.reconcile_expired_attempts(now=time.time())
+        processed_job_id: str | None = None
+
+        accepted = self.store.next_job("ACCEPTED")
         if accepted is not None:
+            processed_job_id = accepted.job_id
             self._prepare_job(accepted)
+
         claimed = self.store.claim_ready(worker_id=worker_id, now=time.time())
         if claimed is None:
-            return None
+            return processed_job_id
         job, lease = claimed
         self._execute(job, lease)
         return job.job_id
-
-    def _next_job(self, state: str) -> JobRecord | None:
-        with self.store._connect() as connection:
-            row = connection.execute(
-                "SELECT * FROM jobs WHERE state = ? ORDER BY created_at, job_id LIMIT 1",
-                (state,),
-            ).fetchone()
-        if row is None:
-            return None
-        return self.store._row_to_job(row)
-
-    def _reconcile_expired_uncertain(self) -> None:
-        now = time.time()
-        with self.store._transaction() as connection:
-            rows = connection.execute(
-                """
-                SELECT j.*, a.attempt_id
-                  FROM jobs j JOIN attempts a ON a.job_id = j.job_id
-                 WHERE j.state = 'EXECUTING'
-                   AND a.command_started = 1
-                   AND a.state NOT IN ('COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT')
-                   AND COALESCE(a.lease_expires_at, 0) <= ?
-                """,
-                (now,),
-            ).fetchall()
-            for row in rows:
-                result = {
-                    "verdict": "INSUFFICIENT_EVIDENCE",
-                    "terminal_state": "BLOCKED",
-                    "reason": "ABANDONED_UNCERTAIN",
-                    "attempt_id": row["attempt_id"],
-                    "automatic_reexecution": False,
-                }
-                connection.execute(
-                    "UPDATE attempts SET state = 'ABANDONED_UNCERTAIN', updated_at = ? WHERE attempt_id = ?",
-                    (now, row["attempt_id"]),
-                )
-                connection.execute(
-                    """
-                    UPDATE jobs SET state = 'BLOCKED', revision = revision + 1,
-                           result_json = ?, updated_at = ? WHERE job_id = ?
-                    """,
-                    (canonical_json(result), now, row["job_id"]),
-                )
-                self.store._append_event(
-                    connection,
-                    row["job_id"],
-                    event_type="UNCERTAIN_EXECUTION_BLOCKED",
-                    state="BLOCKED",
-                    payload=result,
-                    created_at=now,
-                )
 
     def _prepare_job(self, job: JobRecord) -> None:
         if job.cancel_requested:
@@ -132,9 +101,31 @@ class RuntimeService:
                 },
             )
             return
-        submission = job.submission
-        project_path = Path(submission["resolved"]["checkout_path"])
-        self._verify_project_identity(project_path, submission["submission"])
+
+        payload = job.submission
+        project_path = Path(payload["resolved"]["checkout_path"])
+        image = str(payload["resolved"]["execution_image"])
+        try:
+            self._verify_project_identity(project_path, payload["submission"])
+            validate_project_tree(project_path)
+            self.sandbox.ensure_available(image)
+        except SandboxPolicyError as exc:
+            self._finish_preflight_failure(
+                job,
+                verdict="POLICY_BLOCKED",
+                terminal_state="BLOCKED",
+                reason=str(exc),
+            )
+            return
+        except SandboxUnavailable as exc:
+            self._finish_preflight_failure(
+                job,
+                verdict="ENVIRONMENT_FAILURE",
+                terminal_state="FAILED",
+                reason=str(exc),
+            )
+            return
+
         before_digest = source_tree_digest(project_path)
         self.store.transition(
             job.job_id,
@@ -144,28 +135,84 @@ class RuntimeService:
             payload={"project_source_digest": before_digest},
         )
 
+    def _finish_preflight_failure(
+        self,
+        job: JobRecord,
+        *,
+        verdict: str,
+        terminal_state: str,
+        reason: str,
+    ) -> None:
+        result = {
+            "verdict": verdict,
+            "terminal_state": terminal_state,
+            "reason": reason,
+            "attempt_started": False,
+            "automatic_reexecution": False,
+        }
+        self.store.transition(
+            job.job_id,
+            expected_revision=job.revision,
+            new_state=terminal_state,
+            event_type="PREFLIGHT_FAILED",
+            payload={"verdict": verdict, "reason": reason},
+            result=result,
+        )
+
     @staticmethod
-    def _verify_project_identity(project_path: Path, submission: dict[str, Any]) -> None:
+    def _verify_project_identity(
+        project_path: Path,
+        submission: dict[str, Any],
+    ) -> None:
         expected_commit = str(submission["commit_sha"])
         expected_repository = str(submission["project_repository"])
         head = _git(project_path, "rev-parse", "HEAD")
         if head != expected_commit:
-            raise RuntimeValidationError("project checkout HEAD does not match pinned commit")
+            raise RuntimeValidationError(
+                "project checkout HEAD does not match pinned commit"
+            )
         remote = _git(project_path, "remote", "get-url", "origin")
         if remote != expected_repository:
-            raise RuntimeValidationError("project checkout origin does not match submission repository")
+            raise RuntimeValidationError(
+                "project checkout origin does not match submission repository"
+            )
 
     def _execute(self, job: JobRecord, lease: AttemptLease) -> None:
         payload = job.submission
         project_path = Path(payload["resolved"]["checkout_path"])
         image = str(payload["resolved"]["execution_image"])
-        selected = tuple(str(value) for value in payload["resolved"]["selected_node_ids"])
-        required = tuple(str(value) for value in payload["resolved"]["required_node_ids"])
+        selected = tuple(
+            str(value) for value in payload["resolved"]["selected_node_ids"]
+        )
+        required = tuple(
+            str(value) for value in payload["resolved"]["required_node_ids"]
+        )
         scratch = (self.work_root / lease.attempt_id).resolve()
         scratch.mkdir(parents=True, exist_ok=True)
-        before_digest = source_tree_digest(project_path)
-        self.sandbox.ensure_available(image)
 
+        try:
+            self.sandbox.ensure_available(image)
+            validate_project_tree(project_path)
+        except SandboxPolicyError as exc:
+            self._finish_prelaunch_attempt(
+                job,
+                lease,
+                verdict="POLICY_BLOCKED",
+                terminal_state="BLOCKED",
+                reason=str(exc),
+            )
+            return
+        except SandboxUnavailable as exc:
+            self._finish_prelaunch_attempt(
+                job,
+                lease,
+                verdict="ENVIRONMENT_FAILURE",
+                terminal_state="FAILED",
+                reason=str(exc),
+            )
+            return
+
+        before_digest = source_tree_digest(project_path)
         command_manifest = self.sandbox.command_manifest(
             image=image,
             project_path=project_path,
@@ -174,8 +221,11 @@ class RuntimeService:
         )
         command_ref = self.artifacts.put_json(command_manifest)
         command_manifest["artifact"] = _ref_dict(command_ref)
-        lease = self.store.mark_command_started(lease, command_manifest, now=time.time())
-
+        lease = self.store.mark_command_started(
+            lease,
+            command_manifest,
+            now=time.time(),
+        )
         current_lease = lease
 
         def heartbeat(now: float) -> None:
@@ -195,16 +245,25 @@ class RuntimeService:
         lease = current_lease
         after_digest = source_tree_digest(project_path)
 
-        artifact_refs = self._capture_attempt_artifacts(scratch, run.stdout, run.stderr)
-        artifact_refs.insert(0, command_ref)
-        artifact_index = [_ref_dict(ref) for ref in artifact_refs]
+        named_artifacts = self._capture_attempt_artifacts(
+            scratch,
+            docker_stdout=run.stdout,
+            docker_stderr=run.stderr,
+        )
+        named_artifacts["command_manifest"] = command_ref
+        artifact_index = {
+            name: _ref_dict(ref)
+            for name, ref in sorted(named_artifacts.items())
+        }
 
         if run.cancelled:
             if run.cleanup_verified:
                 result = {
                     "verdict": "CANCELLED",
                     "terminal_state": "CANCELLED",
-                    "reason": "durable cancellation observed and Docker process tree removed",
+                    "reason": (
+                        "durable cancellation observed and Docker process tree removed"
+                    ),
                     "cleanup_verified": True,
                     "artifacts": artifact_index,
                 }
@@ -213,7 +272,9 @@ class RuntimeService:
                 result = {
                     "verdict": "INSUFFICIENT_EVIDENCE",
                     "terminal_state": "BLOCKED",
-                    "reason": "cancellation requested but process cleanup could not be verified",
+                    "reason": (
+                        "cancellation requested but process cleanup could not be verified"
+                    ),
                     "cleanup_verified": False,
                     "artifacts": artifact_index,
                 }
@@ -231,22 +292,38 @@ class RuntimeService:
             self._finish(job.job_id, lease, result, attempt_state="TIMED_OUT")
             return
 
-        meta = self._load_json_file(scratch / "entry-meta.json")
-        collection = self._load_json_file(scratch / "collection.json")
+        meta_ref = named_artifacts.get("entry_meta")
+        collection_ref = named_artifacts.get("collection")
+        runtime_report_ref = named_artifacts.get("runtime_report")
+        meta = self._load_json_artifact(meta_ref)
+        collection = self._load_json_artifact(collection_ref)
         collected = tuple(str(value) for value in collection.get("node_ids", []))
         execution_code_raw = meta.get("execution_exit_code")
-        execution_code = int(execution_code_raw) if execution_code_raw is not None else int(run.exit_code)
+        execution_code = (
+            int(execution_code_raw)
+            if execution_code_raw is not None
+            else int(run.exit_code)
+        )
         infrastructure_error = None
         if int(run.exit_code) == 125:
-            infrastructure_error = "Docker runtime rejected or failed to start the governed execution"
+            infrastructure_error = (
+                "Docker runtime rejected or failed to start governed execution"
+            )
 
+        runtime_report_path = (
+            self.artifacts.resolve(runtime_report_ref)
+            if runtime_report_ref is not None
+            else scratch / "missing-runtime-report.jsonl"
+        )
         verification = verify_attempt(
             VerificationInput(
                 required_node_ids=required,
                 collected_node_ids=collected,
-                runtime_report_path=scratch / "runtime-report.jsonl",
+                runtime_report_path=runtime_report_path,
                 command_exit_code=execution_code,
-                artifact_refs=tuple(_ref_dict(ref) for ref in artifact_refs),
+                artifact_refs=tuple(
+                    _ref_dict(ref) for ref in named_artifacts.values()
+                ),
                 product_source_unchanged=before_digest == after_digest,
                 cleanup_verified=run.cleanup_verified,
                 infrastructure_error=infrastructure_error,
@@ -263,11 +340,47 @@ class RuntimeService:
                 "automatic_reexecution": False,
             }
         )
-        self._finish(
-            job.job_id,
+        attempt_state = (
+            "COMPLETED"
+            if verification.terminal_state == "SUCCEEDED"
+            else "FAILED"
+        )
+        self._finish(job.job_id, lease, result, attempt_state=attempt_state)
+
+    def _finish_prelaunch_attempt(
+        self,
+        job: JobRecord,
+        lease: AttemptLease,
+        *,
+        verdict: str,
+        terminal_state: str,
+        reason: str,
+    ) -> None:
+        result = {
+            "verdict": verdict,
+            "terminal_state": terminal_state,
+            "reason": reason,
+            "attempt_id": lease.attempt_id,
+            "command_started": False,
+            "automatic_reexecution": False,
+        }
+        now = time.time()
+        self.store.set_attempt_evidence(
             lease,
-            result,
-            attempt_state="COMPLETED" if verification.terminal_state == "SUCCEEDED" else "FAILED",
+            {"prelaunch_result": result},
+            state="FAILED",
+            now=now,
+        )
+        current = self.store.get_job(job.job_id)
+        self.store.transition(
+            job.job_id,
+            expected_revision=current.revision,
+            new_state=terminal_state,
+            event_type="PRELAUNCH_ATTEMPT_FAILED",
+            payload={"verdict": verdict, "reason": reason},
+            result=result,
+            lease_token=lease.lease_token,
+            now=now,
         )
 
     def _finish(
@@ -278,13 +391,16 @@ class RuntimeService:
         *,
         attempt_state: str,
     ) -> None:
+        current_job = self.store.get_job(job_id)
         evidence_manifest = {
             "schema_version": 1,
             "job_id": job_id,
             "attempt_id": lease.attempt_id,
+            "request_fingerprint": current_job.request_fingerprint,
+            "bindings": current_job.submission.get("bindings", {}),
             "verdict": result["verdict"],
             "terminal_state": result["terminal_state"],
-            "artifacts": result.get("artifacts", []),
+            "artifacts": result.get("artifacts", {}),
         }
         evidence_ref = self.artifacts.put_json(evidence_manifest)
         result["evidence_manifest"] = _ref_dict(evidence_ref)
@@ -301,7 +417,10 @@ class RuntimeService:
             expected_revision=current.revision,
             new_state=str(result["terminal_state"]),
             event_type="VERDICT_FINALIZED",
-            payload={"verdict": result["verdict"], "attempt_id": lease.attempt_id},
+            payload={
+                "verdict": result["verdict"],
+                "attempt_id": lease.attempt_id,
+            },
             result=result,
             lease_token=lease.lease_token,
             now=now,
@@ -310,47 +429,64 @@ class RuntimeService:
     def _capture_attempt_artifacts(
         self,
         scratch: Path,
+        *,
         docker_stdout: str,
         docker_stderr: str,
-    ) -> list[ArtifactRef]:
-        refs = [
-            self.artifacts.put_text(docker_stdout),
-            self.artifacts.put_text(docker_stderr),
-        ]
-        text_files = (
-            "collection.stdout.txt",
-            "collection.stderr.txt",
-            "execution.stdout.txt",
-            "execution.stderr.txt",
-        )
-        for name in text_files:
-            path = scratch / name
-            if path.is_file():
-                refs.append(self.artifacts.put_text(path.read_text(encoding="utf-8", errors="replace")))
-        typed_files = {
-            "collection.json": "application/json",
-            "entry-meta.json": "application/json",
-            "runtime-report.jsonl": "application/x-ndjson",
-            "junit.xml": "application/xml",
+    ) -> dict[str, ArtifactRef]:
+        refs = {
+            "docker_stdout": self.artifacts.put_text(docker_stdout),
+            "docker_stderr": self.artifacts.put_text(docker_stderr),
         }
-        for name, media_type in typed_files.items():
+        text_files = {
+            "collection_stdout": "collection.stdout.txt",
+            "collection_stderr": "collection.stderr.txt",
+            "execution_stdout": "execution.stdout.txt",
+            "execution_stderr": "execution.stderr.txt",
+        }
+        for key, name in text_files.items():
             path = scratch / name
             if path.is_file():
-                refs.append(self.artifacts.put_file(path, media_type=media_type))
+                refs[key] = self.artifacts.put_text(
+                    path.read_text(encoding="utf-8", errors="replace")
+                )
+
+        typed_files = {
+            "collection": ("collection.json", "application/json"),
+            "entry_meta": ("entry-meta.json", "application/json"),
+            "runtime_report": (
+                "runtime-report.jsonl",
+                "application/x-ndjson",
+            ),
+            "junit": ("junit.xml", "application/xml"),
+        }
+        for key, (name, media_type) in typed_files.items():
+            path = scratch / name
+            if path.is_file():
+                refs[key] = self.artifacts.put_file(
+                    path,
+                    media_type=media_type,
+                )
         return refs
 
-    @staticmethod
-    def _load_json_file(path: Path) -> dict[str, Any]:
-        if not path.is_file():
+    def _load_json_artifact(
+        self,
+        ref: ArtifactRef | None,
+    ) -> dict[str, Any]:
+        if ref is None or not self.artifacts.verify(ref):
             return {}
         try:
-            value = json.loads(path.read_text(encoding="utf-8"))
+            value = json.loads(
+                self.artifacts.resolve(ref).read_text(encoding="utf-8")
+            )
         except (OSError, json.JSONDecodeError):
             return {}
         return value if isinstance(value, dict) else {}
 
     @staticmethod
     def _attempt_timeout_seconds(payload: dict[str, Any]) -> float:
-        budget_ref = payload.get("bindings", {}).get("budget", {})
-        _ = budget_ref
-        return 15 * 60
+        manifests = payload.get("resolved", {}).get("manifests", {})
+        budget = manifests.get("budget", {}) if isinstance(manifests, dict) else {}
+        requested = budget.get("execution_attempt_minutes", 15)
+        if not isinstance(requested, int) or requested <= 0 or requested > 15:
+            raise RuntimeValidationError("invalid durable execution attempt budget")
+        return float(requested * 60)
