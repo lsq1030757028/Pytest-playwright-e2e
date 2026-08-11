@@ -1,0 +1,419 @@
+spec:
+  id: SPEC-BETA-A-DURABLE-GOVERNED-PACK
+  version: 0.1.0
+  status: CANDIDATE
+  phase: SPEC_ONLY
+  goal_issue: 95
+  parent_campaign_issue: 65
+  architecture_goal_issue: 66
+  parent_spec: SPEC-TEST-AGENT-RUNTIME-BETA@0.1.0
+  work_item_id: BETA-A-SPEC
+  product_slice: BETA-A
+
+authority:
+  type: explicit_repository_owner_scope_extension
+  owner_scope_extension_issues: [65, 66]
+  slice_goal_issue: 95
+  standing_mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+  standing_mandate_covers_slice: false
+  standing_mandate_extended: false
+  runtime_implementation_requires_spec_merge: true
+  may_change_oracle_policy_permission: false
+
+assurance:
+  development: DEV3
+  ux: UX3
+  threat_model_required: true
+  independent_test_design_required: true
+  mutation_or_equivalent_proof_required: true
+  rollback_and_recovery_required: true
+  human_uat_replaced: false
+
+business_outcome:
+  user_can_submit_existing_governed_pack: true
+  durable_job_queryable_after_control_restart: true
+  existing_pytest_playwright_pack_executes: true
+  evidence_backed_deterministic_verdict: true
+  cancellation_is_truthful_and_durable: true
+  runtime_implemented_by_this_spec_pr: false
+  scheduled_relay_reenabled_by_this_spec: false
+
+slice_boundary:
+  includes:
+    - cli_job_submit_status_result_events_cancel
+    - pinned_project_revision_validation
+    - existing_governed_pack_manifest
+    - sqlite_wal_durable_job_state
+    - content_addressed_artifacts
+    - single_worker_lease_and_run_fencing
+    - existing_pytest_playwright_execution
+    - deterministic_verifier
+    - cancellation_and_process_tree_cleanup
+    - control_process_restart_reconciliation
+    - package_container_smoke
+    - replayable_evidence
+  excludes:
+    - requirement_to_test_generation
+    - test_patch_generation_or_modification
+    - diagnosis_and_test_repair
+    - automatic_reexecution_after_failure
+    - governed_memory_reuse
+    - cross_project_beta_acceptance
+    - autonomous_product_source_repair
+    - private_repository_secret_acquisition
+    - production_or_personal_data
+    - arbitrary_shell_service
+    - direct_main_write
+    - scheduled_relay_reenable
+
+supported_profile:
+  project_source: GITHUB_PINNED_COMMIT
+  language: PYTHON
+  test_framework: PYTEST
+  browser_framework: PLAYWRIGHT
+  browser: CHROMIUM
+  fixture_data: SYNTHETIC_OR_REPOSITORY_OWNED_NON_PRODUCTION
+  deployment: SINGLE_NODE_DURABLE
+  product_source_agent_write: false
+  network_default: DENY
+
+entrypoint:
+  user_commands:
+    submit: test-agent job submit
+    status: test-agent job status
+    result: test-agent job result
+    events: test-agent job events
+    cancel: test-agent job cancel
+  operator_bootstrap:
+    reference_command: test-agent runtime serve
+    user_product_entrypoint: false
+  state_locator:
+    type: EXPLICIT_STATE_DIR
+    same_state_dir_required_for_runtime_and_cli: true
+  output:
+    human_readable_default: true
+    stable_json_mode_required: true
+    raw_unbounded_logs_in_default_output: false
+
+submission:
+  required_fields:
+    - idempotency_key
+    - project_repository
+    - commit_sha
+    - project_profile_ref
+    - objective_manifest_ref
+    - governed_pack_manifest_ref
+    - permitted_test_paths
+    - permitted_capabilities
+    - oracle_refs
+    - environment_profile_ref
+    - budget_profile_ref
+    - evidence_profile_ref
+  fingerprint_binds_all_required_fields: true
+  same_key_same_fingerprint: IDEMPOTENT_SAME_JOB
+  same_key_changed_fingerprint: EXPLICIT_CONFLICT
+  rejects:
+    - floating_project_ref
+    - missing_oracle_authority
+    - unknown_project_profile
+    - unknown_or_mutable_pack_manifest
+    - unsupported_capability
+    - unbounded_budget
+    - product_source_write_permission
+    - freeform_shell_or_pytest_argument_string
+
+governed_pack_manifest:
+  immutable_and_hash_bound: true
+  required_fields:
+    - pack_id
+    - pack_version
+    - project_profile_ref
+    - commit_sha
+    - framework
+    - selected_node_ids
+    - required_node_ids
+    - node_oracle_bindings
+    - environment_profile_ref
+    - evidence_profile_ref
+  selected_node_ids_unique: true
+  required_node_ids_subset_of_selected: true
+  exact_node_ids_required: true
+  freeform_pytest_args_allowed: false
+  user_supplied_shell_fragments_allowed: false
+  collection_preflight_required: true
+  collection_manifest_hash_required: true
+  required_nodes_must_collect: true
+  required_nodes_must_execute_for_verified_success: true
+  skipped_required_node_allows_success: false
+  xfailed_required_node_allows_success: false
+  deselected_required_node_allows_success: false
+
+runtime_reference_profile:
+  control_plane_access: SHARED_LOCAL_STATE_DIR
+  control_plane_instances: 1
+  workers_per_job: 1
+  browser_contexts_per_attempt: 1
+  job_store:
+    backend: SQLITE_WAL
+    synchronous: FULL
+    persistent_storage_required: true
+    schema_version_required: true
+  artifact_store:
+    backend: CONTENT_ADDRESSED_FILESYSTEM
+    hash: SHA256
+    persistent_storage_required: true
+    temp_write_hash_fsync_atomic_finalize: required
+  sandbox:
+    isolated_worker_required: true
+    product_tree_read_only: true
+    writable_paths: [workspace_scratch, evidence_store]
+    host_secret_environment_inheritance: forbidden
+    host_socket_mounts: forbidden
+    path_traversal: reject
+    symlink_escape: reject
+    network_default: deny
+  process_execution:
+    shell_interpolation: forbidden
+    argv_list_only: true
+    command_family: PYTHON_MODULE_PYTEST
+    adapter_generated_command_only: true
+
+job_lifecycle:
+  allowed_states:
+    - DRAFT
+    - ACCEPTED
+    - READY_TO_EXECUTE
+    - EXECUTING
+    - VERDICT_READY
+    - SUCCEEDED
+    - FAILED
+    - BLOCKED
+    - CANCELLED
+    - TIMED_OUT
+  terminal_states: [SUCCEEDED, FAILED, BLOCKED, CANCELLED, TIMED_OUT]
+  append_only_events: true
+  monotonic_event_sequence: true
+  expected_revision_required_for_transition: true
+  stale_revision_result: EXPLICIT_CONFLICT
+  terminal_state_immutable: true
+  terminal_mapping:
+    VERIFIED_SUCCESS: SUCCEEDED
+    PRODUCT_DEFECT: FAILED
+    TEST_DEFECT: FAILED
+    ENVIRONMENT_FAILURE: FAILED
+    INSUFFICIENT_EVIDENCE: BLOCKED
+    ORACLE_CONFLICT: BLOCKED
+    POLICY_BLOCKED: BLOCKED
+    CANCELLED: CANCELLED
+    TIMED_OUT: TIMED_OUT
+
+attempt_lifecycle:
+  states:
+    - CREATED
+    - LEASED
+    - STARTING
+    - RUNNING
+    - COLLECTING_EVIDENCE
+    - VERIFYING
+    - COMPLETED
+    - FAILED
+    - CANCELLED
+    - TIMED_OUT
+    - ABANDONED_UNCERTAIN
+  lease_token_required_for_mutation_after_claim: true
+  lease_heartbeat_required: true
+  heartbeat_interval_seconds: 2
+  lease_ttl_seconds: 10
+  tests_use_injectable_clock_not_wall_sleep: true
+  command_started_marker_durable_before_spawn: true
+  maximum_command_launches_per_job: 1
+  automatic_execution_retries: 0
+
+restart_reconciliation:
+  queryable_state_after_control_restart: required
+  safe_recovery_cases:
+    accepted_without_attempt: MAY_CONTINUE
+    leased_before_command_started: MAY_RECLAIM_AFTER_LEASE_EXPIRY
+    command_started_without_terminal_attempt: BLOCK_NO_REEXECUTION
+    durable_evidence_without_final_verdict: REVERIFY_DETERMINISTICALLY
+    terminal_job: RETURN_EXISTING_RESULT
+  uncertain_side_effect_auto_reexecute: forbidden
+  duplicate_execution_after_restart_count: 0
+  beta_a_claims_full_resume_after_active_execution: false
+  full_active_execution_resume_deferred_to_slice: BETA-D
+
+execution_contract:
+  preflight_order:
+    - validate_authority_and_profiles
+    - verify_project_commit
+    - verify_pack_manifest_hash
+    - verify_read_only_product_tree_boundary
+    - collect_exact_selected_nodes
+    - verify_required_node_collection
+    - persist_collection_manifest
+  execution_order:
+    - acquire_attempt_lease
+    - persist_command_manifest
+    - persist_command_started_marker
+    - launch_sandboxed_pytest_argv
+    - stream_redacted_bounded_logs_to_artifact_store
+    - collect_junit_and_selected_browser_artifacts
+    - persist_attempt_evidence_manifest
+    - deterministic_verification
+    - finalize_job_result
+  product_source_diff_after_attempt_allowed: false
+
+required_evidence:
+  - submission_manifest_and_fingerprint
+  - job_event_history
+  - project_commit_and_profile
+  - governed_pack_manifest_and_hash
+  - collection_manifest_and_hash
+  - command_manifest
+  - worker_identity_lease_and_run_token
+  - bounded_redacted_stdout_stderr
+  - junit
+  - environment_and_dependency_manifest
+  - artifact_index_and_sha256_hashes
+  - deterministic_verifier_output
+  - cancellation_or_timeout_evidence_when_applicable
+  - workspace_reset_cleanup_result
+  - replay_manifest_and_instructions
+conditional_evidence:
+  - playwright_screenshot
+  - playwright_trace
+  - playwright_video
+  - browser_console_network_dom_accessibility
+
+verifier:
+  authority: DETERMINISTIC_VERIFIER
+  model_output_authority: CANDIDATE_ONLY
+  verified_success_requires:
+    - terminal_attempt_completed
+    - command_exit_success
+    - all_required_nodes_collected
+    - all_required_nodes_executed
+    - all_required_nodes_passed
+    - required_evidence_complete
+    - all_artifact_hashes_valid
+    - project_pack_environment_bindings_match
+    - no_product_source_diff
+    - no_policy_or_oracle_conflict
+    - cleanup_verified
+  assertion_failure_with_valid_governed_oracle_binding: PRODUCT_DEFECT
+  collection_import_fixture_or_test_structure_failure: TEST_DEFECT
+  browser_dependency_runtime_or_sandbox_failure: ENVIRONMENT_FAILURE
+  missing_stale_tampered_or_conflicting_evidence: INSUFFICIENT_EVIDENCE
+  missing_or_conflicting_oracle_authority: ORACLE_CONFLICT
+  forbidden_capability_or_boundary_violation: POLICY_BLOCKED
+  exit_code_alone_may_produce_verified_success: false
+
+cancellation:
+  cancel_request_durable: true
+  cancel_request_idempotent: true
+  worker_must_observe_cancel_before_new_step: true
+  active_process_tree_termination_required: true
+  graceful_termination_seconds: 10
+  force_kill_after_grace: true
+  lease_revoke_required: true
+  partial_evidence_preserved: true
+  cleanup_verification_required_before_cancelled_terminal: true
+  surviving_process_or_unverified_cleanup_may_return_cancelled: false
+  cancel_after_terminal_returns_existing_terminal_truth: true
+
+budgets:
+  wall_clock_job_minutes_max: 45
+  execution_attempt_minutes_max: 15
+  execution_attempts_max: 1
+  concurrent_workers_per_job: 1
+  browser_contexts_per_attempt: 1
+  artifact_mebibytes_per_job_max: 500
+  freeform_retry_count: 0
+  budget_exhaustion_widens_limit: false
+
+ux_contract:
+  affected_journey: CLI_SUBMIT_PROGRESS_RESULT_CANCEL_RECOVERY
+  personas:
+    - FIRST_TIME_ENGINEER
+    - SCRIPTING_AUTOMATION_USER
+    - RECOVERY_FOCUSED_OPERATOR
+  minimum_repetitions_per_critical_journey: 3
+  adversarial_environment_required: true
+  requirements:
+    - accepted_state_is_immediately_distinguishable_from_success
+    - status_and_events_never_claim_unverified_success
+    - result_explains_verdict_evidence_and_limitations
+    - cancel_reports_requested_terminating_and_final_truthfully
+    - restart_recovery_does_not_hide_uncertainty
+    - error_messages_include_actionable_failure_class
+    - evidence_is_discoverable_without_dumping_unbounded_logs
+  human_uat:
+    required_for_final_beta: true
+    beta_a_requires_uat_package_readiness: true
+    beta_a_claims_human_uat_complete: false
+
+implementation_evidence:
+  focused_contract_and_state_tests: required
+  sqlite_restart_and_concurrency: required
+  cli_contract: required
+  real_pytest_playwright_execution: required
+  sandbox_boundary: required
+  cancellation_process_tree: required
+  evidence_hash_and_replay: required
+  package_container_smoke: required
+  ux3_journey_evidence: required
+  selected_repository_regression: required
+  full_quality: required
+  secret_scan: required
+  codeql: required
+  release: required
+
+critical_mutation_catalog:
+  - REMOVE_SUBMISSION_FINGERPRINT_REBOUND_REJECTION
+  - REMOVE_EXPECTED_REVISION_OR_LEASE_FENCING
+  - REMOVE_REQUIRED_NODE_COLLECTION_COMPLETENESS
+  - ALLOW_SKIPPED_OR_DESELECTED_REQUIRED_NODE_SUCCESS
+  - REMOVE_EVIDENCE_COMPLETENESS_BEFORE_SUCCESS
+  - REMOVE_ARTIFACT_HASH_VERIFICATION
+  - REMOVE_PRODUCT_SOURCE_DIFF_REJECTION
+  - REMOVE_CANCELLATION_PROCESS_TREE_PROOF
+  - AUTO_REEXECUTE_UNCERTAIN_RESTART
+  - ALLOW_EXIT_CODE_ONLY_SUCCESS
+critical_mutation_survivors_allowed: 0
+
+protected_invariants:
+  critical_false_green_count: 0
+  unauthorized_product_source_write_count: 0
+  unauthorized_oracle_policy_permission_change_count: 0
+  unverifiable_success_verdict_count: 0
+  duplicate_execution_after_restart_count: 0
+  idempotency_key_rebound_accepted_count: 0
+  stale_worker_state_write_count: 0
+  required_node_not_executed_but_success_count: 0
+  artifact_hash_mismatch_but_success_count: 0
+  child_process_survivor_after_cancelled_count: 0
+  secret_or_personal_data_exposure_count: 0
+  unbounded_retry_or_spend_count: 0
+
+spec_acceptance:
+  machine_markdown_consistent: true
+  threat_model_complete: true
+  independent_test_design_complete: true
+  parent_architecture_not_weakened: true
+  runtime_implementation_absent_from_spec_pr: true
+  dedicated_gate_green: true
+  full_ci_green: true
+  secret_scan_green: true
+  codeql_green: true
+  review_threads: 0
+  scheduled_relay_remains_disabled: true
+
+post_spec_transition:
+  program_delivery_work_item_to_close: BETA-A-SPEC
+  program_delivery_work_item_to_ready: BETA-A-IMPLEMENTATION
+  runtime_implementation_may_start_only_after:
+    - spec_merged_to_main
+    - post_merge_spec_gate_green
+    - post_merge_full_quality_green
+    - post_merge_security_green
+  scheduled_relay_reenabled: false
