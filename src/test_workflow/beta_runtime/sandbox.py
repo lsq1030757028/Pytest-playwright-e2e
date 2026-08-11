@@ -234,10 +234,18 @@ class DockerSandbox:
                 elapsed = time.monotonic() - started
                 if not cancelled and not timed_out and cancel_requested():
                     cancelled = True
-                    self._stop(container_name)
+                    self._terminate(
+                        container_name,
+                        heartbeat=heartbeat,
+                        heartbeat_interval_seconds=heartbeat_interval_seconds,
+                    )
                 elif not cancelled and not timed_out and elapsed >= timeout_seconds:
                     timed_out = True
-                    self._stop(container_name)
+                    self._terminate(
+                        container_name,
+                        heartbeat=heartbeat,
+                        heartbeat_interval_seconds=heartbeat_interval_seconds,
+                    )
 
                 now = time.monotonic()
                 if now - last_heartbeat >= heartbeat_interval_seconds:
@@ -262,7 +270,7 @@ class DockerSandbox:
             )
         finally:
             if process.poll() is None:
-                self._stop(container_name)
+                self._force_remove(container_name)
                 try:
                     process.communicate(timeout=2)
                 except subprocess.TimeoutExpired:
@@ -270,24 +278,49 @@ class DockerSandbox:
                     process.communicate()
             self._force_remove(container_name)
 
+    @classmethod
+    def _terminate(
+        cls,
+        container_name: str,
+        *,
+        heartbeat: Callable[[float], None],
+        heartbeat_interval_seconds: float,
+    ) -> None:
+        cls._signal(container_name, "TERM")
+        deadline = time.monotonic() + 10.0
+        last_heartbeat = time.monotonic()
+        while time.monotonic() < deadline:
+            if not cls._is_running(container_name):
+                return
+            now = time.monotonic()
+            if now - last_heartbeat >= heartbeat_interval_seconds:
+                heartbeat(time.time())
+                last_heartbeat = now
+            time.sleep(0.2)
+        cls._signal(container_name, "KILL")
+
     @staticmethod
-    def _stop(container_name: str) -> None:
+    def _signal(container_name: str, signal_name: str) -> None:
         subprocess.run(
-            ["docker", "stop", "--time", "10", container_name],
-            capture_output=True,
-            text=True,
-            env=_minimal_host_env(),
-            timeout=15,
-            check=False,
-        )
-        subprocess.run(
-            ["docker", "kill", container_name],
+            ["docker", "kill", "--signal", signal_name, container_name],
             capture_output=True,
             text=True,
             env=_minimal_host_env(),
             timeout=10,
             check=False,
         )
+
+    @staticmethod
+    def _is_running(container_name: str) -> bool:
+        inspect = subprocess.run(
+            ["docker", "inspect", "--format", "{{.State.Running}}", container_name],
+            capture_output=True,
+            text=True,
+            env=_minimal_host_env(),
+            timeout=10,
+            check=False,
+        )
+        return inspect.returncode == 0 and inspect.stdout.strip().lower() == "true"
 
     @staticmethod
     def _force_remove(container_name: str) -> None:
