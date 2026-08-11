@@ -25,6 +25,7 @@ test = [
 [project.scripts]
 test-workflow = "test_workflow.cli:app"
 test-harness-ledger = "test_workflow.ledger_cli:app"
+test-agent = "test_workflow.test_agent_cli:app"
 
 [build-system]
 requires = ["hatchling"]
