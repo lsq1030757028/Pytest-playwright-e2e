@@ -39,6 +39,8 @@ def _terminal_debug(service: RuntimeService, terminal) -> str:
     diagnostics = {"state": terminal.state, "result": result}
     artifacts = result.get("artifacts", {}) if isinstance(result, dict) else {}
     for name in (
+        "docker_stdout",
+        "docker_stderr",
         "entry_meta",
         "collection_stdout",
         "collection_stderr",
