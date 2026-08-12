@@ -135,7 +135,11 @@ def test_prelaunch_lease_reclaims_but_started_attempt_never_reexecutes(tmp_path)
     reclaimed = store.reconcile_expired_attempts(now=12.0)
     assert reclaimed == {"reclaimed": [first.job_id], "blocked": []}
     assert store.get_job(first.job_id).state == "READY_TO_EXECUTE"
-    reclaimed_claim = store.claim_ready(worker_id="worker-b", now=13.0)
+    reclaimed_claim = store.claim_ready(
+        worker_id="worker-b",
+        now=13.0,
+        lease_ttl_seconds=100.0,
+    )
     assert reclaimed_claim is not None
     assert reclaimed_claim[1].attempt_id == lease.attempt_id
     assert reclaimed_claim[1].lease_token != lease.lease_token
