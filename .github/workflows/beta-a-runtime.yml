@@ -9,6 +9,7 @@ on:
       - "tests/beta_a_helpers.py"
       - "tests/unit/test_beta_a_runtime_*.py"
       - "tests/integration/test_beta_a_runtime_docker.py"
+      - "tests/integration/test_beta_a_runtime_ux3.py"
       - ".github/workflows/beta-a-runtime.yml"
   push:
     branches: [main]
@@ -19,6 +20,7 @@ on:
       - "tests/beta_a_helpers.py"
       - "tests/unit/test_beta_a_runtime_*.py"
       - "tests/integration/test_beta_a_runtime_docker.py"
+      - "tests/integration/test_beta_a_runtime_ux3.py"
       - ".github/workflows/beta-a-runtime.yml"
   workflow_dispatch:
 
@@ -47,6 +49,13 @@ jobs:
             tests/unit/test_beta_a_runtime_recovery.py \
             tests/unit/test_beta_a_runtime_mutation_proof.py \
             --junitxml=test-results/junit-beta-a-runtime-unit.xml
+
+      - name: UX3 real CLI persona and adversarial recovery proof
+        env:
+          BETA_A_UX3_REPORT: test-results/beta-a-ux3-journeys.json
+        run: >-
+          uv run pytest tests/integration/test_beta_a_runtime_ux3.py
+          --junitxml=test-results/junit-beta-a-runtime-ux3.xml
 
       - name: Build immutable local Playwright execution image
         shell: bash
