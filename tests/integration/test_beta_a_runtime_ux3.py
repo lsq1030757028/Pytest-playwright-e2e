@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import subprocess
 import sys
-from pathlib import Path
 
 
 PERSONAS = (
@@ -33,7 +33,12 @@ def _json(process: subprocess.CompletedProcess[str]) -> dict:
     return json.loads(process.stdout)
 
 
-def _submit(root: Path, *, persona: str, repetition: int) -> tuple[Path, str]:
+def _submit(
+    root: pathlib.Path,
+    *,
+    persona: str,
+    repetition: int,
+) -> tuple[pathlib.Path, str]:
     from tests.beta_a_helpers import make_governed_fixture
 
     _, _, _, submission_path = make_governed_fixture(
@@ -57,7 +62,7 @@ def _submit(root: Path, *, persona: str, repetition: int) -> tuple[Path, str]:
     return state, str(submitted["job_id"])
 
 
-def _pending_result(state: Path, job_id: str) -> dict:
+def _pending_result(state: pathlib.Path, job_id: str) -> dict:
     pending = _json(
         _cli(
             "job",
@@ -78,7 +83,7 @@ def _pending_result(state: Path, job_id: str) -> dict:
     return pending
 
 
-def _first_time_journey(root: Path, repetition: int) -> dict:
+def _first_time_journey(root: pathlib.Path, repetition: int) -> dict:
     state, job_id = _submit(root, persona=PERSONAS[0], repetition=repetition)
     _pending_result(state, job_id)
 
@@ -134,7 +139,7 @@ def _first_time_journey(root: Path, repetition: int) -> dict:
     }
 
 
-def _automation_journey(root: Path, repetition: int) -> dict:
+def _automation_journey(root: pathlib.Path, repetition: int) -> dict:
     state, job_id = _submit(root, persona=PERSONAS[1], repetition=repetition)
     pending = _pending_result(state, job_id)
     assert pending["result_ready"] is False
@@ -230,7 +235,7 @@ def _automation_journey(root: Path, repetition: int) -> dict:
     }
 
 
-def _recovery_journey(root: Path, repetition: int) -> dict:
+def _recovery_journey(root: pathlib.Path, repetition: int) -> dict:
     from test_workflow.beta_runtime.store import RuntimeStore
 
     state, job_id = _submit(root, persona=PERSONAS[2], repetition=repetition)
@@ -351,7 +356,7 @@ def _recovery_journey(root: Path, repetition: int) -> dict:
     }
 
 
-def _prove_failure_taxonomy(root: Path) -> list[dict]:
+def _prove_failure_taxonomy(root: pathlib.Path) -> list[dict]:
     from test_workflow.beta_runtime.artifacts import ArtifactStore
     from test_workflow.beta_runtime.store import RuntimeStore
 
@@ -484,7 +489,7 @@ def test_beta_a_ux3_real_cli_persona_matrix(tmp_path):
 
     report_path = os.environ.get("BETA_A_UX3_REPORT")
     if report_path:
-        destination = Path(report_path)
+        destination = pathlib.Path(report_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(
             json.dumps(report, sort_keys=True, indent=2) + "\n",
