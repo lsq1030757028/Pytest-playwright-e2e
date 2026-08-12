@@ -60,6 +60,7 @@ def _run(argv: list[str]) -> tuple[int, str, str]:
             "PYTHONDONTWRITEBYTECODE": "1",
             "BETA_A_RUNTIME_REPORT": str(RUNTIME_REPORT),
             "HOME": "/tmp/beta-a-home",
+            "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
         },
     )
     _current_process = process
