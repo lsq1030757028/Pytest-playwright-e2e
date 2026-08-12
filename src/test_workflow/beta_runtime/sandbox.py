@@ -255,6 +255,7 @@ class DockerSandbox:
                     cancelled = True
                     self._terminate(
                         container_name,
+                        launcher_process=process,
                         heartbeat=heartbeat,
                         heartbeat_interval_seconds=heartbeat_interval_seconds,
                     )
@@ -262,6 +263,7 @@ class DockerSandbox:
                     timed_out = True
                     self._terminate(
                         container_name,
+                        launcher_process=process,
                         heartbeat=heartbeat,
                         heartbeat_interval_seconds=heartbeat_interval_seconds,
                     )
@@ -302,21 +304,31 @@ class DockerSandbox:
         cls,
         container_name: str,
         *,
+        launcher_process: subprocess.Popen[str],
         heartbeat: Callable[[float], None],
         heartbeat_interval_seconds: float,
     ) -> None:
-        cls._signal(container_name, "TERM")
         deadline = time.monotonic() + 10.0
         last_heartbeat = time.monotonic()
+        term_sent = False
         while time.monotonic() < deadline:
-            if not cls._is_running(container_name):
+            if launcher_process.poll() is not None:
+                return
+            if cls._is_running(container_name):
+                if not term_sent:
+                    cls._signal(container_name, "TERM")
+                    term_sent = True
+            elif term_sent:
                 return
             now = time.monotonic()
             if now - last_heartbeat >= heartbeat_interval_seconds:
                 heartbeat(time.time())
                 last_heartbeat = now
-            time.sleep(0.2)
+            time.sleep(0.1)
         cls._signal(container_name, "KILL")
+        cls._force_remove(container_name)
+        if launcher_process.poll() is None:
+            launcher_process.kill()
 
     @staticmethod
     def _signal(container_name: str, signal_name: str) -> None:
