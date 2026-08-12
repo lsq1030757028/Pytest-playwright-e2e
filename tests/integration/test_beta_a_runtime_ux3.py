@@ -5,7 +5,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 from test_workflow.beta_runtime.artifacts import ArtifactStore
 from test_workflow.beta_runtime.store import RuntimeStore
@@ -34,7 +33,7 @@ def _cli(*args: str, expected_exit: int = 0) -> subprocess.CompletedProcess[str]
     return process
 
 
-def _json(process: subprocess.CompletedProcess[str]) -> dict[str, Any]:
+def _json(process: subprocess.CompletedProcess[str]) -> dict:
     return json.loads(process.stdout)
 
 
@@ -60,7 +59,7 @@ def _submit(root: Path, *, persona: str, repetition: int) -> tuple[Path, str]:
     return state, str(submitted["job_id"])
 
 
-def _pending_result(state: Path, job_id: str) -> dict[str, Any]:
+def _pending_result(state: Path, job_id: str) -> dict:
     pending = _json(
         _cli(
             "job",
@@ -81,7 +80,7 @@ def _pending_result(state: Path, job_id: str) -> dict[str, Any]:
     return pending
 
 
-def _first_time_journey(root: Path, repetition: int) -> dict[str, Any]:
+def _first_time_journey(root: Path, repetition: int) -> dict:
     state, job_id = _submit(root, persona=PERSONAS[0], repetition=repetition)
     _pending_result(state, job_id)
 
@@ -137,7 +136,7 @@ def _first_time_journey(root: Path, repetition: int) -> dict[str, Any]:
     }
 
 
-def _automation_journey(root: Path, repetition: int) -> dict[str, Any]:
+def _automation_journey(root: Path, repetition: int) -> dict:
     state, job_id = _submit(root, persona=PERSONAS[1], repetition=repetition)
     pending = _pending_result(state, job_id)
     assert pending["result_ready"] is False
@@ -233,7 +232,7 @@ def _automation_journey(root: Path, repetition: int) -> dict[str, Any]:
     }
 
 
-def _recovery_journey(root: Path, repetition: int) -> dict[str, Any]:
+def _recovery_journey(root: Path, repetition: int) -> dict:
     state, job_id = _submit(root, persona=PERSONAS[2], repetition=repetition)
     _pending_result(state, job_id)
 
@@ -352,8 +351,8 @@ def _recovery_journey(root: Path, repetition: int) -> dict[str, Any]:
     }
 
 
-def _prove_failure_taxonomy(root: Path) -> list[dict[str, Any]]:
-    visible: list[dict[str, Any]] = []
+def _prove_failure_taxonomy(root: Path) -> list[dict]:
+    visible: list[dict] = []
     for index, verdict in enumerate(
         ("PRODUCT_DEFECT", "TEST_DEFECT", "ENVIRONMENT_FAILURE"),
         start=1,
@@ -366,7 +365,7 @@ def _prove_failure_taxonomy(root: Path) -> list[dict[str, Any]]:
         )
         store = RuntimeStore(state)
         accepted = store.get_job(job_id)
-        ready = store.transition(
+        store.transition(
             job_id,
             expected_revision=accepted.revision,
             new_state="READY_TO_EXECUTE",
@@ -436,7 +435,7 @@ def _prove_failure_taxonomy(root: Path) -> list[dict[str, Any]]:
 
 
 def test_beta_a_ux3_real_cli_persona_matrix(tmp_path):
-    journeys: list[dict[str, Any]] = []
+    journeys: list[dict] = []
     for repetition in range(1, REPETITIONS + 1):
         journeys.append(_first_time_journey(tmp_path / f"first-time-{repetition}", repetition))
         journeys.append(_automation_journey(tmp_path / f"automation-{repetition}", repetition))
