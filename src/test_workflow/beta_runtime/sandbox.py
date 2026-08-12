@@ -45,6 +45,14 @@ def _safe_mount_source(path: Path) -> str:
     return value
 
 
+def _host_execution_user() -> str:
+    if not hasattr(os, "getuid") or not hasattr(os, "getgid"):
+        raise SandboxUnavailable(
+            "BETA-A Docker sandbox requires POSIX uid/gid ownership semantics"
+        )
+    return f"{os.getuid()}:{os.getgid()}"
+
+
 def validate_project_tree(root: Path) -> None:
     root = root.resolve()
     for path in root.rglob("*"):
@@ -132,6 +140,8 @@ class DockerSandbox:
             "attempt_id": attempt_id,
             "project_path": str(project_path.resolve()),
             "project_mount": "/project:ro",
+            "evidence_mount": "/evidence:rw-owner-only",
+            "execution_user": _host_execution_user(),
             "network": "none",
             "rootfs_read_only": True,
             "capabilities": "drop_all",
@@ -164,6 +174,7 @@ class DockerSandbox:
             canonical_json({"selected_node_ids": list(selected_node_ids)}) + "\n",
             encoding="utf-8",
         )
+        command_input.chmod(0o600)
         container_name = "beta-a-" + "".join(
             character if character.isalnum() or character in "_.-" else "-"
             for character in attempt_id
@@ -172,12 +183,15 @@ class DockerSandbox:
         evidence_mount = _safe_mount_source(scratch_path)
         entry_mount = _safe_mount_source(self.entry_path)
         plugin_mount = _safe_mount_source(self.plugin_path)
+        execution_user = _host_execution_user()
         argv = [
             "docker",
             "run",
             "--rm",
             "--name",
             container_name,
+            "--user",
+            execution_user,
             "--network",
             "none",
             "--read-only",
@@ -203,6 +217,8 @@ class DockerSandbox:
             f"type=bind,src={entry_mount},dst=/runtime/container_entry.py,readonly",
             "--mount",
             f"type=bind,src={plugin_mount},dst=/runtime/beta_a_pytest_plugin.py,readonly",
+            "-e",
+            "HOME=/tmp/beta-a-home",
             "-e",
             "PYTHONPATH=/runtime",
             "-e",
