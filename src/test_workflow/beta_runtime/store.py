@@ -26,6 +26,7 @@ class LeaseError(RuntimeError):
 
 
 TERMINAL_STATES = {"SUCCEEDED", "FAILED", "BLOCKED", "CANCELLED", "TIMED_OUT"}
+_RECOVERABLE_ATTEMPT_STATES = {"COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT"}
 
 
 @dataclass(frozen=True)
@@ -536,6 +537,108 @@ class RuntimeStore:
                 """,
                 (state, canonical_json(evidence_manifest), now, lease.attempt_id),
             )
+
+    def next_recoverable_evidence(
+        self,
+    ) -> tuple[JobRecord, dict[str, Any]] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT j.*, a.attempt_id, a.state AS attempt_state,
+                       a.command_started, a.evidence_manifest_json
+                  FROM jobs j
+                  JOIN attempts a ON a.job_id = j.job_id
+                 WHERE j.state = 'EXECUTING'
+                   AND a.command_started = 1
+                   AND a.evidence_manifest_json IS NOT NULL
+                   AND a.state IN ('COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT')
+                 ORDER BY j.created_at, j.job_id
+                 LIMIT 1
+                """
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_job(row), {
+            "attempt_id": row["attempt_id"],
+            "attempt_state": row["attempt_state"],
+            "evidence_manifest": json.loads(row["evidence_manifest_json"]),
+        }
+
+    def finalize_recovered_evidence(
+        self,
+        job_id: str,
+        *,
+        attempt_id: str,
+        expected_revision: int,
+        result: dict[str, Any],
+        event_type: str,
+        now: float,
+    ) -> JobRecord:
+        terminal_state = str(result.get("terminal_state", ""))
+        if terminal_state not in TERMINAL_STATES:
+            raise StaleWriteError("recovered result is not terminal")
+        with self._transaction() as connection:
+            row = connection.execute(
+                """
+                SELECT j.*, a.attempt_id, a.state AS attempt_state,
+                       a.command_started, a.evidence_manifest_json
+                  FROM jobs j
+                  JOIN attempts a ON a.job_id = j.job_id
+                 WHERE j.job_id = ?
+                """,
+                (job_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(job_id)
+            if row["state"] != "EXECUTING":
+                raise StaleWriteError("job is no longer awaiting recovery")
+            if int(row["revision"]) != expected_revision:
+                raise StaleWriteError("job revision changed during recovery")
+            if row["attempt_id"] != attempt_id:
+                raise StaleWriteError("attempt changed during recovery")
+            if not bool(row["command_started"]):
+                raise StaleWriteError("recovery cannot finalize an unlaunched attempt")
+            if row["attempt_state"] not in _RECOVERABLE_ATTEMPT_STATES:
+                raise StaleWriteError("attempt is not in a recoverable evidence state")
+            if row["evidence_manifest_json"] is None:
+                raise StaleWriteError("durable recovery evidence disappeared")
+
+            next_revision = expected_revision + 1
+            updated = connection.execute(
+                """
+                UPDATE jobs
+                   SET state = ?, revision = ?, result_json = ?, updated_at = ?
+                 WHERE job_id = ? AND revision = ? AND state = 'EXECUTING'
+                """,
+                (
+                    terminal_state,
+                    next_revision,
+                    canonical_json(result),
+                    now,
+                    job_id,
+                    expected_revision,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise StaleWriteError("job changed during recovery finalization")
+            self._append_event(
+                connection,
+                job_id,
+                event_type=event_type,
+                state=terminal_state,
+                payload={
+                    "attempt_id": attempt_id,
+                    "verdict": result.get("verdict"),
+                    "automatic_reexecution": False,
+                },
+                created_at=now,
+            )
+            changed = connection.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
+            assert changed is not None
+            return self._row_to_job(changed)
 
     def reconcile_expired_attempts(self, *, now: float) -> dict[str, list[str]]:
         reclaimed: list[str] = []
