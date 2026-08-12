@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import threading
 import time
@@ -31,6 +32,27 @@ def _expand_pack(manifests, submission_path, nodes):
     submission["permitted_capabilities"] = ["pytest", "playwright", "chromium"]
     write_yaml(submission_path, submission)
     return load_submission_bundle(submission_path)
+
+
+def _terminal_debug(service: RuntimeService, terminal) -> str:
+    result = terminal.result or {}
+    diagnostics = {"state": terminal.state, "result": result}
+    artifacts = result.get("artifacts", {}) if isinstance(result, dict) else {}
+    for name in (
+        "entry_meta",
+        "collection_stdout",
+        "collection_stderr",
+        "execution_stdout",
+        "execution_stderr",
+    ):
+        ref = artifacts.get(name) if isinstance(artifacts, dict) else None
+        if not isinstance(ref, dict) or not service.artifacts.verify(ref):
+            continue
+        diagnostics[name] = service.artifacts.resolve(ref).read_text(
+            encoding="utf-8",
+            errors="replace",
+        )
+    return json.dumps(diagnostics, indent=2, sort_keys=True, ensure_ascii=False)
 
 
 def test_real_docker_pytest_playwright_is_durable_replayable_and_isolated(
@@ -92,7 +114,7 @@ def test_governed_boundaries():
 
     assert service.serve_once(worker_id="docker-worker") == job.job_id
     terminal = RuntimeStore(state).get_job(job.job_id)
-    assert terminal.state == "SUCCEEDED"
+    assert terminal.state == "SUCCEEDED", _terminal_debug(service, terminal)
     assert terminal.result["verdict"] == "VERIFIED_SUCCESS"
     assert terminal.result["automatic_reexecution"] is False
     assert (
@@ -166,7 +188,7 @@ def test_governed_unit():
     assert not thread.is_alive()
 
     terminal = RuntimeStore(state).get_job(job.job_id)
-    assert terminal.state == "CANCELLED"
+    assert terminal.state == "CANCELLED", _terminal_debug(service, terminal)
     assert terminal.result["verdict"] == "CANCELLED"
     assert terminal.result["cleanup_verified"] is True
     assert terminal.result["artifacts"]
