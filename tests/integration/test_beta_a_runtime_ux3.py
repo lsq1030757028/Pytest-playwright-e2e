@@ -6,7 +6,6 @@ import pathlib
 import subprocess
 import sys
 
-
 PERSONAS = (
     "first-time-engineer",
     "scripting-automation-user",
