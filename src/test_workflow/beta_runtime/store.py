@@ -85,51 +85,59 @@ class RuntimeStore:
             connection.close()
 
     def _initialize(self) -> None:
-        with self._transaction() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS runtime_meta (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS jobs (
-                    job_id TEXT PRIMARY KEY,
-                    idempotency_key TEXT NOT NULL UNIQUE,
-                    request_fingerprint TEXT NOT NULL,
-                    submission_json TEXT NOT NULL,
-                    state TEXT NOT NULL,
-                    revision INTEGER NOT NULL,
-                    result_json TEXT,
-                    cancel_requested INTEGER NOT NULL DEFAULT 0,
-                    created_at REAL NOT NULL,
-                    updated_at REAL NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS job_events (
-                    job_id TEXT NOT NULL,
-                    seq INTEGER NOT NULL,
-                    event_type TEXT NOT NULL,
-                    state TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    created_at REAL NOT NULL,
-                    PRIMARY KEY (job_id, seq),
-                    FOREIGN KEY (job_id) REFERENCES jobs(job_id)
-                );
-                CREATE TABLE IF NOT EXISTS attempts (
-                    attempt_id TEXT PRIMARY KEY,
-                    job_id TEXT NOT NULL UNIQUE,
-                    state TEXT NOT NULL,
-                    lease_token TEXT,
-                    worker_id TEXT,
-                    lease_expires_at REAL,
-                    command_started INTEGER NOT NULL DEFAULT 0,
-                    command_manifest_json TEXT,
-                    evidence_manifest_json TEXT,
-                    created_at REAL NOT NULL,
-                    updated_at REAL NOT NULL,
-                    FOREIGN KEY (job_id) REFERENCES jobs(job_id)
-                );
-                """
+        schema_statements = (
+            """
+            CREATE TABLE IF NOT EXISTS runtime_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
             )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS jobs (
+                job_id TEXT PRIMARY KEY,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                request_fingerprint TEXT NOT NULL,
+                submission_json TEXT NOT NULL,
+                state TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                result_json TEXT,
+                cancel_requested INTEGER NOT NULL DEFAULT 0,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS job_events (
+                job_id TEXT NOT NULL,
+                seq INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                state TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                PRIMARY KEY (job_id, seq),
+                FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS attempts (
+                attempt_id TEXT PRIMARY KEY,
+                job_id TEXT NOT NULL UNIQUE,
+                state TEXT NOT NULL,
+                lease_token TEXT,
+                worker_id TEXT,
+                lease_expires_at REAL,
+                command_started INTEGER NOT NULL DEFAULT 0,
+                command_manifest_json TEXT,
+                evidence_manifest_json TEXT,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL,
+                FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+            )
+            """,
+        )
+        with self._transaction() as connection:
+            for statement in schema_statements:
+                connection.execute(statement)
             existing = connection.execute(
                 "SELECT value FROM runtime_meta WHERE key = 'schema_version'"
             ).fetchone()
