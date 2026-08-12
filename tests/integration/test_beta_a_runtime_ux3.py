@@ -6,10 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from test_workflow.beta_runtime.artifacts import ArtifactStore
-from test_workflow.beta_runtime.store import RuntimeStore
-from tests.beta_a_helpers import make_governed_fixture
-
 
 PERSONAS = (
     "first-time-engineer",
@@ -38,6 +34,8 @@ def _json(process: subprocess.CompletedProcess[str]) -> dict:
 
 
 def _submit(root: Path, *, persona: str, repetition: int) -> tuple[Path, str]:
+    from tests.beta_a_helpers import make_governed_fixture
+
     _, _, _, submission_path = make_governed_fixture(
         root,
         idempotency_key=f"ux3-{persona}-{repetition}",
@@ -233,6 +231,8 @@ def _automation_journey(root: Path, repetition: int) -> dict:
 
 
 def _recovery_journey(root: Path, repetition: int) -> dict:
+    from test_workflow.beta_runtime.store import RuntimeStore
+
     state, job_id = _submit(root, persona=PERSONAS[2], repetition=repetition)
     _pending_result(state, job_id)
 
@@ -352,6 +352,9 @@ def _recovery_journey(root: Path, repetition: int) -> dict:
 
 
 def _prove_failure_taxonomy(root: Path) -> list[dict]:
+    from test_workflow.beta_runtime.artifacts import ArtifactStore
+    from test_workflow.beta_runtime.store import RuntimeStore
+
     visible: list[dict] = []
     for index, verdict in enumerate(
         ("PRODUCT_DEFECT", "TEST_DEFECT", "ENVIRONMENT_FAILURE"),
