@@ -164,7 +164,7 @@ jobs:
             --once --worker-id acceptance-restarted-worker \
             --state-dir "${state}" --json \
             | grep '"processed_job_id":null'
-          printf '%s\n' "${result_one}" > test-results/beta-a-packaged-result.json
+          printf '%s\n' "${result_one}" > "${GITHUB_WORKSPACE}/test-results/beta-a-packaged-result.json"
 
       - name: Validate acceptance evidence bundle shape
         run: |
