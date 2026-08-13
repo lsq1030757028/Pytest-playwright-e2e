@@ -4,7 +4,7 @@ program_delivery:
   status: ACTIVE
   source_role: AUTHORITATIVE_DELIVERY
   delivery_selection_authoritative: true
-  updated_at: 2026-08-13T09:13:00+08:00
+  updated_at: 2026-08-13T09:48:00+08:00
   governing_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
   goal_issue: 91
 
@@ -12,7 +12,7 @@ program:
   id: TEST_AGENT_RUNTIME_BETA
   campaign_issue: 65
   architecture_goal_issue: 66
-  state: BETA_A_ACCEPTANCE
+  state: PRE_BETA_B
   delivery_principle: VERTICAL_OPERATING_SLICE_BEFORE_UNUSED_HORIZONTAL_SUBSYSTEM
 
 responsibility_planes:
@@ -38,7 +38,7 @@ responsibility_planes:
 product_slices:
   BETA-A:
     title: Execute an existing governed test pack
-    state: ACCEPTING
+    state: CLOSED
     dependencies: []
     user_entrypoint: CLI
     user_outcome: durable_job_returns_evidence_backed_verdict
@@ -55,7 +55,7 @@ product_slices:
       duplicate_execution_after_restart_count: 0
   BETA-B:
     title: Generate and execute a bounded test from a requirement
-    state: BLOCKED
+    state: PREPARING
     dependencies: [BETA-A]
     user_entrypoint: CLI
     user_outcome: requirement_becomes_reviewable_executed_test_patch
@@ -96,17 +96,21 @@ product_slices:
       human_uat_complete: true
 
 execution_pointer:
-  active_slice: BETA-A
-  current_focus: BETA-A-ACCEPTANCE
-  next_slice_after_active: BETA-B
+  active_slice: BETA-B
+  current_focus: BETA-B-SPEC
+  next_slice_after_active: BETA-C
   critical_path:
-    - BETA-A-ACCEPTANCE
+    - BETA-B-SPEC
+    - BETA-B-IMPLEMENTATION
+    - BETA-B-ACCEPTANCE
   rationale: >-
-    BETA-A implementation PR #98 is merged to main as
-    2c980826044d1bdafece52d0ad1918aaa04b06d8 and the exact main commit passed
-    the BETA-A runtime, Full Quality, Secret Scan, CodeQL, and Release gates.
-    The bounded operating-evidence acceptance phase is now the only canonical
-    product closer; BETA-B remains blocked until BETA-A acceptance closes.
+    BETA-A operating acceptance PR #100 is merged to main as
+    056d8819e6b7da507c8f9ed1be3ab8fca77f046a. The exact main commit passed
+    beta-a-acceptance run 31658662384, Full Quality run 31658662425,
+    Secret Scan run 31658662439, CodeQL run 31658662475, and Release run
+    31658662468. BETA-A is therefore verified and closable. Goal #101 authorizes
+    BETA-B SPEC work only; BETA-B generation implementation remains blocked
+    until its SPEC is merged and main-verified.
 
 capability_lanes:
   M1_MEMORY:
@@ -117,8 +121,8 @@ capability_lanes:
   M2_MODEL_GENERALIZATION:
     role: cross_model_normalization_safe_degradation_and_routing
     primary_slices: [BETA-B, BETA-C, BETA-E]
-    current: FUTURE
-    critical_for_active_slice: false
+    current: BETA_B_SPEC_INPUT
+    critical_for_active_slice: true
   M3_PROJECT_GENERALIZATION:
     role: project_architecture_and_adapter_generalization
     primary_slices: [BETA-E]
@@ -133,8 +137,8 @@ capability_lanes:
   M5_DURABLE_RUNTIME:
     role: durable_control_plane_worker_state_and_recovery
     primary_slices: [BETA-A, BETA-D]
-    current: BETA_A_ACCEPTANCE
-    critical_for_active_slice: true
+    current: BETA_A_VERIFIED_FOUNDATION
+    critical_for_active_slice: false
   M6_INTEGRATED_BETA:
     role: integrated_operating_beta_and_acceptance
     primary_slices: [BETA-E]
@@ -236,7 +240,7 @@ work_items:
       - cancellation_cleanup
   - work_item_id: BETA-A-ACCEPTANCE
     outcome: prove BETA-A through packaged and replayable operating evidence
-    state: READY
+    state: CLOSED
     phase: EVIDENCE
     selection_class: ACTIVE_SLICE_CLOSER
     priority: 800
@@ -244,8 +248,8 @@ work_items:
     authority_issue: 95
     architecture_goal_issue: 66
     required_spec: SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0
-    target_branch: null
-    target_pr: null
+    target_branch: accept/beta-a-operating-evidence
+    target_pr: 100
     exclusive_domain: beta-a-runtime
     closes_slice: BETA-A
     supports_slices: [BETA-A]
@@ -254,6 +258,70 @@ work_items:
       - replay_equivalence
       - critical_false_green_zero
       - main_release_verified
+  - work_item_id: BETA-B-SPEC
+    outcome: define bounded requirement-to-test generation with a reviewable test-only patch
+    state: READY
+    phase: SPEC
+    selection_class: ACTIVE_SLICE_BLOCKER
+    priority: 750
+    dependencies: [BETA-A-ACCEPTANCE]
+    authority_issue: 101
+    architecture_goal_issue: 66
+    required_spec: self
+    target_branch: null
+    target_pr: null
+    exclusive_domain: beta-b-generation
+    blocks_slice: BETA-B
+    supports_slices: [BETA-B, BETA-C, BETA-E]
+    completion_checks:
+      - requirement_and_provenance_contract
+      - current_authoritative_oracle_contract
+      - generated_test_only_patch_contract
+      - beta_a_execution_handoff_contract
+      - bounded_budget_and_no_retry_contract
+      - threat_model_and_independent_test_design
+  - work_item_id: BETA-B-IMPLEMENTATION
+    outcome: generate validate and execute a bounded reviewable test-only patch
+    state: BLOCKED
+    phase: IMPLEMENTATION
+    selection_class: ACTIVE_SLICE_CLOSER
+    priority: 700
+    dependencies: [BETA-B-SPEC]
+    authority_issue: 101
+    architecture_goal_issue: 66
+    required_spec: SPEC-BETA-B-BOUNDED-REQUIREMENT-TO-TEST@0.1.0
+    target_branch: null
+    target_pr: null
+    exclusive_domain: beta-b-generation
+    closes_slice: BETA-B
+    supports_slices: [BETA-B, BETA-C, BETA-E]
+    completion_checks:
+      - bounded_generation_runtime
+      - reviewable_test_only_patch
+      - validation_before_execution
+      - beta_a_durable_execution
+      - evidence_backed_verdict
+  - work_item_id: BETA-B-ACCEPTANCE
+    outcome: prove bounded requirement-to-test generation through independent operating evidence
+    state: BLOCKED
+    phase: EVIDENCE
+    selection_class: ACTIVE_SLICE_CLOSER
+    priority: 650
+    dependencies: [BETA-B-IMPLEMENTATION]
+    authority_issue: 101
+    architecture_goal_issue: 66
+    required_spec: SPEC-BETA-B-BOUNDED-REQUIREMENT-TO-TEST@0.1.0
+    target_branch: null
+    target_pr: null
+    exclusive_domain: beta-b-generation
+    closes_slice: BETA-B
+    supports_slices: [BETA-B]
+    completion_checks:
+      - generated_patch_reviewability
+      - product_source_write_zero
+      - oracle_and_budget_fail_closed
+      - beta_a_handoff_replay
+      - critical_false_green_zero
   - work_item_id: M1C-MEMORY-FORMATION-CLOSURE
     outcome: preserve M1C formation evidence across migration and close the Memory formation lane
     state: INTEGRATION_WAITING
