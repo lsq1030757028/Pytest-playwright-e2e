@@ -41,18 +41,18 @@ def active_claim(
     }
 
 
-def test_relay_selector_resolves_current_beta_a_implementation() -> None:
+def test_relay_selector_resolves_current_beta_a_acceptance() -> None:
     program = load_current_program()
     result = select_work_item(program, registry())
-    assert result.work_item_id == "BETA-A-IMPLEMENTATION"
+    assert result.work_item_id == "BETA-A-ACCEPTANCE"
 
 
 def test_claim_sequence_cannot_reprioritize_program_delivery() -> None:
     program = load_current_program()
     low_sequence = select_work_item(program, registry(claim_sequence=1))
     high_sequence = select_work_item(program, registry(claim_sequence=1_000_000))
-    assert low_sequence.work_item_id == "BETA-A-IMPLEMENTATION"
-    assert high_sequence.work_item_id == "BETA-A-IMPLEMENTATION"
+    assert low_sequence.work_item_id == "BETA-A-ACCEPTANCE"
+    assert high_sequence.work_item_id == "BETA-A-ACCEPTANCE"
 
 
 def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
@@ -66,7 +66,7 @@ def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
         )
     )
     result = select_work_item(program, state)
-    assert result.work_item_id == "BETA-A-IMPLEMENTATION"
+    assert result.work_item_id == "BETA-A-ACCEPTANCE"
 
 
 def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> None:
@@ -99,6 +99,6 @@ def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> 
     )
     result = select_work_item(program, state)
     assert result.work_item_id == "READY-HORIZONTAL"
-    assert result.rejected["BETA-A-IMPLEMENTATION"] == (
+    assert result.rejected["BETA-A-ACCEPTANCE"] == (
         "domain_conflict:beta-a-runtime"
     )
