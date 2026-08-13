@@ -1,0 +1,114 @@
+acceptance:
+  id: BETA-A-OPERATING-ACCEPTANCE
+  version: 1.0.0
+  status: CANDIDATE
+  work_item_id: BETA-A-ACCEPTANCE
+  goal_issue: 95
+  parent_campaign_issue: 65
+  architecture_goal_issue: 66
+  governing_spec: SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0
+  product_slice: BETA-A
+  assurance:
+    development: DEV3
+    ux: UX3
+
+scope:
+  existing_governed_pack_only: true
+  adds_new_runtime_capability: false
+  requirement_to_test_generation: false
+  diagnosis_or_repair: false
+  governed_memory_resume: false
+  two_project_acceptance: false
+  scheduled_relay_reenable: false
+
+implementation_truth:
+  pull_request: 98
+  merge_commit: 2c980826044d1bdafece52d0ad1918aaa04b06d8
+  exact_main_runs:
+    beta_a_runtime:
+      run_id: 31657082539
+      workflow: beta-a-runtime
+      conclusion: success
+    full_quality:
+      run_id: 31657082561
+      workflow: test-workflow-ci
+      conclusion: success
+    secret_scan:
+      run_id: 31657082556
+      workflow: security-secrets
+      conclusion: success
+    codeql:
+      run_id: 31657082555
+      workflow: security-codeql
+      conclusion: success
+    release:
+      run_id: 31657082558
+      workflow: release-test-harness
+      conclusion: success
+
+implementation_closure_truth:
+  pull_request: 99
+  merge_commit: 77d54bd6b58b45c4fca3e458667bc46f22ff8991
+  exact_main_runs:
+    program_delivery:
+      run_id: 31658000843
+      workflow: program-delivery-consistency
+      conclusion: success
+    full_quality:
+      run_id: 31658000842
+      workflow: test-workflow-ci
+      conclusion: success
+    secret_scan:
+      run_id: 31658000873
+      workflow: security-secrets
+      conclusion: success
+    codeql:
+      run_id: 31658000911
+      workflow: security-codeql
+      conclusion: success
+    release:
+      run_id: 31658000894
+      workflow: release-test-harness
+      conclusion: success
+
+independent_acceptance_proof:
+  workflow: beta-a-acceptance
+  historical_github_run_reverification: required
+  core_runtime_contracts: required
+  restart_recovery_contracts: required
+  critical_mutation_survivors_allowed: 0
+  ux3_personas: 3
+  ux3_repetitions_per_persona: 3
+  adversarial_recovery: required
+  real_docker_pytest_playwright: required
+  real_cancellation_cleanup: required
+  host_secret_socket_network_readonly_boundaries: required
+  clean_wheel_install: required
+  packaged_cli_submit_execute_restart_replay: required
+  control_plane_container_smoke: required
+  acceptance_evidence_upload: required
+
+protected_invariants:
+  critical_false_green_count: 0
+  product_source_write_count: 0
+  oracle_policy_permission_mutation_count: 0
+  automatic_execution_retry_count: 0
+  duplicate_uncertain_execution_count: 0
+  stale_lease_write_count: 0
+  incomplete_required_node_success_count: 0
+  artifact_hash_mismatch_success_count: 0
+  surviving_process_after_cancelled_count: 0
+  host_secret_or_socket_exposure_count: 0
+
+candidate_exit:
+  acceptance_pr_latest_head_green: required
+  review_blockers: 0
+  acceptance_merge_main_commit_bound: required
+  main_beta_a_acceptance_green: required
+  main_full_quality_green: required
+  main_secret_scan_green: required
+  main_codeql_green: required
+  main_release_green: required
+  then_program_delivery_may_close_beta_a: true
+  then_goal_95_may_close_completed: true
+  scheduled_relay_reenabled: false
