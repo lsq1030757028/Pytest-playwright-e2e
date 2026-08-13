@@ -4,7 +4,7 @@ program_delivery:
   status: ACTIVE
   source_role: AUTHORITATIVE_DELIVERY
   delivery_selection_authoritative: true
-  updated_at: 2026-08-11T13:00:00+08:00
+  updated_at: 2026-08-13T09:13:00+08:00
   governing_spec: SPEC-PROGRAM-DELIVERY-SSOT@1.0.0
   goal_issue: 91
 
@@ -12,7 +12,7 @@ program:
   id: TEST_AGENT_RUNTIME_BETA
   campaign_issue: 65
   architecture_goal_issue: 66
-  state: BETA_A_IMPLEMENTATION
+  state: BETA_A_ACCEPTANCE
   delivery_principle: VERTICAL_OPERATING_SLICE_BEFORE_UNUSED_HORIZONTAL_SUBSYSTEM
 
 responsibility_planes:
@@ -38,7 +38,7 @@ responsibility_planes:
 product_slices:
   BETA-A:
     title: Execute an existing governed test pack
-    state: IMPLEMENTING
+    state: ACCEPTING
     dependencies: []
     user_entrypoint: CLI
     user_outcome: durable_job_returns_evidence_backed_verdict
@@ -97,16 +97,16 @@ product_slices:
 
 execution_pointer:
   active_slice: BETA-A
-  current_focus: BETA-A-IMPLEMENTATION
+  current_focus: BETA-A-ACCEPTANCE
   next_slice_after_active: BETA-B
   critical_path:
-    - BETA-A-IMPLEMENTATION
     - BETA-A-ACCEPTANCE
   rationale: >-
-    BETA-A durable governed-pack SPEC is merged as PR #96 and independently
-    verified on main. Goal #95 plus the approved SPEC now authorize the bounded
-    implementation phase; capability lanes remain parallel unless they unblock
-    this active slice.
+    BETA-A implementation PR #98 is merged to main as
+    2c980826044d1bdafece52d0ad1918aaa04b06d8 and the exact main commit passed
+    the BETA-A runtime, Full Quality, Secret Scan, CodeQL, and Release gates.
+    The bounded operating-evidence acceptance phase is now the only canonical
+    product closer; BETA-B remains blocked until BETA-A acceptance closes.
 
 capability_lanes:
   M1_MEMORY:
@@ -133,7 +133,7 @@ capability_lanes:
   M5_DURABLE_RUNTIME:
     role: durable_control_plane_worker_state_and_recovery
     primary_slices: [BETA-A, BETA-D]
-    current: BETA_A_IMPLEMENTING
+    current: BETA_A_ACCEPTANCE
     critical_for_active_slice: true
   M6_INTEGRATED_BETA:
     role: integrated_operating_beta_and_acceptance
@@ -215,7 +215,7 @@ work_items:
       - runtime_test_design_and_threat_model_approved
   - work_item_id: BETA-A-IMPLEMENTATION
     outcome: run an existing governed Pytest and Playwright pack as a durable job
-    state: READY
+    state: CLOSED
     phase: IMPLEMENTATION
     selection_class: ACTIVE_SLICE_CLOSER
     priority: 850
@@ -223,8 +223,8 @@ work_items:
     authority_issue: 95
     architecture_goal_issue: 66
     required_spec: SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0
-    target_branch: null
-    target_pr: null
+    target_branch: feat/beta-a-durable-runtime
+    target_pr: 98
     exclusive_domain: beta-a-runtime
     closes_slice: BETA-A
     supports_slices: [BETA-A, BETA-D]
@@ -236,7 +236,7 @@ work_items:
       - cancellation_cleanup
   - work_item_id: BETA-A-ACCEPTANCE
     outcome: prove BETA-A through packaged and replayable operating evidence
-    state: BLOCKED
+    state: READY
     phase: EVIDENCE
     selection_class: ACTIVE_SLICE_CLOSER
     priority: 800
