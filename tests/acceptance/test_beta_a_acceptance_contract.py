@@ -10,11 +10,11 @@ def load_yaml(path: Path) -> dict[str, object]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def test_acceptance_candidate_is_bound_to_beta_a_authority() -> None:
+def test_acceptance_is_verified_and_bound_to_beta_a_authority() -> None:
     evidence = load_yaml(EVIDENCE_PATH)
     acceptance = evidence["acceptance"]
     assert acceptance["id"] == "BETA-A-OPERATING-ACCEPTANCE"
-    assert acceptance["status"] == "CANDIDATE"
+    assert acceptance["status"] == "VERIFIED"
     assert acceptance["work_item_id"] == "BETA-A-ACCEPTANCE"
     assert acceptance["goal_issue"] == 95
     assert acceptance["parent_campaign_issue"] == 65
@@ -36,15 +36,14 @@ def test_acceptance_does_not_expand_beta_a_scope() -> None:
     assert scope["scheduled_relay_reenable"] is False
 
 
-def test_acceptance_binds_exact_implementation_and_closure_truth() -> None:
+def test_acceptance_binds_all_three_exact_main_truth_layers() -> None:
     evidence = load_yaml(EVIDENCE_PATH)
     implementation = evidence["implementation_truth"]
     assert implementation["pull_request"] == 98
     assert implementation["merge_commit"] == (
         "2c980826044d1bdafece52d0ad1918aaa04b06d8"
     )
-    implementation_runs = implementation["exact_main_runs"]
-    assert {binding["run_id"] for binding in implementation_runs.values()} == {
+    assert {binding["run_id"] for binding in implementation["exact_main_runs"].values()} == {
         31657082539,
         31657082561,
         31657082556,
@@ -55,30 +54,50 @@ def test_acceptance_binds_exact_implementation_and_closure_truth() -> None:
     closure = evidence["implementation_closure_truth"]
     assert closure["pull_request"] == 99
     assert closure["merge_commit"] == "77d54bd6b58b45c4fca3e458667bc46f22ff8991"
-    closure_runs = closure["exact_main_runs"]
-    assert {binding["run_id"] for binding in closure_runs.values()} == {
+    assert {binding["run_id"] for binding in closure["exact_main_runs"].values()} == {
         31658000843,
         31658000842,
         31658000873,
         31658000911,
         31658000894,
     }
-    for binding in (*implementation_runs.values(), *closure_runs.values()):
-        assert binding["conclusion"] == "success"
-        assert binding["workflow"]
+
+    verified = evidence["verified_main_truth"]
+    assert verified["pull_request"] == 100
+    assert verified["merge_commit"] == "056d8819e6b7da507c8f9ed1be3ab8fca77f046a"
+    assert {binding["run_id"] for binding in verified["exact_main_runs"].values()} == {
+        31658662384,
+        31658662425,
+        31658662439,
+        31658662475,
+        31658662468,
+    }
+
+    for section in (implementation, closure, verified):
+        for binding in section["exact_main_runs"].values():
+            assert binding["conclusion"] == "success"
+            assert binding["workflow"]
 
 
-def test_program_delivery_current_truth_is_acceptance_ready() -> None:
+def test_program_delivery_handoff_closes_beta_a_and_readies_beta_b_spec() -> None:
     program = load_yaml(PROGRAM_PATH)
     items = {item["work_item_id"]: item for item in program["work_items"]}
-    assert program["program"]["state"] == "BETA_A_ACCEPTANCE"
-    assert program["product_slices"]["BETA-A"]["state"] == "ACCEPTING"
-    assert program["execution_pointer"]["active_slice"] == "BETA-A"
-    assert program["execution_pointer"]["current_focus"] == "BETA-A-ACCEPTANCE"
-    assert program["execution_pointer"]["critical_path"] == ["BETA-A-ACCEPTANCE"]
-    assert items["BETA-A-IMPLEMENTATION"]["state"] == "CLOSED"
-    assert items["BETA-A-IMPLEMENTATION"]["target_pr"] == 98
-    assert items["BETA-A-ACCEPTANCE"]["state"] == "READY"
+    assert program["program"]["state"] == "PRE_BETA_B"
+    assert program["product_slices"]["BETA-A"]["state"] == "CLOSED"
+    assert program["product_slices"]["BETA-B"]["state"] == "PREPARING"
+    assert program["execution_pointer"]["active_slice"] == "BETA-B"
+    assert program["execution_pointer"]["current_focus"] == "BETA-B-SPEC"
+    assert program["execution_pointer"]["critical_path"] == [
+        "BETA-B-SPEC",
+        "BETA-B-IMPLEMENTATION",
+        "BETA-B-ACCEPTANCE",
+    ]
+    assert items["BETA-A-ACCEPTANCE"]["state"] == "CLOSED"
+    assert items["BETA-A-ACCEPTANCE"]["target_pr"] == 100
+    assert items["BETA-B-SPEC"]["state"] == "READY"
+    assert items["BETA-B-SPEC"]["authority_issue"] == 101
+    assert items["BETA-B-IMPLEMENTATION"]["state"] == "BLOCKED"
+    assert items["BETA-B-ACCEPTANCE"]["state"] == "BLOCKED"
     assert program["relay_enablement"]["state"] == "DISABLED_GOVERNANCE_MIGRATION"
 
 
@@ -105,16 +124,10 @@ def test_all_acceptance_safety_invariants_are_zero() -> None:
     assert all(value == 0 for value in invariants.values())
 
 
-def test_candidate_exit_requires_fresh_main_acceptance_truth() -> None:
-    exit_gate = load_yaml(EVIDENCE_PATH)["candidate_exit"]
-    assert exit_gate["acceptance_pr_latest_head_green"] == "required"
-    assert exit_gate["review_blockers"] == 0
-    assert exit_gate["acceptance_merge_main_commit_bound"] == "required"
-    assert exit_gate["main_beta_a_acceptance_green"] == "required"
-    assert exit_gate["main_full_quality_green"] == "required"
-    assert exit_gate["main_secret_scan_green"] == "required"
-    assert exit_gate["main_codeql_green"] == "required"
-    assert exit_gate["main_release_green"] == "required"
-    assert exit_gate["then_program_delivery_may_close_beta_a"] is True
-    assert exit_gate["then_goal_95_may_close_completed"] is True
-    assert exit_gate["scheduled_relay_reenabled"] is False
+def test_verified_result_allows_program_closure_but_not_relay() -> None:
+    result = load_yaml(EVIDENCE_PATH)["verification_result"]
+    assert result["candidate_exit_satisfied"] is True
+    assert result["acceptance_main_verified"] is True
+    assert result["beta_a_may_close"] is True
+    assert result["goal_95_may_close_after_program_delivery_closure_main_verification"] is True
+    assert result["relay_reenable_authorized"] is False

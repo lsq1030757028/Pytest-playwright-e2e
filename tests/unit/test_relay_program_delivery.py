@@ -41,21 +41,21 @@ def active_claim(
     }
 
 
-def test_relay_selector_resolves_current_beta_a_acceptance() -> None:
+def test_relay_selector_resolves_current_beta_b_spec() -> None:
     program = load_current_program()
     result = select_work_item(program, registry())
-    assert result.work_item_id == "BETA-A-ACCEPTANCE"
+    assert result.work_item_id == "BETA-B-SPEC"
 
 
 def test_claim_sequence_cannot_reprioritize_program_delivery() -> None:
     program = load_current_program()
     low_sequence = select_work_item(program, registry(claim_sequence=1))
     high_sequence = select_work_item(program, registry(claim_sequence=1_000_000))
-    assert low_sequence.work_item_id == "BETA-A-ACCEPTANCE"
-    assert high_sequence.work_item_id == "BETA-A-ACCEPTANCE"
+    assert low_sequence.work_item_id == "BETA-B-SPEC"
+    assert high_sequence.work_item_id == "BETA-B-SPEC"
 
 
-def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
+def test_unrelated_parallel_claim_does_not_displace_beta_b_spec() -> None:
     program = load_current_program()
     state = registry(
         active_claim(
@@ -66,10 +66,10 @@ def test_unrelated_parallel_claim_does_not_displace_beta_a() -> None:
         )
     )
     result = select_work_item(program, state)
-    assert result.work_item_id == "BETA-A-ACCEPTANCE"
+    assert result.work_item_id == "BETA-B-SPEC"
 
 
-def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> None:
+def test_beta_b_domain_claim_filters_candidate_without_mutating_truth() -> None:
     program = load_current_program()
     items = {item["work_item_id"]: item for item in program["work_items"]}
     horizontal = deepcopy(items["M1D-SHARED-MEMORY-GOVERNANCE"])
@@ -79,8 +79,8 @@ def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> 
             "state": "READY",
             "priority": 99_999,
             "dependencies": [],
-            "authority_issue": 95,
-            "required_spec": "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0",
+            "authority_issue": 101,
+            "required_spec": "self",
             "target_branch": "horizontal",
             "target_pr": None,
             "exclusive_domain": "horizontal",
@@ -92,13 +92,12 @@ def test_claim_conflict_filters_candidate_without_changing_remaining_order() -> 
 
     state = registry(
         active_claim(
-            "FOREIGN-BETA-A",
-            domain="beta-a-runtime",
-            branch="foreign-beta-a",
+            "FOREIGN-BETA-B",
+            domain="beta-b-generation",
+            branch="foreign-beta-b",
         )
     )
     result = select_work_item(program, state)
     assert result.work_item_id == "READY-HORIZONTAL"
-    assert result.rejected["BETA-A-ACCEPTANCE"] == (
-        "domain_conflict:beta-a-runtime"
-    )
+    assert result.rejected["BETA-B-SPEC"] == "domain_conflict:beta-b-generation"
+    assert items["BETA-B-SPEC"]["state"] == "READY"

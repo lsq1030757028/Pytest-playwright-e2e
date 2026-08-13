@@ -5,9 +5,9 @@
 > Canonical Delivery SSOT: `docs/program-delivery-ssot.yaml`  
 > 最近同步：2026-08-13  
 > 当前产品：`TEST_AGENT_RUNTIME_BETA`  
-> Program State：`BETA_A_ACCEPTANCE`  
-> Active Product Slice：`BETA-A`  
-> 当前 Focus：`BETA-A-ACCEPTANCE`  
+> Program State：`PRE_BETA_B`  
+> Active Product Slice：`BETA-B`  
+> 当前 Focus：`BETA-B-SPEC`  
 > Scheduled Relay：`DISABLED_GOVERNANCE_MIGRATION`
 
 本文件只用于人类快速阅读当前状态。它不得独立决定下一步、Work Item priority、Product Slice 或 Relay claim。若本文件与 `docs/program-delivery-ssot.yaml` 不一致，以 Program Delivery SSOT 为准。
@@ -16,23 +16,23 @@
 
 ## 1. 当前业务结论
 
-当前目标仍是交付真正可运行的 `TEST_AGENT_RUNTIME_BETA`：
+产品主轴仍是：
 
 ```text
-BETA-A  Existing governed test pack → durable job → execute → evidence → verdict
-→ BETA-B  Requirement → generated/reviewable test → execute
+BETA-A  Existing governed pack → durable job → evidence-backed verdict  [CLOSED]
+→ BETA-B  Requirement → generated/reviewable test-only patch → execute  [SPEC NEXT]
 → BETA-C  Diagnose → bounded test-workflow repair → re-run
 → BETA-D  Restart → durable state + governed Memory → resume
 → BETA-E  Two materially different projects → Beta acceptance
 ```
 
-BETA-A 实现已合入：PR #98 的 merge commit 为 `2c980826044d1bdafece52d0ad1918aaa04b06d8`。该精确 main 提交上的 BETA-A Runtime、Full Quality、Secret Scan、CodeQL 与 Release 均已通过，因此实现阶段已满足关闭条件。
+BETA-A 已完成实现、implementation closure 与独立 operating acceptance：
 
-当前关键路径：
+- Implementation PR #98 → main `2c980826...`，主干 BETA-A runtime / Full Quality / Secret / CodeQL / Release 全绿；
+- Implementation closure PR #99 → main `77d54bd6...`，主干 Program Delivery / Full Quality / Secret / CodeQL / Release 全绿；
+- Acceptance PR #100 → main `056d8819...`，主干 `beta-a-acceptance` / Full Quality / Secret / CodeQL / Release 全绿。
 
-```text
-BETA-A-ACCEPTANCE
-```
+因此 BETA-A 可以正式 `CLOSED`。BETA-B Goal 已创建为 #101，当前只允许 SPEC-first 工作。
 
 ---
 
@@ -40,49 +40,54 @@ BETA-A-ACCEPTANCE
 
 | Work Item | 状态 | 产品作用 |
 |---|---|---|
-| `PROGRAM-DELIVERY-SSOT-IMPLEMENTATION` | `CLOSED` | 单一 delivery truth / selector / Relay source 迁移已闭环 |
-| `BETA-A-SPEC` | `CLOSED` | Goal #95 / PR #96 定义 durable governed-pack contract |
-| `BETA-A-IMPLEMENTATION` | `CLOSED` | PR #98 已在 main 交付 durable CLI job、真实 governed-pack execution 与 evidence-backed verdict |
-| `BETA-A-ACCEPTANCE` | `READY` | 当前唯一产品下一步：用独立 operating evidence 证明 package / Docker / replay / mutation / UX3 / main-release 真值 |
-
-这些状态来自 `docs/program-delivery-ssot.yaml`。
+| `BETA-A-SPEC` | `CLOSED` | PR #96，定义 durable governed-pack contract |
+| `BETA-A-IMPLEMENTATION` | `CLOSED` | PR #98，交付 durable runtime |
+| `BETA-A-ACCEPTANCE` | `CLOSED` | PR #100，独立证明历史真值、真实 Docker/Playwright、package/restart/replay 与 UX3 |
+| `BETA-B-SPEC` | `READY` | Goal #101；当前唯一产品下一步 |
+| `BETA-B-IMPLEMENTATION` | `BLOCKED` | BETA-B SPEC 合并并主干验证前禁止启动 |
+| `BETA-B-ACCEPTANCE` | `BLOCKED` | implementation 完成并主干验证前禁止启动 |
 
 ---
 
-## 3. BETA-A 已实现能力
+## 3. BETA-A 形成的已验证产品基线
 
-已合入的 vertical slice 包含：
+BETA-A 已验证能力包括：
 
 - `test-agent job submit/status/result/events/cancel`；
 - pinned project + immutable governed Pytest/Playwright pack；
 - SQLite WAL durable job/event/attempt/lease state；
-- exact required-node collection，missing/skip/xfail/deselect 不能成功；
-- 一个 job 最多一次真实 execution launch，automatic retry = `0`；
-- durable `command_started` + lease/revision fencing；
-- uncertain launched execution 在 restart 后禁止自动重跑；
-- 完整 durable evidence 可 deterministic reverify/finalize；
-- SHA-256 content-addressed evidence；
-- deterministic verifier-owned final verdict；
-- Docker-only strong sandbox；
-- process-tree cancellation + cleanup truth；
-- clean wheel install、packaged CLI、restart/replay、critical mutation proof、UX3 3 persona × 3 repetitions。
+- exact required-node completeness，missing/skip/xfail/deselect 不能成功；
+- automatic execution retry = `0`；
+- durable command-start + lease/revision fencing；
+- uncertain launched execution restart 后不得自动重跑；
+- durable evidence 可 deterministic reverify/finalize；
+- SHA-256 CAS evidence + deterministic verdict authority；
+- Docker-only strong sandbox、read-only product source、network deny、host secret/socket isolation；
+- truthful process-tree cancellation/cleanup；
+- clean wheel、control-plane container、packaged CLI、restart/replay；
+- 10 个 critical mutation families、survivor = `0`；
+- UX3：3 persona × 3 repetitions + adversarial recovery。
 
-明确不包含 BETA-B test generation、BETA-C repair、BETA-D governed Memory/full active resume、BETA-E two-project acceptance、product-source repair/write 或 Scheduled Relay re-enable。
+这套 BETA-A 基线将在 BETA-B 作为执行底座复用，而不是重建第二套 runtime。
 
 ---
 
-## 4. Acceptance 要证明什么
+## 4. BETA-B 下一步只做 SPEC
 
-`BETA-A-ACCEPTANCE` 不继续扩功能，而是对已合入能力做独立 operating proof：
+Goal #101 的业务目标是：
 
-- 绑定 PR #98 merge commit 与主干 gate 运行事实；
-- 独立重跑真实 Docker / Chromium / cancellation；
-- 独立重跑 package / CLI / restart / replay；
-- 证明 critical false green = `0`、uncertain auto-reexecution = `0`；
-- 证明 durable artifacts/hash/bindings 可复核；
-- 缺失或篡改证据必须 fail closed。
+```text
+requirement + provenance + pinned project/profile + authoritative Oracle
+→ bounded deterministic generation
+→ reviewable test-only patch artifact
+→ validation
+→ BETA-A durable execution
+→ evidence-backed verdict
+```
 
-Acceptance 通过并完成 main 验证后，才允许关闭 BETA-A 并准备 BETA-B SPEC。
+BETA-B SPEC 必须定义 requirement/provenance、Oracle、patch artifact、permitted test paths、product-source read-only、validation/handoff、evidence、budgets、mutation proof 与 UX3。硬约束包括 product source write = `0`、missing/stale Oracle success = `0`、unreviewable patch success = `0`、assertion weakening = `0`、fixed/blind retry = `0`。
+
+在 SPEC 合并并 main-verified 以前，不得提交 generation runtime implementation。
 
 ---
 
@@ -94,13 +99,13 @@ SHOULD_DO_NEXT  → docs/program-delivery-ssot.yaml
 WHO_DOES_IT     → control-branch Claim Registry / Integration Lease
 ```
 
-BETA-A 使用 #65/#66 的显式 owner scope extension、Goal #95 与 `SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0`。`MANDATE-AUTONOMY-M1-M3@1.0.0` 没有被扩大。
+BETA-B 使用 #65/#66 的显式 owner scope extension和 Goal #101。`MANDATE-AUTONOMY-M1-M3@1.0.0` 没有被扩大。
 
 ---
 
 ## 6. Relay 状态
 
-`Pytest GitHub Relay` 仍保持禁用。BETA-A implementation 或 acceptance readiness 都不会自动恢复 Scheduled Relay；恢复仍要求 claims/integration queue reconcile、selector agreement、bounded Relay acceptance 以及全部安全/质量门禁通过。
+`Pytest GitHub Relay` 仍保持禁用。BETA-A 完成不会自动恢复 Scheduled Relay；恢复仍要求 claims/integration queue reconcile、selector agreement、独立 bounded Relay acceptance 以及全部安全/质量门禁通过。
 
 ---
 
@@ -109,10 +114,10 @@ BETA-A 使用 #65/#66 的显式 owner scope extension、Goal #95 与 `SPEC-BETA-
 当前 canonical Program Delivery 的唯一产品下一步是：
 
 ```text
-BETA-A-ACCEPTANCE = READY
+BETA-B-SPEC = READY
 ```
 
-Acceptance 只收集并验证 operating evidence，不得把 BETA-B/C/D/E 的新能力提前混入，也不得放宽 Oracle / Policy / Permission / product-source / sandbox / evidence / cancellation 约束。
+只允许创建 BETA-B SPEC / threat model / independent test design / dedicated SPEC gate；禁止提前写 BETA-B generation runtime。
 
 ---
 

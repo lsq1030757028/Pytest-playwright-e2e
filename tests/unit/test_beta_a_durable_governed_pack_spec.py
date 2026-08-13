@@ -306,18 +306,19 @@ def test_parent_architecture_is_narrowed_not_weakened() -> None:
 def test_program_delivery_truth_and_post_spec_transition_are_consistent() -> None:
     program = load_yaml(PROGRAM_DELIVERY)
     items = {item["work_item_id"]: item for item in program["work_items"]}
-    assert program["program"]["state"] == "BETA_A_ACCEPTANCE"
-    assert program["execution_pointer"]["active_slice"] == "BETA-A"
-    assert program["execution_pointer"]["current_focus"] == "BETA-A-ACCEPTANCE"
-    assert program["execution_pointer"]["critical_path"][0] == "BETA-A-ACCEPTANCE"
+    assert program["program"]["state"] == "PRE_BETA_B"
+    assert program["execution_pointer"]["active_slice"] == "BETA-B"
+    assert program["execution_pointer"]["current_focus"] == "BETA-B-SPEC"
+    assert program["execution_pointer"]["critical_path"][0] == "BETA-B-SPEC"
     assert items["BETA-A-SPEC"]["state"] == "CLOSED"
     assert items["BETA-A-SPEC"]["target_pr"] == 96
     assert items["BETA-A-IMPLEMENTATION"]["state"] == "CLOSED"
     assert items["BETA-A-IMPLEMENTATION"]["target_pr"] == 98
-    assert items["BETA-A-ACCEPTANCE"]["state"] == "READY"
-    assert items["BETA-A-ACCEPTANCE"]["required_spec"] == (
-        "SPEC-BETA-A-DURABLE-GOVERNED-PACK@0.1.0"
-    )
+    assert items["BETA-A-ACCEPTANCE"]["state"] == "CLOSED"
+    assert items["BETA-A-ACCEPTANCE"]["target_pr"] == 100
+    assert items["BETA-B-SPEC"]["state"] == "READY"
+    assert items["BETA-B-SPEC"]["authority_issue"] == 101
+    assert items["BETA-B-IMPLEMENTATION"]["state"] == "BLOCKED"
 
     transition = load_yaml(SPEC_YAML)["post_spec_transition"]
     assert transition["program_delivery_work_item_to_close"] == "BETA-A-SPEC"

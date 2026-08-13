@@ -42,8 +42,8 @@ def test_mutant_claim_registry_product_selector_is_killed() -> None:
 
 def test_mutant_critical_path_without_slice_mapping_is_killed() -> None:
     data = deepcopy(load_raw())
-    item = items_by_id(data)["BETA-A-ACCEPTANCE"]
-    item.pop("closes_slice")
+    item = items_by_id(data)["BETA-B-SPEC"]
+    item.pop("blocks_slice")
     with pytest.raises(ProgramDeliveryError, match="lacks product mapping"):
         validate_program_delivery(data)
 
@@ -69,7 +69,7 @@ def test_mutant_unmapped_horizontal_not_last_is_killed() -> None:
 
 def test_mutant_ready_without_authority_is_killed() -> None:
     data = deepcopy(load_raw())
-    items_by_id(data)["BETA-A-ACCEPTANCE"]["authority_issue"] = None
+    items_by_id(data)["BETA-B-SPEC"]["authority_issue"] = None
     with pytest.raises(ProgramDeliveryError, match="lacks authority/spec"):
         validate_program_delivery(data)
 
@@ -97,11 +97,9 @@ def test_mutant_milestone_priority_signal_is_killed() -> None:
 
 def test_claim_ownership_cannot_mutate_product_readiness() -> None:
     data = deepcopy(load_raw())
-    before = deepcopy(items_by_id(data)["BETA-A-ACCEPTANCE"])
-    decision = select_next_work_item(
-        data, unavailable_work_item_ids={"BETA-A-ACCEPTANCE"}
-    )
-    after = items_by_id(data)["BETA-A-ACCEPTANCE"]
+    before = deepcopy(items_by_id(data)["BETA-B-SPEC"])
+    decision = select_next_work_item(data, unavailable_work_item_ids={"BETA-B-SPEC"})
+    after = items_by_id(data)["BETA-B-SPEC"]
     assert after == before
     assert after["state"] == "READY"
     assert decision.selected_work_item_id is None
@@ -114,7 +112,7 @@ def test_active_slice_selector_cannot_fall_through_to_future_horizontal() -> Non
     items["M1C-MEMORY-FORMATION-CLOSURE"]["state"] = "CLOSED"
     items["M1D-SHARED-MEMORY-GOVERNANCE"]["authority_issue"] = 74
     decision = select_next_work_item(data)
-    assert decision.selected_work_item_id == "BETA-A-ACCEPTANCE"
-    assert decision.candidates.index("BETA-A-ACCEPTANCE") < decision.candidates.index(
+    assert decision.selected_work_item_id == "BETA-B-SPEC"
+    assert decision.candidates.index("BETA-B-SPEC") < decision.candidates.index(
         "M1D-SHARED-MEMORY-GOVERNANCE"
     )

@@ -42,7 +42,7 @@ jobs:
       - name: Install test dependencies
         run: uv sync --extra test
 
-      - name: Reverify bound GitHub implementation and closure evidence
+      - name: Reverify bound GitHub implementation closure and acceptance evidence
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -175,9 +175,9 @@ jobs:
           history = json.loads(Path("test-results/beta-a-historical-evidence.json").read_text())
           ux3 = json.loads(Path("test-results/beta-a-ux3-acceptance.json").read_text())
           result = json.loads(Path("test-results/beta-a-packaged-result.json").read_text())
-          assert history["candidate_status"] == "CANDIDATE"
-          assert len(history["pull_requests"]) == 2
-          assert len(history["runs"]) == 10
+          assert history["candidate_status"] == "VERIFIED"
+          assert len(history["pull_requests"]) == 3
+          assert len(history["runs"]) == 15
           assert ux3["assurance"] == "UX3"
           assert ux3["journey_count"] == 9
           assert ux3["adversarial_recovery"]["automatic_reexecution"] is False

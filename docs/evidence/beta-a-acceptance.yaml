@@ -1,7 +1,7 @@
 acceptance:
   id: BETA-A-OPERATING-ACCEPTANCE
   version: 1.0.0
-  status: CANDIDATE
+  status: VERIFIED
   work_item_id: BETA-A-ACCEPTANCE
   goal_issue: 95
   parent_campaign_issue: 65
@@ -71,6 +71,31 @@ implementation_closure_truth:
       workflow: release-test-harness
       conclusion: success
 
+verified_main_truth:
+  pull_request: 100
+  merge_commit: 056d8819e6b7da507c8f9ed1be3ab8fca77f046a
+  exact_main_runs:
+    beta_a_acceptance:
+      run_id: 31658662384
+      workflow: beta-a-acceptance
+      conclusion: success
+    full_quality:
+      run_id: 31658662425
+      workflow: test-workflow-ci
+      conclusion: success
+    secret_scan:
+      run_id: 31658662439
+      workflow: security-secrets
+      conclusion: success
+    codeql:
+      run_id: 31658662475
+      workflow: security-codeql
+      conclusion: success
+    release:
+      run_id: 31658662468
+      workflow: release-test-harness
+      conclusion: success
+
 independent_acceptance_proof:
   workflow: beta-a-acceptance
   historical_github_run_reverification: required
@@ -112,3 +137,10 @@ candidate_exit:
   then_program_delivery_may_close_beta_a: true
   then_goal_95_may_close_completed: true
   scheduled_relay_reenabled: false
+
+verification_result:
+  candidate_exit_satisfied: true
+  acceptance_main_verified: true
+  beta_a_may_close: true
+  goal_95_may_close_after_program_delivery_closure_main_verification: true
+  relay_reenable_authorized: false

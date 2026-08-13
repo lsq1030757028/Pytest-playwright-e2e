@@ -83,7 +83,7 @@ def verify_runs(repo: str, section: dict[str, Any]) -> list[dict[str, Any]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Reverify historical GitHub evidence bound by BETA-A acceptance."
+        description="Reverify GitHub evidence bound by BETA-A acceptance."
     )
     parser.add_argument(
         "evidence",
@@ -99,6 +99,7 @@ def main() -> int:
     sections = (
         evidence["implementation_truth"],
         evidence["implementation_closure_truth"],
+        evidence["verified_main_truth"],
     )
     report = {
         "schema_version": "1.0",
