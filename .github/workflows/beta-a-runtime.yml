@@ -1,0 +1,147 @@
+name: beta-a-runtime
+
+on:
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "src/test_workflow/beta_runtime/**"
+      - "src/test_workflow/test_agent_cli.py"
+      - "tests/beta_a_helpers.py"
+      - "tests/unit/test_beta_a_runtime_*.py"
+      - "tests/integration/test_beta_a_runtime_docker.py"
+      - "tests/integration/test_beta_a_runtime_ux3.py"
+      - ".github/workflows/beta-a-runtime.yml"
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "src/test_workflow/beta_runtime/**"
+      - "src/test_workflow/test_agent_cli.py"
+      - "tests/beta_a_helpers.py"
+      - "tests/unit/test_beta_a_runtime_*.py"
+      - "tests/integration/test_beta_a_runtime_docker.py"
+      - "tests/integration/test_beta_a_runtime_ux3.py"
+      - ".github/workflows/beta-a-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install test dependencies
+        run: uv sync --extra test
+
+      - name: Focused runtime contracts and critical mutants
+        run: |
+          mkdir -p test-results
+          uv run pytest \
+            tests/unit/test_beta_a_runtime_core.py \
+            tests/unit/test_beta_a_runtime_recovery.py \
+            tests/unit/test_beta_a_runtime_mutation_proof.py \
+            --junitxml=test-results/junit-beta-a-runtime-unit.xml
+
+      - name: UX3 real CLI persona and adversarial recovery proof
+        env:
+          BETA_A_UX3_REPORT: test-results/beta-a-ux3-journeys.json
+        run: >-
+          uv run pytest tests/integration/test_beta_a_runtime_ux3.py
+          --junitxml=test-results/junit-beta-a-runtime-ux3.xml
+
+      - name: Build immutable local Playwright execution image
+        shell: bash
+        run: |
+          cat > /tmp/beta-a-runtime.Dockerfile <<'EOF'
+          FROM mcr.microsoft.com/playwright/python:v1.57.0-noble
+          RUN python -m pip install --no-cache-dir pytest==9.1.1 playwright==1.57.0
+          EOF
+          docker build \
+            --file /tmp/beta-a-runtime.Dockerfile \
+            --tag beta-a-runtime-ci:${GITHUB_SHA} \
+            /tmp
+          image_id="$(docker image inspect --format '{{.Id}}' beta-a-runtime-ci:${GITHUB_SHA})"
+          test "${image_id#sha256:}" != "${image_id}"
+          echo "BETA_A_DOCKER_IMAGE=${image_id}" >> "${GITHUB_ENV}"
+
+      - name: Real Docker Pytest Playwright and cancellation proof
+        run: >-
+          uv run pytest tests/integration/test_beta_a_runtime_docker.py
+          --junitxml=test-results/junit-beta-a-runtime-docker.xml
+
+      - name: Build wheel and install packaged Test Agent in clean environment
+        shell: bash
+        run: |
+          uv build
+          rm -rf /tmp/beta-a-wheel
+          uv venv /tmp/beta-a-wheel
+          uv pip install --python /tmp/beta-a-wheel/bin/python dist/*.whl
+          cd /tmp
+          /tmp/beta-a-wheel/bin/test-agent --help
+          /tmp/beta-a-wheel/bin/test-agent job --help
+          /tmp/beta-a-wheel/bin/test-agent runtime --help
+
+      - name: Prepare packaged CLI governed fixture
+        shell: bash
+        run: |
+          rm -rf /tmp/beta-a-package-fixture /tmp/beta-a-package-state
+          BETA_A_DOCKER_IMAGE="${BETA_A_DOCKER_IMAGE}" uv run python - <<'PY' > /tmp/beta-a-submission-path
+          import os
+          from pathlib import Path
+          from tests.beta_a_helpers import make_governed_fixture
+
+          _, _, _, submission = make_governed_fixture(
+              Path("/tmp/beta-a-package-fixture"),
+              image=os.environ["BETA_A_DOCKER_IMAGE"],
+          )
+          print(submission)
+          PY
+          test -s /tmp/beta-a-submission-path
+
+      - name: Packaged CLI submit execute restart and replay truth
+        shell: bash
+        run: |
+          submission="$(cat /tmp/beta-a-submission-path)"
+          state=/tmp/beta-a-package-state
+          cd /tmp
+          submit_json="$(/tmp/beta-a-wheel/bin/test-agent job submit \
+            "${submission}" --state-dir "${state}" --json)"
+          job_id="$(python -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
+            <<< "${submit_json}")"
+          test -n "${job_id}"
+
+          /tmp/beta-a-wheel/bin/test-agent runtime serve \
+            --once --worker-id package-worker --state-dir "${state}" --json
+          result_one="$(/tmp/beta-a-wheel/bin/test-agent job result \
+            "${job_id}" --state-dir "${state}" --json)"
+          verdict_one="$(python -c \
+            'import json,sys; print(json.load(sys.stdin)["result"]["verdict"])' \
+            <<< "${result_one}")"
+          test "${verdict_one}" = "VERIFIED_SUCCESS"
+
+          result_two="$(/tmp/beta-a-wheel/bin/test-agent job result \
+            "${job_id}" --state-dir "${state}" --json)"
+          test "${result_two}" = "${result_one}"
+          /tmp/beta-a-wheel/bin/test-agent runtime serve \
+            --once --worker-id restarted-package-worker \
+            --state-dir "${state}" --json \
+            | grep '"processed_job_id":null'
+
+      - name: Upload BETA-A runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-a-runtime-evidence
+          path: |
+            test-results
+            dist
+          if-no-files-found: warn
+          retention-days: 30
