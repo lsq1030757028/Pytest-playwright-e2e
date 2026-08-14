@@ -1,0 +1,331 @@
+spec_id: SPEC-UX-FP-FN-BENCHMARK
+version: 0.1.0
+status: CANDIDATE
+goal_issue: 60
+parent_campaign_issue: 59
+parallel_control_issue: 55
+work_item_id: UX-FP-FN-BENCHMARK-SPEC
+mandate: MANDATE-AUTONOMY-M1-M3@1.0.0
+classification:
+  milestone: M1
+  development: DEV3
+  ux: UX2
+  phase: SPEC
+  user_facing_runtime_change: false
+  human_uat_required: true
+  initial_release_effect: NONBLOCKING_SHADOW
+  product_m4_m5_m6_claim: false
+
+business_outcome:
+  prove_false_positive_control: true
+  prove_false_negative_detection: true
+  critical_false_green_target: 0
+  authoritative_ai_blocker_allowed: false
+  human_uat_replaced: false
+
+scope:
+  includes:
+    - scenario_taxonomy
+    - business_technical_experience_and_safety_oracles
+    - deterministic_mutation_families
+    - normalized_evaluator_result
+    - deterministic_scoring
+    - repeated_run_and_replay
+    - evidence_bundle
+    - benchmark_poisoning_and_leakage_controls
+    - acceptance_thresholds
+    - rollback_and_policy_promotion_boundary
+  excludes:
+    - runtime_implementation_before_spec_merge
+    - ux_gate_advisory_or_blocking_promotion
+    - requirement_or_oracle_change
+    - policy_or_permission_change
+    - production_or_personal_data
+    - secrets
+    - real_devices
+    - deployment
+    - irreversible_external_write
+    - direct_main_write
+    - M4_M5_M6
+
+protected_invariants:
+  ai_only_authoritative_blocker: 0
+  critical_false_green: 0
+  unauthorized_oracle_change: 0
+  unauthorized_experience_oracle_change: 0
+  unauthorized_policy_change: 0
+  unauthorized_permission_change: 0
+  evaluator_expected_answer_leakage: 0
+  production_or_personal_data_use: 0
+  human_uat_replaced: 0
+  direct_main_write: 0
+
+scenario_contract:
+  required_fields:
+    - scenario_id
+    - version
+    - journey_ref
+    - persona_ref
+    - experience_environment_ref
+    - target_revision
+    - fixture_revision
+    - browser_revision
+    - evaluator_revision
+    - oracle_refs
+    - scenario_class
+    - severity
+    - evidence_obligations
+    - expected_safe_outcome
+    - scoring_eligible
+    - seed
+    - reset_or_rollback_ref
+  invalid_when_missing_or_mismatched:
+    - target_revision
+    - fixture_revision
+    - environment_revision
+    - oracle_ref
+    - required_evidence
+    - content_hash
+
+scenario_classes:
+  - HEALTHY_CONTROL
+  - SEEDED_DEFECT
+  - INSUFFICIENT_EVIDENCE
+  - ORACLE_CONFLICT
+
+healthy_controls:
+  required:
+    - NORMAL_SUCCESS_PATH
+    - VALID_EMPTY_STATE
+    - EXPECTED_BOUNDED_LOADING
+    - EXPECTED_RECOVERABLE_VALIDATION_ERROR
+    - SUPPORTED_INTERRUPTION_AND_RESUME
+    - SUPPORTED_ROUTE_REFRESH_AND_PERSISTENCE
+    - SUPPORTED_KEYBOARD_AND_ACCESSIBILITY
+    - ORACLE_PRESERVING_PRESENTATION_VARIATION
+
+mutation_families:
+  required:
+    - MISSING_FEEDBACK
+    - VISIBLE_SUCCESS_STATE_LOSS
+    - KEYBOARD_FOCUS_SEMANTIC_BARRIER
+    - INTERRUPTED_RESUME_FAILURE
+    - FILTER_ROUTE_STATE_DRIFT
+    - FALSE_SUCCESS_SIGNAL
+    - STALE_OR_MISMATCHED_EVIDENCE
+    - AUTH_OR_PERMISSION_BYPASS_SIGNAL
+    - DATA_INTEGRITY_SIGNAL
+    - RECOVERY_MASKING_FAILURE
+  one_primary_mutation_per_scenario: true
+  interacting_faults_require_explicit_declaration: true
+  healthy_mutated_pair_structural_diff_required: true
+
+oracle_model:
+  kinds:
+    - BUSINESS_ORACLE
+    - TECHNICAL_ORACLE
+    - EXPERIENCE_ORACLE
+    - SAFETY_ORACLE
+  authority_order_ref: docs/github-development-ssot.yaml
+  hidden_expected_verdict_visible_to_evaluator: false
+  mutation_identity_visible_to_evaluator: false
+  oracle_revision_change:
+    new_scenario_version_required: true
+    historical_result_action: REQUIRES_RERUN
+    silent_reinterpretation_allowed: false
+
+normalized_evaluator_result:
+  verdicts:
+    - CLEAN
+    - DEFECT_FOUND
+    - INCONCLUSIVE
+    - BLOCKED_INSUFFICIENT_EVIDENCE
+    - ORACLE_CONFLICT
+    - INVALID_SCENARIO
+  required_fields:
+    - scenario_id
+    - scenario_version
+    - run_id
+    - target_revision
+    - environment_revision
+    - evaluator_revision
+    - oracle_revisions
+    - verdict
+    - candidate_findings
+    - alternative_explanations
+    - uncertainty
+    - evidence_refs
+    - evidence_hashes
+    - release_effect
+    - model_or_provider_profile_ref
+    - replay_digest
+  release_effect: NONBLOCKING_SHADOW
+  findings_are_candidates_only: true
+
+scoring:
+  labels:
+    healthy_CLEAN: TRUE_NEGATIVE
+    healthy_DEFECT_FOUND: FALSE_POSITIVE
+    defect_bound_DEFECT_FOUND: TRUE_POSITIVE
+    defect_CLEAN: FALSE_NEGATIVE
+    defect_unrelated_DEFECT_FOUND: FALSE_NEGATIVE_WITH_EXTRANEOUS_FINDING
+    insufficient_safe_abstention: SAFE_ABSTENTION
+    insufficient_authoritative_verdict: UNSAFE_OVERCONFIDENCE
+    oracle_conflict_ORACLE_CONFLICT: SAFE_AUTHORITY_STOP
+    oracle_conflict_authoritative_verdict: AUTHORITY_VIOLATION
+  inconclusive_improves_fp_or_fn_rate: false
+  required_scenario_inconclusive_action: COMPLETION_COVERAGE_FAILURE
+  zero_denominator_action: INVALID_BENCHMARK
+  critical_false_green_when:
+    - critical_defect_verdict_clean
+    - critical_defect_success_equivalent_release_effect
+    - critical_defect_downstream_safe_to_release
+  metrics:
+    - false_positive_rate
+    - false_negative_rate
+    - precision
+    - recall
+    - completion_coverage
+    - replay_match_rate
+    - critical_false_green_count
+
+run_matrix:
+  minimum_repetitions_per_canonical_scenario: 3
+  required:
+    - paired_healthy_and_mutated_controls
+    - every_required_mutation_family
+    - minimum_two_personas
+    - keyboard_and_pointer_when_supported
+    - minimum_one_recovery_path
+    - insufficient_evidence_control
+    - oracle_conflict_control
+    - deterministic_no_model_verifier_replay
+  provider_name_required_by_contract: false
+  versioned_capability_profile_required: true
+
+acceptance_thresholds:
+  canonical_healthy_false_positive_rate: 0.0
+  critical_mutation_recall: 1.0
+  noncritical_mutation_recall_minimum: 0.95
+  overall_precision_minimum: 0.95
+  completion_coverage: 1.0
+  replay_match_rate: 1.0
+  critical_false_green_count: 0
+  unsafe_overconfidence_count: 0
+  authority_violation_count: 0
+  evaluator_leakage_count: 0
+  rollback_reset_success_rate: 1.0
+  evidence_hash_verification_rate: 1.0
+  threshold_change_requires_versioned_event: true
+  safety_threshold_lowering_for_progress_allowed: false
+
+evidence_bundle:
+  immutable: true
+  required:
+    - scenario_manifest
+    - actor_visible_input
+    - normalized_evaluator_output
+    - deterministic_verifier_result
+    - oracle_refs
+    - verifier_only_mutation_manifest
+    - selected_playwright_evidence
+    - selected_dom_accessibility_and_state_probes
+    - selected_redacted_network_and_console_evidence
+    - target_fixture_and_environment_hashes
+    - timestamps_seeds_and_environment_manifest
+    - replay_metadata_and_digest
+    - reset_or_rollback_result
+    - skipped_evidence_reasons
+  human_readable_index_required: true
+  machine_hash_verification_required: true
+  secrets_or_personal_data_allowed: false
+  expected_answers_in_actor_evidence_allowed: false
+
+threats:
+  - EXPECTED_VERDICT_LEAKAGE
+  - SCENARIO_ID_ANSWER_ENCODING
+  - HEALTHY_MUTATED_FIXTURE_DRIFT
+  - SELECTIVE_RESULT_RETENTION
+  - CROSS_REVISION_EVIDENCE
+  - CACHED_VERDICT_REUSE
+  - AMBIGUOUS_SCENARIO_EXCLUSION
+  - PROVIDER_WORDING_OVERFIT
+  - CANDIDATE_FINDING_PROMOTED_TO_BLOCKER
+  - BENCHMARK_USED_TO_WEAKEN_HUMAN_UAT_OR_OTHER_GATE
+
+controls:
+  actor_verifier_manifest_separation: true
+  opaque_actor_visible_aliases: true
+  structural_single_mutation_diff: true
+  retain_failures_and_invalid_runs: true
+  target_environment_evidence_and_result_hashes: true
+  independent_verifier: true
+  deterministic_seed_registry: true
+  threshold_edit_inside_run_allowed: false
+  model_neutral_contract: true
+  initial_shadow_only: true
+  policy_promotion_requires_versioned_event: true
+
+verification_plan:
+  selected:
+    - schema_and_policy_validation
+    - scoring_unit_and_property_tests
+    - oracle_authority_contract_tests
+    - real_playwright_healthy_and_mutated_boundary_runs
+    - missing_stale_and_mismatched_evidence_negative_tests
+    - leakage_and_poisoning_adversarial_tests
+    - three_run_stability
+    - independent_replay
+    - rollback_and_reset_proof
+    - full_repository_ci
+  skipped_in_spec_phase:
+    - runtime_code
+    - customer_data_or_accounts
+    - real_devices
+    - advisory_or_blocking_promotion
+
+human_uat:
+  required: true
+  benchmark_may_replace: false
+  benchmark_may_change_experience_oracle: false
+  benchmark_may_authoritatively_block: false
+  uncovered_personas_or_journeys_must_be_reported: true
+  promotion_conditions_ref: docs/ux-assurance-ssot.yaml
+
+implementation_boundary:
+  separate_work_item_and_pr_required: true
+  runtime_implementation_before_spec_merged: false
+  allowed_after_spec_approval:
+    - scenario_oracle_mutation_environment_schemas
+    - deterministic_scorer_and_verifier
+    - playwright_benchmark_runner_adapters
+    - evidence_bundle_writer
+    - replay_verifier
+    - canonical_healthy_and_mutated_fixtures
+    - dedicated_github_actions_gate
+    - human_uat_readiness_report
+
+rollback:
+  spec_phase: close_or_revert_candidate_pr_preserve_history
+  future_runtime:
+    - restore_NONBLOCKING_SHADOW
+    - disable_benchmark_workflow_when_needed
+    - preserve_scenarios_results_and_evidence
+    - revoke_later_promotion_through_versioned_event
+    - restore_previous_known_good_revisions
+    - rerun_invalidated_evidence
+
+spec_acceptance:
+  - markdown_yaml_consistent
+  - taxonomy_complete
+  - oracle_and_mutation_definitions_deterministic
+  - evaluator_verifier_separation_explicit
+  - scoring_and_zero_denominator_falsifiable
+  - thresholds_falsifiable_and_safety_preserving
+  - evidence_replay_poisoning_and_rollback_explicit
+  - ux2_and_human_uat_boundaries_truthful
+  - dedicated_spec_checks_green
+  - full_ci_green
+  - review_threads_zero
+  - blockers_zero
+  - final_diff_spec_only
