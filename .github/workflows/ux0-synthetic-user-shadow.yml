@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload Synthetic User evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ux0-synthetic-user-shadow-results
           path: test-results

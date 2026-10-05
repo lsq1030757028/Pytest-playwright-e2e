@@ -69,7 +69,7 @@ jobs:
 
       - name: Upload UX0 SPEC evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ux0-synthetic-user-spec-results
           path: test-results
